@@ -126,7 +126,8 @@ logs
 .cursorignore
 
 # docs
-docs/
+docs/*.md
+docs/deployment/*.md
 
 # claude
 .claude/
