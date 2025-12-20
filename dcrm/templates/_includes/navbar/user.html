@@ -1,0 +1,58 @@
+{% load static %}
+<li class="dropdown user user-menu">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+        <img src="{{ request.user.avatar_url|default:'/static/adminlte/img/avatar04.png' }}" 
+             class="user-image" alt="User Image" 
+             style="object-fit: cover; object-position: center;">
+        <span class="hidden-xs">{{ request.user.get_full_name|default:request.user.username }}</span>
+    </a>
+    <ul class="dropdown-menu">
+        <!-- User image -->
+        <li class="user-header">
+            <img src="{{ request.user.avatar_url|default:'/static/adminlte/img/avatar04.png' }}" 
+                 class="img-circle" alt="User Image"
+                 style="object-fit: cover; object-position: center; width: 90px; height: 90px;">
+            <p>
+                {{ request.user.get_full_name|default:request.user.username }}
+                <small>
+                    {{ request.user.data_center }}
+                    <br>
+                    {{ request.user.email }}
+                </small>
+            </p>
+        </li>
+        <!-- Menu Body -->
+        <li class="user-body">
+            <div class="row">
+                <div class="col-xs-4 text-center">
+                    <a href="#">
+                        <i class="fa fa-cog"></i> 设置
+                    </a>
+                </div>
+                <div class="col-xs-4 text-center">
+                    <a href="#">
+                        <i class="fa fa-key"></i> 密码
+                    </a>
+                </div>
+                <div class="col-xs-4 text-center">
+                    <a href="#">
+                        <i class="fa fa-bell"></i> 通知
+                    </a>
+                </div>
+            </div>
+        </li>
+        <!-- Menu Footer-->
+        <li class="user-footer">
+            <div class="pull-left">
+                <a href="{% url 'user_profile' %}" class="btn btn-default btn-flat">
+                    <i class="fa fa-user"></i> 个人信息
+                </a>
+            </div>
+            <div class="pull-right">
+                <a href="{% url 'logout' %}" class="btn btn-default btn-flat">
+                    <i class="fa fa-sign-out"></i> 退出登录
+                </a>
+            </div>
+        </li>
+    </ul>
+</li>

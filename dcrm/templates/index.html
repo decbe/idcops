@@ -1,0 +1,599 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ title }} | {{ block.super }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}{{ subtitle }}{% endblock %}
+
+{% block breadcrumb %}
+{% for item in breadcrumbs %}
+<li {% if forloop.last %}class="active" {% endif %}>
+    {% if not forloop.last %}<a href="{{ item.url }}">{% endif %}
+        <i class="{{ item.icon }}"></i> {{ item.name }}
+        {% if not forloop.last %}</a>{% endif %}
+</li>
+{% endfor %}
+{% endblock %}
+
+{% block content %}
+<!-- 统计信息 -->
+<div class="row">
+    {% for item in model_stats %}
+    <div class="col-lg-3 col-md-3 col-sm-6 col-xs-12">
+        <div class="info-box">
+            <span class="info-box-icon {{ item.color }}"><i class="{{ item.icon }}"></i></span>
+            <div class="info-box-content">
+                <a href="{{ item.url }}">
+                    <span class="info-box-text">{{ item.name }}</span>
+                </a>
+                {% if item.active_count %}
+                <span class="info-box-number">{{ item.active_count }}<small>
+                        /{{ item.count }}{{ item.metric }}</small></span>
+                {% else %}
+                <span class="info-box-number">{{ item.count }}<small> {{ item.metric }}</small></span>
+                {% endif %}
+                {% if item.desc %}<small class="text-muted">{{ item.desc }}</small>{% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- 统计与分析 Tabs -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="nav-tabs-custom">
+            <ul class="nav nav-tabs">
+                <li class="active"><a href="#device-stats" data-toggle="tab">{% trans "设备分析" %}</a></li>
+                <li><a href="#rack-stats" data-toggle="tab">{% trans "机柜分析" %}</a></li>
+                <li><a href="#tenant-stats" data-toggle="tab">{% trans "租户分析" %}</a></li>
+                <li class="pull-right"><a class="text-muted" href="{% url 'device_report' %}">详情</a></li>
+            </ul>
+            <div class="tab-content no-padding">
+                <!-- 设备统计与分析 Tab -->
+                <div class="tab-pane active" id="device-stats">
+                    <div class="box box-solid">
+                        <div class="box-body">
+                            <div class="row">
+                                <!-- 设备变更趋势分析 -->
+                                <div class="col-md-8">
+                                    <div id="device-trend-chart" style="height: 400px; margin-bottom: 20px;"></div>
+                                </div>
+                                <!-- 设备类型分布 -->
+                                <div class="col-md-4">
+                                    <div id="device-type-chart" style="height: 400px; margin-bottom: 20px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 机柜统计与分析 Tab -->
+                <div class="tab-pane" id="rack-stats">
+                    <div class="box box-solid">
+                        <div class="box-body">
+                            <div class="row">
+                                <!-- 机柜变更趋势分析 -->
+                                <div class="col-md-8">
+                                    <div id="rack-trend-chart" style="height: 400px; margin-bottom: 20px;"></div>
+                                </div>
+                                <!-- 机柜状态分布 -->
+                                <div class="col-md-4">
+                                    <div id="rack-status-chart" style="height: 400px; margin-bottom: 20px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 租户统计与分析 Tab -->
+                <div class="tab-pane" id="tenant-stats">
+                    <div class="box box-solid">
+                        <div class="box-body">
+                            <div class="row">
+                                <!-- 租户趋势分析 -->
+                                <div class="col-md-8">
+                                    <div id="tenant-trend-chart" style="height: 400px; margin-bottom: 20px;"></div>
+                                </div>
+                                <!-- 租户分布 -->
+                                <div class="col-md-4">
+                                    <div id="tenant-distribution-chart" style="height: 400px; margin-bottom: 20px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 最近活动 -->
+<div class="row">
+    <div class="col-md-7">
+        <div class="box">
+            <div class="box-header with-border">
+                <h3 class="box-title">{% trans "最近操作" %}</h3>
+                <div class="box-tools pull-right">
+                    <a class="text-muted" href="{% url 'log_entry_list' %}">{% trans "更多" %}</a>
+                </div>
+            </div>
+            <div class="box-body bg-light-gray">
+                <ul class="timeline">
+                    {% for operation in recent_operations %}
+                    <li>
+                        <i class="{{ operation.color_class }} {{operation.icon}}"></i>
+                        <div class="timeline-item">
+                            <span class="time">
+                                {% if operation.user %}{{ operation.user }}{% else %}{% trans "系统" %}{% endif %}
+                                <i class="fa fa-clock-o"></i> {{ operation.timestamp }}
+                            </span>
+                            <div class="timeline-body" title="{{ operation.message}}">
+                                {{ operation.action }}
+                                <small class="text-muted">
+                                    {{ operation.content_type }}:
+                                    {% if operation.object_repr %}
+                                    <a href="{{ operation.object_repr.get_absolute_url }}">
+                                        {{ operation.object_repr }}
+                                    </a>
+                                    {% else %}
+                                    {{ operation.message }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li>
+                        <i class="fa fa-info bg-gray"></i>
+                        <div class="timeline-item">
+                            <div class="timeline-body">
+                                {% trans "暂无操作记录" %}
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="box">
+            <div class="box-header with-border">
+                <h3 class="box-title">{% trans "系统状态" %}</h3>
+            </div>
+            <div class="box-body">
+                <table class="table table-striped">
+                    <tbody>
+                        <tr>
+                            <td>{% trans "系统时间" %}</td>
+                            <td>{{ system_info.system_time }}</td>
+                        </tr>
+                        <tr>
+                            <td>{% trans "Python版本" %}</td>
+                            <td>{{ system_info.python_version }}</td>
+                        </tr>
+                        <tr>
+                            <td>{% trans "PostgreSQL版本" %}</td>
+                            <td>{{ system_info.postgresql_version }}</td>
+                        </tr>
+                        <tr>
+                            <td>{% trans "数据库大小" %}</td>
+                            <td>{{ system_info.database_size }}</td>
+                        </tr>
+                        <tr>
+                            <td>{% trans "RQ Workers" %}</td>
+                            <td>{{ system_info.rqworker_count }}</td>
+                        </tr>
+                        <tr>
+                            <td>{% trans "应用运行时间" %}</td>
+                            <td>{{ system_info.app_uptime|timesince }}</td>
+                        </tr>
+                        {% if system_info.load_average != 'N/A' %}
+                        <tr>
+                            <td>{% trans "系统负载" %}</td>
+                            <td>
+                                1min: {{ system_info.load_average.1_minute }},
+                                5min: {{ system_info.load_average.5_minute }},
+                                15min: {{ system_info.load_average.15_minute }}
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/echarts.min.js' %}"></script>
+<script>
+    // 等待DOM加载完成后再初始化图表
+    document.addEventListener('DOMContentLoaded', function () {
+        // 设备变更趋势图表
+        var trendChart = echarts.init(document.getElementById('device-trend-chart'));
+        const deviceData = JSON.parse('{{ device_stats|safe }}');
+        console.log(deviceData);
+        var trendOption = {
+            title: {
+                top: 10,
+                text: '{% trans "设备变更分析" %}',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                }
+            },
+            legend: {
+                data: ['{% trans "上架" %}', '{% trans "迁移" %}', '{% trans "下架" %}'],
+                bottom: 5
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '15%',
+                containLabel: true
+            },
+            xAxis: [
+                {
+                    type: 'category',
+                    data: deviceData.trend_data.dates,
+                    axisTick: {
+                        alignWithLabel: true
+                    }
+                }
+            ],
+            yAxis: [
+                {
+                    type: 'value',
+                    name: '{% trans "设备变更数量(台)" %}',
+                    nameLocation: 'middle',
+                    nameGap: 50
+                }
+            ],
+            series: [
+                {
+                    name: '{% trans "上架" %}',
+                    type: 'bar',
+                    stack: '总量',
+                    barGap: 0,
+                    data: deviceData.trend_data.create,
+                    itemStyle: {
+                        color: '#3d9970'
+                    }
+                },
+                {
+                    name: '{% trans "迁移" %}',
+                    type: 'bar',
+                    stack: '总量',
+                    data: deviceData.trend_data.device_migrate,
+                    itemStyle: {
+                        color: '#f39c12'
+                    }
+                },
+                {
+                    name: '{% trans "下架" %}',
+                    type: 'bar',
+                    stack: '总量',
+                    data: deviceData.trend_data.device_move_down,
+                    itemStyle: {
+                        color: '#dd4b39'
+                    }
+                }
+            ]
+        };
+
+        trendChart.setOption(trendOption);
+
+        // 设备类型分布图表
+        var typeChart = echarts.init(document.getElementById('device-type-chart'));
+
+        var typeData = deviceData.type_data;
+
+        var typeOption = {
+            title: {
+                top: 10,
+                text: '{% trans "设备类型分布" %}',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'item',
+                formatter: '{a} <br/>{b}: {c} ({d}%)'
+            },
+            itemStyle: {
+                borderRadius: 10,
+                borderColor: '#fff',
+                borderWidth: 2
+            },
+            legend: {
+                bottom: 5,
+                data: typeData.map(function (item) { return item.name; })
+            },
+            series: [
+                {
+                    name: '{% trans "设备类型" %}',
+                    type: 'pie',
+                    radius: ['50%', '70%'],
+                    avoidLabelOverlap: false,
+                    label: {
+                        show: false,
+                        position: 'center',
+                        formatter: '{b}\n{c}台 ({d}%)',
+                        fontSize: 14,
+                        fontWeight: 'bold'
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: 16,
+                            fontWeight: 'bold'
+                        },
+                    },
+                    data: typeData
+                }
+            ]
+        };
+
+        typeChart.setOption(typeOption);
+
+        // 机柜变更趋势图表 (占位符，需要后端提供数据)
+        var rackTrendChart = echarts.init(document.getElementById('rack-trend-chart'));
+        var rackTrendOption = {
+            title: {
+                top: 10,
+                text: '{% trans "机柜变更分析" %}',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                }
+            },
+            legend: {
+                data: ['{% trans "分配" %}', '{% trans "释放" %}'],
+                bottom: 5
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '15%',
+                containLabel: true
+            },
+            xAxis: [
+                {
+                    type: 'category',
+                    data: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    axisTick: {
+                        alignWithLabel: true
+                    }
+                }
+            ],
+            yAxis: [
+                {
+                    type: 'value',
+                    name: '{% trans "机柜变更数量(台)" %}',
+                    nameLocation: 'middle',
+                    nameGap: 50
+                }
+            ],
+            series: [
+                {
+                    name: '{% trans "分配" %}',
+                    type: 'bar',
+                    stack: '总量',
+                    barGap: 0,
+                    data: [120, 132, 101, 134, 90, 230],
+                    itemStyle: {
+                        color: '#3d9970'
+                    }
+                },
+                {
+                    name: '{% trans "释放" %}',
+                    type: 'bar',
+                    stack: '总量',
+                    data: [220, 182, 191, 234, 290, 330],
+                    itemStyle: {
+                        color: '#dd4b39'
+                    }
+                }
+            ]
+        };
+        rackTrendChart.setOption(rackTrendOption);
+
+        // 机柜状态分布图表 (占位符，需要后端提供数据)
+        var rackStatusChart = echarts.init(document.getElementById('rack-status-chart'));
+        var rackStatusOption = {
+            title: {
+                top: 10,
+                text: '{% trans "机柜状态分布" %}',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'item',
+                formatter: '{a} <br/>{b}: {c} ({d}%)'
+            },
+            itemStyle: {
+                borderRadius: 10,
+                borderColor: '#fff',
+                borderWidth: 2
+            },
+            legend: {
+                bottom: 5,
+                data: ['{% trans "可用" %}', '{% trans "已用" %}', '{% trans "维护" %}', '{% trans "故障" %}']
+            },
+            series: [
+                {
+                    name: '{% trans "机柜状态" %}',
+                    type: 'pie',
+                    radius: ['50%', '70%'],
+                    avoidLabelOverlap: false,
+                    label: {
+                        show: false,
+                        position: 'center',
+                        formatter: '{b}\n{c}台 ({d}%)',
+                        fontSize: 14,
+                        fontWeight: 'bold'
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: 16,
+                            fontWeight: 'bold'
+                        },
+                    },
+                    data: [
+                        { value: 335, name: '{% trans "可用" %}', itemStyle: { color: '#3d9970' } },
+                        { value: 310, name: '{% trans "已用" %}', itemStyle: { color: '#00c0ef' } },
+                        { value: 234, name: '{% trans "维护" %}', itemStyle: { color: '#f39c12' } },
+                        { value: 135, name: '{% trans "故障" %}', itemStyle: { color: '#dd4b39' } }
+                    ]
+                }
+            ]
+        };
+        rackStatusChart.setOption(rackStatusOption);
+
+        // 租户趋势图表 (占位符，需要后端提供数据)
+        var tenantTrendChart = echarts.init(document.getElementById('tenant-trend-chart'));
+        var tenantTrendOption = {
+            title: {
+                top: 10,
+                text: '{% trans "租户变更分析" %}',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                }
+            },
+            legend: {
+                data: ['{% trans "新增" %}', '{% trans "活跃" %}'],
+                bottom: 5
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '15%',
+                containLabel: true
+            },
+            xAxis: [
+                {
+                    type: 'category',
+                    data: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    axisTick: {
+                        alignWithLabel: true
+                    }
+                }
+            ],
+            yAxis: [
+                {
+                    type: 'value',
+                    name: '{% trans "租户数量" %}',
+                    nameLocation: 'middle',
+                    nameGap: 50
+                }
+            ],
+            series: [
+                {
+                    name: '{% trans "新增" %}',
+                    type: 'bar',
+                    stack: '总量',
+                    barGap: 0,
+                    data: [120, 132, 101, 134, 90, 230],
+                    itemStyle: {
+                        color: '#3d9970'
+                    }
+                },
+                {
+                    name: '{% trans "活跃" %}',
+                    type: 'bar',
+                    stack: '总量',
+                    data: [220, 182, 191, 234, 290, 330],
+                    itemStyle: {
+                        color: '#00c0ef'
+                    }
+                }
+            ]
+        };
+        tenantTrendChart.setOption(tenantTrendOption);
+
+        // 租户分布图表 (占位符，需要后端提供数据)
+        var tenantDistributionChart = echarts.init(document.getElementById('tenant-distribution-chart'));
+        var tenantDistributionOption = {
+            title: {
+                top: 10,
+                text: '{% trans "租户分布" %}',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'item',
+                formatter: '{a} <br/>{b}: {c} ({d}%)'
+            },
+            itemStyle: {
+                borderRadius: 10,
+                borderColor: '#fff',
+                borderWidth: 2
+            },
+            legend: {
+                bottom: 5,
+                data: ['{% trans "企业" %}', '{% trans "个人" %}', '{% trans "政府" %}', '{% trans "教育" %}']
+            },
+            series: [
+                {
+                    name: '{% trans "租户类型" %}',
+                    type: 'pie',
+                    radius: ['50%', '70%'],
+                    avoidLabelOverlap: false,
+                    label: {
+                        show: false,
+                        position: 'center',
+                        formatter: '{b}\n{c}个 ({d}%)',
+                        fontSize: 14,
+                        fontWeight: 'bold'
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: 16,
+                            fontWeight: 'bold'
+                        },
+                    },
+                    data: [
+                        { value: 335, name: '{% trans "企业" %}', itemStyle: { color: '#3d9970' } },
+                        { value: 310, name: '{% trans "个人" %}', itemStyle: { color: '#00c0ef' } },
+                        { value: 234, name: '{% trans "政府" %}', itemStyle: { color: '#f39c12' } },
+                        { value: 135, name: '{% trans "教育" %}', itemStyle: { color: '#dd4b39' } }
+                    ]
+                }
+            ]
+        };
+        tenantDistributionChart.setOption(tenantDistributionOption);
+
+        // 窗口大小调整时重绘图表
+        window.addEventListener('resize', function () {
+            trendChart.resize();
+            typeChart.resize();
+            rackTrendChart.resize();
+            rackStatusChart.resize();
+            tenantTrendChart.resize();
+            tenantDistributionChart.resize();
+        });
+    });
+</script>
+{% endblock %}

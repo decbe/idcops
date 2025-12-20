@@ -1,0 +1,18 @@
+{% if field_stats %}
+{% for field_name, stats in field_stats.items %}
+<div class="stats-box">
+    <h4>按{{ stats.label }}统计</h4>
+    <div class="stats-content">
+        {% for value, label in stats.choices %}
+        <span class="stats-item">
+            {{ label }}: {{ stats.stats|get:value }}
+        </span>
+        {% endfor %}
+        <span class="stats-total">
+            总计: {{ stats.total }}
+        </span>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+<div id="field-stats-chart" style="min-height: 300px;"></div>

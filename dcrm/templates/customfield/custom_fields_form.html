@@ -1,0 +1,14 @@
+{% for field in custom_fields %}
+<div class="form-group">
+    {{ field.label_tag }}
+    {{ field }}
+    {% if field.help_text %}
+        <small class="form-text text-muted">{{ field.help_text }}</small>
+    {% endif %}
+    {% if field.errors %}
+        <div class="invalid-feedback">
+            {{ field.errors }}
+        </div>
+    {% endif %}
+</div>
+{% endfor %} 

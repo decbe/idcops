@@ -1,0 +1,247 @@
+{% load static %}
+{% load i18n %}
+{% load form_filters %}
+
+<form method="post" enctype="multipart/form-data" id="edit-form-htmx" novalidate>
+	<div class="box-body no-padding">
+		{% csrf_token %}
+		{% if form.non_field_errors %}
+		<div class="alert alert-danger">
+			{{ form.non_field_errors }}
+		</div>
+		{% endif %}
+		{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+
+		{% for fieldset in fieldsets|slice:"2" %}
+		{% if forloop.first %}
+		<div class="row">
+			{% endif %}
+			<div class="col-md-{{ fieldset.col|default:6 }}">
+				<div class="form-group">
+					<div class="clearfix" style="margin-bottom: 10px;">
+						<h4 class="margin-r-5" style="display: inline;">{{ fieldset.name }}</h4>
+						{% if fieldset.description %}
+						<span class="text-muted">{{ fieldset.description }}</span>
+						{% endif %}
+					</div>
+					{% include "field_group.html" %}
+				</div>
+			</div>
+			{% if forloop.last %}
+		</div>
+		<br>
+		{% endif %}
+		{% endfor %}
+
+		{% for fieldset in fieldsets|slice:"2:" %}
+		{% if forloop.first %}
+		<div class="row">
+			{% endif %}
+			<div class="col-md-{{ fieldset.col|default:6 }}">
+				<div class="form-group">
+					<div class="clearfix" style="margin-bottom: 10px;">
+						<h4 class="margin-r-5" style="display: inline;">{{ fieldset.name }}</h4>
+						{% if fieldset.description %}
+						<span class="text-muted">{{ fieldset.description }}</span>
+						{% endif %}
+					</div>
+					{% include "field_group.html" %}
+				</div>
+			</div>
+			{% if forloop.last %}
+		</div>
+		{% endif %}
+		{% endfor %}
+	</div>
+	<div class="box-footer">
+		<div class="pull-right">
+			<a href="{{ request.META.HTTP_REFERER }}" class="btn btn-default btn-sm margin-r-5" title="{% trans '取消并返回' %}">
+				{% trans '返回' %}
+			</a>
+			<button type="submit" name="save" class="btn btn-primary btn-sm">{% trans '保存' %}</button>
+		</div>
+	</div>
+</form>
+<script src="{% static 'js/choices.min.js' %}"></script>
+<script>
+	function initChoices() {
+		const form = document.getElementById('edit-form-htmx');
+		const selects = new Map(); // 存储所有select和其对应的错误状态
+
+		document.querySelectorAll('select.form-control').forEach(select => {
+			// 如果已经初始化过，跳过
+			if (select._choice) return;
+
+			// 保存原始的htmx触发器设置
+			const originalTrigger = select.getAttribute('hx-trigger');
+			// 暂时移除htmx触发器，避免重复触发
+			if (originalTrigger) {
+				select.removeAttribute('hx-trigger');
+			}
+
+			// 获取原生select的错误信息容器
+			const errorContainer = select.parentElement.querySelector('.help-block');
+			const canAddOption = select.dataset.createOption == 'true';
+			const choiceConfig = {
+				removeItemButton: true,
+				searchEnabled: true,
+				searchResultLimit: -1,
+				shouldSort: false,
+				sorter: () => [],
+				allowHTML: true,
+				addChoices: canAddOption,
+				position: 'auto',
+				renderChoiceLimit: -1,
+				searchPlaceholderValue: canAddOption ? "可添加新选项，或搜索..." : "搜索...",
+				noResultsText: '没有找到匹配项',
+				itemSelectText: '点击选择',
+				loadingText: '加载中...',
+				noChoicesText: '没有可选择的选项',
+				// 添加按钮文本
+				addItemText: (value) => {
+					return `按回车键添加 <b>"${value}"</b>`;
+				},
+				maxItemText: (maxItemCount) => {
+					return `最多只能选择${maxItemCount}项`;
+				},
+				// 自定义按钮和占位符文本
+				customAddItemText: '只能添加符合此规则的选项',
+				removeItemButton: true,
+				duplicateItemsAllowed: false,
+				// 分组相关文本
+				classNames: {
+					groupTitle: '选项组标题'
+				},
+			};
+
+			// 针对 color 字段的特殊处理
+			if (select.name === 'color') {
+				choiceConfig.callbackOnCreateTemplates = function (template) {
+					return {
+						choice: (classNames, data) => {
+							if (!data.value) return template(`
+								<div style="margin-bottom: 3px; padding: 3px 0;" data-select-text="${this.config.itemSelectText}" data-choice data-choice-selectable data-id="${data.id}" data-value="${data.value}" role="option">
+										<span style="margin: 0 10px; height:16px; display: inline-block;">${data.label}</span>
+								</div>
+							`);
+
+							return template(`
+								<div style="margin-bottom: 3px;" data-select-text="${this.config.itemSelectText}" data-choice data-choice-selectable data-id="${data.id}" data-value="${data.value}" role="option">
+										<span class="label bg-${data.value}" style="margin: 0 5px; width:90px; height:12px; display: inline-block;"></span>${data.label}
+								</div>
+							`);
+						},
+						item: (classNames, data) => {
+							if (!data.value) return template(`
+								<div data-item data-id="${data.id}" data-value="${data.value}">
+										<span style="margin-right: 5px; font-size: 85%;">${data.label}</span>
+										<button type="button" class="choices__button" aria-label="Remove item: exclusive" data-button="">Remove item</button>
+								</div>
+							`);
+
+							return template(`
+								<div data-item data-id="${data.id}" data-value="${data.value}">
+										<span class="label bg-${data.value}" style="margin-right: 5px; width:100px; font-size: 85%;">${data.label}</span>
+										<button type="button" class="choices__button" aria-label="Remove item: exclusive" data-button="">Remove item</button>
+								</div>
+							`);
+						}
+					};
+				};
+			}
+			// 创建 Choices 实例
+			const choice = new Choices(select, choiceConfig);
+
+			// 标记已初始化
+			select._choice = choice;
+
+			// 如果有htmx触发器，使用Choices的事件系统
+			if (originalTrigger) {
+				select.setAttribute('hx-trigger', originalTrigger);
+			}
+
+			// 创建错误提示元素
+			let errorElement = document.createElement('span');
+			errorElement.className = 'help-block';
+			errorElement.style.display = 'none';
+			choice.containerInner.element.parentElement.appendChild(errorElement);
+
+			// 将select添加到Map中
+			selects.set(select, {
+				choice,
+				errorElement,
+				hasError: false
+			});
+
+			// 监听 Choices 的事件
+			choice.passedElement.element.addEventListener('choice', function (event) {
+				const value = choice.getValue(true);
+				if (value) {
+					errorElement.style.display = 'none';
+					choice.containerInner.element.parentElement.classList.remove('has-error');
+					selects.get(select).hasError = false;
+				} else if (this.required) {
+					errorElement.textContent = '此字段是必填项。';
+					errorElement.style.display = 'block';
+					choice.containerInner.element.parentElement.classList.add('has-error');
+					selects.get(select).hasError = true;
+				}
+			});
+
+			choice.passedElement.element.addEventListener('removeItem', function (event) {
+				if (this.required && !choice.getValue(true)) {
+					errorElement.textContent = '此字段是必填项。';
+					errorElement.style.display = 'block';
+					choice.containerInner.element.parentElement.classList.add('has-error');
+					selects.get(select).hasError = true;
+				}
+			});
+
+			// 如果已经有错误信息，立即显示
+			if (errorContainer && errorContainer.textContent) {
+				errorElement.textContent = errorContainer.textContent;
+				errorElement.style.display = 'block';
+				choice.containerInner.element.parentElement.classList.add('has-error');
+				selects.get(select).hasError = true;
+			}
+		});
+
+		// 监听表单提交
+		form.addEventListener('submit', function (e) {
+			e.preventDefault(); // 阻止默认提交
+
+			let hasErrors = false;
+
+			// 检查所有必填的select
+			for (const [select, data] of selects) {
+				const value = data.choice.getValue(true);
+				if (select.required && !value) {
+					data.errorElement.textContent = '此字段是必填项。';
+					data.errorElement.style.display = 'block';
+					data.choice.containerInner.element.parentElement.classList.add('has-error');
+					data.hasError = true;
+					hasErrors = true;
+					// 聚焦到第一个错误的选择框
+					if (!document.querySelector('.choices__input--cloned:focus')) {
+						data.choice.showDropdown();
+					}
+				}
+			}
+
+			// 如果没有错误，提交表单
+			if (!hasErrors) {
+				form.submit();
+			}
+		});
+	}
+
+	// 等待 DOM 完全加载后初始化
+	document.addEventListener('DOMContentLoaded', function () {
+		initChoices();
+	});
+
+	// htmx加载完成后重新初始化
+	document.body.addEventListener('htmx:afterSettle', function (evt) {
+		initChoices();
+	});
+</script>

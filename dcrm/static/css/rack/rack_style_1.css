@@ -1,0 +1,161 @@
+/* Rack Style 1: Modern Minimalist
+ * 特点：简约现代，扁平化设计，清晰的层次感
+ */
+
+/* 机柜整体容器 */
+.rack-elevation {
+    padding: 2px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.rack-elevation .table-responsive {
+    padding: 10px;
+    background: linear-gradient(145deg, #2c3338, #1a1d21);
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.rack-elevation .table {
+    background: #242729;
+    border: none;
+    margin: 0 !important;
+}
+
+/* 表头和U位编号样式 */
+.rack-elevation .bg-light-blue {
+    background: linear-gradient(180deg, #3a4147, #2c3338) !important;
+    color: #a8b3bd !important;
+    border-color: #4a545c !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.rack-elevation .unit-number {
+    font-family: "Courier New", monospace;
+    font-weight: bold;
+    font-size: 0.9em;
+    border-color: #4a545c !important;
+    user-select: none;
+}
+
+/* 设备单元格样式 */
+.rack-elevation .device-cell {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    background: linear-gradient(145deg, #34495e, #2c3e50) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05),
+                0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* 当前选中的设备使用更亮的蓝色 */
+.rack-elevation .device-cell.bg-danger {
+    background: linear-gradient(145deg, #3c8dbc, #367fa9) !important;
+    border: 1px solid rgba(60, 141, 188, 0.4) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1),
+                0 1px 3px rgba(60, 141, 188, 0.3);
+}
+
+.rack-elevation .device-cell:hover {
+    opacity: 0.95;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05),
+                0 2px 4px rgba(0,0,0,0.25);
+}
+
+/* 当前设备悬停效果 */
+.rack-elevation .device-cell.bg-danger:hover {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1),
+                0 2px 4px rgba(60, 141, 188, 0.35);
+}
+
+.rack-elevation .device-info {
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: #fff;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+    width: 100%;
+}
+
+.rack-elevation .device-name {
+    font-weight: bold;
+    font-size: 0.95em;
+}
+
+/* 空闲U位样式 */
+.rack-elevation .empty-unit {
+    min-height: 30px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    background: linear-gradient(180deg, #2c3338, #242729);
+    border-color: #4a545c !important;
+}
+
+.rack-elevation .empty-unit.position {
+    background-color: #fcf8e3 !important;  /* 浅黄色背景 */
+    border: 2px dashed #f0ad4e !important; /* 虚线边框 */
+}
+
+.rack-elevation .empty-unit.position .add-device-hint {
+    color: #f0ad4e;
+}
+
+.rack-elevation .empty-unit:hover {
+    background: linear-gradient(180deg, #353b42, #2c3338);
+}
+
+.rack-elevation .empty-unit.drag-over {
+    background: linear-gradient(180deg, #3a4147, #353b42);
+    box-shadow: inset 0 0 0 2px rgba(52, 152, 219, 0.5);
+}
+
+/* 添加设备提示样式 */
+.rack-elevation .add-device-hint,
+.rack-elevation .rack-status-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 1px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9em;
+    z-index: 100;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.rack-elevation .add-device-hint {
+    background: rgba(52, 152, 219, 0.15);
+    color: #3498db;
+    border: 1px dashed rgba(52, 152, 219, 0.5);
+    box-shadow: 0 2px 6px rgba(52, 152, 219, 0.1);
+}
+
+.rack-elevation .rack-status-hint {
+    background: rgba(241, 196, 15, 0.15);
+    color: #f1c40f;
+    border: 1px dashed rgba(241, 196, 15, 0.5);
+    box-shadow: 0 2px 6px rgba(241, 196, 15, 0.1);
+}
+
+/* 设备链接样式 */
+.rack-elevation .device-link {
+    color: inherit;
+    text-decoration: none;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.rack-elevation .device-link:hover {
+    text-decoration: none;
+    color: inherit;
+}

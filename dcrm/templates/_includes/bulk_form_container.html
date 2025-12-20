@@ -1,0 +1,32 @@
+{% load i18n %}
+
+{% for form in forms %}
+    <div class="box-body form-instance" id="form-instance-{{ forloop.counter0 }}">
+        <h4>
+            {% if is_bulk_create %}
+                {% trans "设备" %} #{{ forloop.counter }}
+            {% else %}
+                {{ form.instance.name }} #{{ forloop.counter }}
+            {% endif %}
+        </h4>
+        
+        {% for field in form %}
+            <div class="form-group {% if field.errors %}has-error{% endif %}">
+                <label class="col-sm-2 control-label">
+                    {{ field.label }}
+                </label>
+                <div class="col-sm-8">
+                    {{ field }}
+                    {% if field.errors %}
+                        <span class="help-block">{{ field.errors.0 }}</span>
+                    {% endif %}
+                    {% if field.help_text %}
+                        <p class="help-block">{{ field.help_text }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+        
+        {% if not forloop.last %}<hr>{% endif %}
+    </div>
+{% endfor %}

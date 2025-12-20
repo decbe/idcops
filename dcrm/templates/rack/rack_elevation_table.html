@@ -1,0 +1,210 @@
+{% load rack_tags %}
+{% load static %}
+
+{% block extra_css %}
+<link id="rack-style" href="{% static 'css/rack/rack_style_1.css' %}?v=3" rel="stylesheet">
+{% endblock %}
+
+{% comment %}
+机柜立面图模板
+三列布局：
+1. 左侧U位编号
+2. 中间设备信息（需要合并单元格）
+3. 右侧U位编号
+{% endcomment %}
+{% with allow_add=rack.allow_add_devices position=request.GET.position|default:'' %}
+<div class="rack-elevation">
+    <div class="table-responsive">
+        <table class="table table-bordered table-condensed">
+            <tbody>
+                {% with su=space_usage %}
+                <tr>
+                    <td colspan="3" class="text-center bg-light-blue p-1">
+                        <span class="d-flex justify-content-between px-2">
+                            <small class="margin-r-5" title="总容量/已用/剩余">容量: {{ su.total_u }}U/{{ su.used_u }}U/{{ su.free_u }}U</small>
+                            <small title="预计可以分别上架的设备数">推荐可上架(台): 1U*{{ su.device_capacity.1U }} | 2U*{{ su.device_capacity.2U }} | 4U*{{ su.device_capacity.4U }}</small>
+                            <!-- <span title="可用PDU数量">PDU: 10A×{{ su.available_pdus.10A }} | 16A×{{ su.available_pdus.16A }}</span> -->
+                        </span>
+                    </td>
+                </tr>
+                {% endwith %}
+                <tr>
+                    <th style="width:2%" class="text-center bg-light-blue">U</th>
+                    <th class="text-center bg-light-blue">设备信息</th>
+                    <th style="width:2%" class="text-center bg-light-blue">U</th>
+                </tr>
+                {% for u, device, is_start in rack_units %}
+                <tr data-u="{{ u }}" class="rack-unit">
+                    {# 左侧U位编号 #}
+                    <td class="text-center no-padding bg-light-blue unit-number" data-u="{{ u }}">
+                        {{ u|zfill:2 }}
+                    </td>
+
+                    {% if device and is_start %}
+                        {# 设备信息单元格，需要合并 #}
+                        <td style="vertical-align: middle;" 
+                            rowspan="{{ device.model.height }}" 
+                            class="no-padding text-center device-cell {% if device == active_device %}bg-danger{%else%}bg-success{% endif %}"
+                            data-device-id="{{ device.id }}"
+                            data-device-height="{{ device.model.height }}"
+                            data-start-u="{{ u }}"
+                            onclick="handleDeviceClick.call(this, event)"
+                            draggable="true">
+                            <a href="{{device.get_absolute_url}}" class="device-link">
+                                <div class="device-info no-padding">
+                                    <span class="device-name">{{ device.name }}</span>
+                                </div>
+                            </a>
+                        </td>
+                    {% elif not device %}
+                        {# 空闲U位 #}
+                        <td class="text-center text-muted no-padding empty-unit {% if position|stringformat:'s' == u|stringformat:'s' %}position{% endif %}" 
+                            data-u="{{ u }}"
+                            {% if u in can_drop_units %}
+                            ondragover="event.preventDefault();"
+                            ondrop="handleDeviceDrop(event, '{{ u }}')"
+                            onclick="handleEmptyUnitClick(event, '{{ u }}')"
+                            onmouseenter="showAddDeviceHint(event, '{{ u }}')"
+                            onmouseleave="hideAddDeviceHint()"{% endif %}>
+                            {% if allow_add.0 %}
+                            <div class="add-device-hint">
+                                {% if edit_device %}
+                                <i class="fa fa-exchange"></i>
+                                将 {{active_device.name}} 迁移到此位置
+                                {% else %}
+                                <i class="fa fa-plus-circle"></i>
+                                <span> {{ allow_add.1 }}</span>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <div class="rack-status-hint">
+                                <i class="fa fa-exclamation-circle"></i>
+                                <span> {{ allow_add.1 }}</span>
+                            </div>
+                            {% endif %}
+                        </td>
+                    {% endif %}
+
+                    {# 右侧U位编号 #}
+                    <td class="text-center no-padding bg-light-blue unit-number" data-u="{{ u }}">
+                        {{ u|zfill:2 }}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// 设备拖拽功能
+document.addEventListener('DOMContentLoaded', function() {
+    const deviceCells = document.querySelectorAll('.rack-elevation .device-cell');
+    const emptyUnits = document.querySelectorAll('.rack-elevation .empty-unit');
+    
+    deviceCells.forEach(cell => {
+        cell.addEventListener('dragstart', handleDragStart);
+        cell.addEventListener('dragend', handleDragEnd);
+    });
+    
+    emptyUnits.forEach(unit => {
+        unit.addEventListener('dragenter', handleDragEnter);
+        unit.addEventListener('dragleave', handleDragLeave);
+    });
+});
+
+function handleDragStart(e) {
+    const deviceId = this.dataset.deviceId;
+    const deviceHeight = this.dataset.deviceHeight;
+    const startU = this.dataset.startU;
+    e.dataTransfer.setData('text/plain', JSON.stringify({ deviceId, deviceHeight, startU }));
+    this.classList.add('dragging');
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+}
+
+function handleDragEnter(e) {
+    this.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drag-over');
+}
+
+function handleDeviceDrop(e, targetU) {
+    e.preventDefault();
+    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+    // TODO: 发送AJAX请求到后端处理设备移动
+    console.log('Moving device', data.deviceId, 'to position', targetU);
+}
+
+function handleDeviceClick(e) {
+    // 如果点击的是链接本身或其子元素，让链接正常工作
+    if (e.target.closest('.device-link')) {
+        return;
+    }
+    // 否则，触发链接点击
+    const link = this.querySelector('.device-link');
+    if (link) {
+        link.click();
+    }
+}
+
+function showAddDeviceHint(e, u) {
+    if (!e.target.matches('.empty-unit')) return;
+    
+    var canAddDevice = '{{rack.allow_add_devices.0|yesno:"true,false"}}';
+    if (canAddDevice == "true") {
+        const addHint = e.target.querySelector('.add-device-hint');
+        if (addHint) {
+            addHint.classList.add('show');
+        }
+    } else {
+        const statusHint = e.target.querySelector('.rack-status-hint');
+        if (statusHint) {
+            statusHint.classList.add('show');
+        }
+    }
+}
+
+function hideAddDeviceHint() {
+    document.querySelectorAll('.rack-elevation .add-device-hint, .rack-elevation .rack-status-hint').forEach(hint => 
+        hint.classList.remove('show')
+    );
+}
+
+function handleEmptyUnitClick(e, u) {
+    var editAble = '{{edit_device|yesno:"true,false"}}';
+    if (editAble == "true") {
+        // 如果当前设备正在编辑，不处理点击事件
+        var editDevice = parseInt('{{active_device.id|default:0}}');
+        var editDeviceHeight = parseInt('{{active_device.height|default:0}}');
+        var editDeviceStartU = parseInt('{{active_device.position|default:0}}');
+        var editDeviceName = '{{active_device.name|default:""}}';
+        var formPositon = document.getElementById('id_position');
+        formPositon.value = u;
+        formPositon.dispatchEvent(new Event('change', { bubbles: false }));
+        return;
+    }
+    var canAddDevice = '{{rack.allow_add_devices.0|yesno:"true,false"}}';
+    if (canAddDevice == "false") {
+        return;  // 如果机柜不允许添加设备，不处理点击事件
+    }
+    var rack_id = "{{rack.pk}}";
+    target_url = `{% url "online_device_create" %}?rack=${rack_id}&position=${u}`;
+    // window.location.href = target_url;
+    // 检查页面是否支持htmx（通过检查device-form元素）
+    const deviceForm = document.getElementById('device-form');
+    if (deviceForm) {
+        // 如果存在device-form，使用htmx触发
+        htmx.ajax('GET', target_url, {target: '#device-form', pushUrl: true});
+    } else {
+        // 如果不存在，使用传统跳转
+        window.location.href = target_url;
+    }
+}
+</script>
+
+{% endwith %}

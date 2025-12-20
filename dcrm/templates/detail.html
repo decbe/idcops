@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+{% load static i18n dcrm_tags %}
+
+{% block title %}{{ title }} {{ object }} | {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .fieldset-header {
+    margin-bottom: 0px;
+    /* border-bottom: 1px solid #f4f4f4; */
+  }
+
+  .fieldset-header h4 {
+    margin: 0;
+    padding: 10px 5px;
+    font-size: 16px;
+    font-weight: 600;
+    border-left: 2px solid #3c8dbc;
+    border-radius: 2px;
+  }
+
+  .mb-3 {
+    margin-bottom: 1rem;
+  }
+
+  .box-solid {
+    border: 1px solid #f4f4f4;
+  }
+
+  .box-header .fieldset-header {
+    margin-bottom: 0;
+    display: inline-block;
+  }
+
+  .m2m-value {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 5px;
+  }
+
+  .m2m-value>div {
+    padding: 2px 5px;
+    margin: 2px 0;
+    background-color: #f8f9fa;
+    border-radius: 3px;
+  }
+
+  .tooltip-inner {
+    max-width: none;
+    white-space: normal;
+  }
+
+  /* 评论区域样式 */
+  .comment-form {
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+
+  .comment-item {
+    border-left: 3px solid #3c8dbc;
+    padding-left: 15px;
+    margin-bottom: 15px;
+    background-color: #fcfcfc;
+    border-radius: 3px;
+    padding: 10px 15px;
+  }
+
+  .comment-meta {
+    color: #666;
+    font-size: 12px;
+    margin-bottom: 5px;
+  }
+
+  .comment-content {
+    color: #333;
+    line-height: 1.5;
+  }
+
+  .htmx-indicator {
+    display: none;
+  }
+
+  .htmx-request .htmx-indicator {
+    display: inline-block;
+  }
+
+  .post {
+    transition: background-color 0.3s ease;
+  }
+
+  .post:hover {
+    background-color: #f8f9fa;
+  }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+{% for item in breadcrumbs %}
+<li {% if forloop.last %}class="active" {% endif %}>
+  {% if not forloop.last %}
+  <a href="{{ item.url }}">{% endif %}<i class="{{ item.icon }}"></i>{{ item.name }}{% if not forloop.last %}</a>
+  {% endif %}
+</li>
+{% endfor %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="box box-default">
+      <div class="box-header with-border">
+        <h3 class="box-title">{{ object }}</h3>
+        <div class="box-tools pull-right">
+          <div class="btn-group">
+            {% if 'dcrm.change_'|add:model_name_lower in perms %}
+            <a href="{{ object.get_update_url }}" class="btn btn-sm btn-default">
+              <i class="fa fa-pencil"></i><span class="hidden-xs"> {% trans "编辑" %}</span>
+            </a>
+            {% endif %}
+            {% if 'dcrm.delete_'|add:model_name_lower in perms %}
+            <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+              <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" role="menu">
+              <li>
+                <a href="{{ object.get_delete_url }}" class="text-danger">
+                  <i class="fa fa-trash"></i> {% trans "删除" %}
+                </a>
+              </li>
+            </ul>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="box-body" id="object-detail">
+        {% for fieldset in fieldsets %}
+        <fieldset class="mb-3">
+          <div class="fieldset-header">
+            <h4>{{ fieldset.title }}</h4>
+          </div>
+          <div class="fieldset-content">
+            <div class="table-responsive">
+              <table class="table table-bordered table-condensed nowarp">
+                <tbody>
+                  <!-- 电脑端显示 -->
+                  {% for field in fieldset.fields %}
+                  {% if forloop.counter0|divisibleby:2 %}
+                  <tr class="hidden-xs">
+                    {% endif %}
+                    <th class="hidden-xs" style="width: 15%">{{ field.label }}</th>
+                    <td class="hidden-xs" {% if fieldset.is_m2m %}colspan="3" {% else %}style="width: 35%" {% endif %}>
+                      {% if field.value|safe|stringformat:"s"|startswith:"<table" %} {{ field.value|safe }} {% elif
+                        field.value|safe|stringformat:"s"|startswith:"<div class=\"m2m-value\"" %} {{ field.value|safe
+                        }} {% else %} {{ field.value|safe|default:"-" }} {% endif %} </td>
+                        {% if not fieldset.is_m2m and forloop.counter|divisibleby:2 or forloop.last %}
+                  </tr>
+                  {% endif %}
+                  {% endfor %}
+
+                  <!-- 手机端显示 -->
+                  {% for field in fieldset.fields %}
+                  <tr class="visible-xs">
+                    <th style="width: 30%">{{ field.label }}</th>
+                    <td style="width: 70%">
+                      {% if field.value|safe|stringformat:"s"|startswith:"<table" %} {{ field.value|safe }} {% else %}
+                        {{ field.value|safe|default:"-" }} {% endif %} </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </fieldset>
+        {% endfor %}
+        {% if enable_tabs and tabs %}
+        <!-- object 统计信息 不是tabs -->
+        <fieldset class="mb-3">
+          <div class="fieldset-header">
+            <h4>相关资源</h4>
+          </div>
+          <div class="fieldset-content" style="margin-top: 1px;">
+            <div class="row">
+              {% for tab in tabs %}
+              {% if tab.count > 0 %}
+              <div class="col-md-3 col-sm-4 col-xs-12">
+                <div class="info-box" style="border: 1px solid #f4f4f4; box-shadow: none;">
+                  <span class="info-box-icon bg-{% cycle 'aqua' 'light-blue' 'olive' 'teal' 'navy' %}"><i
+                      class="{{ tab.icon }}"></i></span>
+
+                  <div class="info-box-content">
+                    <a href="{{ tab.url }}"><span class="info-box-text">{{ tab.title }}</span></a>
+                    <!-- <span class="info-box-text">{{ tab.title }}</span> -->
+                    <span class="info-box-number">{{ tab.count }}</span>
+                  </div>
+                  <!-- /.info-box-content -->
+                </div>
+                <!-- /.info-box -->
+              </div>
+              {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        </fieldset>
+        {% endif %}
+        
+        {% if enable_comments %}
+        <!-- 评论区域 -->
+        <fieldset class="mb-3">
+          <div class="fieldset-header">
+            <h4><i class="fa fa-comments"></i> 评论 ({{ comments.count }})</h4>
+          </div>
+          <div class="fieldset-content">
+            <!-- 评论表单 -->
+            <div class="box box-primary direct-chat direct-chat-primary" style="margin-bottom: 15px;">
+              <div class="box-header with-border">
+                <h3 class="box-title">添加评论</h3>
+              </div>
+              <div class="box-body">
+                <form method="post" 
+                      hx-post="{{ request.path }}" 
+                      hx-target="#comments-container" 
+                      hx-swap="innerHTML"
+                      hx-indicator="#comment-loading">
+                  {% csrf_token %}
+                  <div class="form-group">
+                    {{ comment_form.content }}
+                  </div>
+                  <div class="form-group">
+                    <button type="submit" name="comment_content" value="1" class="btn btn-primary btn-sm">
+                      <i class="fa fa-paper-plane"></i> 发表评论
+                    </button>
+                    <div id="comment-loading" class="htmx-indicator" style="display: inline-block; margin-left: 10px;">
+                      <i class="fa fa-spinner fa-spin"></i> 提交中...
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+            
+            <!-- 评论列表 -->
+            <div id="comments-container">
+              {% if comments %}
+              <div class="box box-widget">
+                <div class="box-header with-border">
+                  <div class="user-block">
+                    <span class="username"><i class="fa fa-comments"></i> 历史评论</span>
+                  </div>
+                </div>
+                <div class="box-body" style="max-height: 400px; overflow-y: auto;">
+                  {% for comment in comments %}
+                  <div class="post" style="border-bottom: 1px solid #f4f4f4; padding-bottom: 10px; margin-bottom: 10px;">
+                    <div class="user-block">
+                      <img class="img-circle img-bordered-sm" 
+                           src="{{ comment.created_by.avatar_url|default:'/static/adminlte/img/avatar04.png' }}" 
+                           alt="User Image"
+                           style="object-fit: cover; object-position: center; width: 35px; height: 35px;">
+                      <span class="username">
+                        <a href="#">{{ comment.created_by.get_full_name|default:comment.created_by.username }}</a>
+                      </span>
+                      <span class="description" title="{{ comment.created_at }}">
+                        {{ comment.created_at|timesince }}前
+                      </span>
+                    </div>
+                    <div class="post-content" style="margin-left: 45px; margin-top: 5px;">
+                      {{ comment.content|linebreaksbr }}
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              {% else %}
+              <div class="callout callout-info">
+                <h4><i class="fa fa-info"></i> 提示</h4>
+                <p>还没有人评论，来添加第一个评论吧！</p>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </fieldset>
+        {% endif %}
+        {% if enable_create_update %}
+        <fieldset>
+          <div class="fieldset-header">
+            <h4>创建与更新</h4>
+          </div>
+          <div class="fieldset-content">
+            <p>
+              <span class="margin-r-5" title="已创建 {{object.created_at|timesince}} ({{object.created_by}})">
+                {% trans "创建于" %}{{ object.created_at }} ({{ object.created_by }})
+              </span>
+              {% if object.updated_by %}
+              </br>
+              <!-- <span class="text-muted margin-r-5">•</span> -->
+              <span title="更新 {{object.updated_at|timesince}} ({{object.updated_by}})">
+                {% trans "更新于" %}{{ object.updated_at }} ({{ object.updated_by }})
+              </span>
+              {% endif %}
+            </p>
+          </div>
+        </fieldset>
+        {% endif %}
+      </div>
+
+      {% block content-extra %}
+      {% endblock %}
+      <div class="box-footer">
+        <div class="pull-left">
+          {% if list_url %}
+          <a href="{{ list_url }}" class="btn btn-default btn-sm">
+            <i class="fa fa-list"></i> {% trans "返回列表" %}
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+{% block styles %}
+{{ block.super }}
+<style>
+  .fieldset-group {
+    margin-bottom: 25px;
+    border: 1px solid #f4f4f4;
+    border-radius: 3px;
+  }
+
+  .fieldset-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .fieldset-header {
+    padding: 10px 15px;
+    background-color: #f7f7f7;
+    border-bottom: 1px solid #f4f4f4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .fieldset-title {
+    margin: 0;
+    color: #444;
+    font-weight: 600;
+    font-size: 16px;
+  }
+
+  .fieldset-tools {
+    margin-left: auto;
+  }
+
+  .table {
+    margin-bottom: 0;
+  }
+
+  .table>tbody>tr>th {
+    background-color: #f9f9f9;
+    vertical-align: middle;
+    font-weight: 600;
+  }
+
+  .table>tbody>tr>td {
+    vertical-align: middle;
+  }
+
+  .label {
+    display: inline-block;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 3px;
+  }
+
+  .btn-box-tool {
+    padding: 5px;
+    font-size: 12px;
+    background: transparent;
+    color: #97a0b3;
+  }
+
+  .btn-box-tool:hover {
+    color: #606c84;
+  }
+</style>
+{% endblock %}

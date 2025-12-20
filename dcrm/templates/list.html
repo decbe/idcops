@@ -1,0 +1,510 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ title }}列表 | {{ block.super }}{% endblock %}
+
+{% block before_adminlte_css %}
+<link rel="stylesheet" href="{% static 'adminlte/select2/dist/css/select2.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/toastify.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/drawer.css' %}">
+<style>
+  /* 下拉菜单最大高度，超出时显示滚动条，防止被遮挡 */
+  .dropdown-menu {
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1051;
+    /* 确保在 modal、表格等上方 */
+  }
+
+  .dropdown-menu-right {
+    right: -20px;
+    left: auto;
+  }
+
+  td.nowrap {
+    white-space: nowrap;
+  }
+
+  .scrollable-btn-group-container {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    /* 为iOS添加平滑滚动 */
+  }
+
+  .field-first input,
+  .col-first input {
+    cursor: pointer;
+  }
+
+  .scrollable-btn-group-container .btn-group {
+    display: inline-flex;
+    flex-wrap: nowrap;
+  }
+
+  #list-action {
+    margin-right: 10px;
+  }
+
+  @media (max-width: 768px) {
+    #list-search {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin-top: 10px;
+    }
+
+    #list-action {
+      margin-right: 0 !important;
+    }
+
+  }
+</style>
+{% endblock %}
+
+{% block page_title %}{{ subtitle }}{% endblock %}
+{% block page_subtitle %}{% if page_obj.paginator.count > 0 %}显示 {{ page_obj.start_index }}-{{ page_obj.end_index }} /
+{{ page_obj.paginator.count }}
+<span id="select-count" style="display: none;">.</span>
+<span id="objects-info" style="display: none;" data-total="{{ page_obj.paginator.count }}"
+  data-current-count="{{ object_list.count }}">
+</span>
+{% else %}没有数据...{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+{% for item in breadcrumbs %}
+<li {% if forloop.last %}class="active" {% endif %}>
+  {% if not forloop.last %}<a href="{{ item.url }}">{% endif %}
+    <i class="{{ item.icon }}"></i> {{ item.name }}
+    {% if not forloop.last %}</a>{% endif %}
+</li>
+{% endfor %}
+{% endblock %}
+
+{% block content %}
+<!-- 抽屉组件 -->
+
+<div class="box" id="box">
+  <form method="get" class="form" id="filter-form" style="border-bottom: 1px solid #f4f4f4;">
+    <div class="box-header with-border no-print clearfix">
+      {# 操作按钮 #}
+      <div id="table-tools" class="pull-left">
+        {% if request.GET.next_url %}
+        <a class="btn btn-default btn-sm margin-r-5" href="{{ request.GET.next_url }}">
+          <i class="fa fa-arrow-left"></i><span class="hidden-xs"> 返回</span>
+        </a>
+        {% endif %}
+        {% if create_url and 'dcrm.add_'|add:model_name_lower in perms %}
+        <a class="btn btn-primary btn-sm margin-r-5" href="{{ create_url }}">
+          <i class="fa fa-plus"></i><span class="hidden-xs"> 新增</span>
+        </a>
+        {% endif %}
+        {% if has_import and 'dcrm.add_'|add:model_name_lower in perms %}
+        <a class="btn btn-default btn-sm margin-r-5" href="{{ import_url }}">
+          <i class="fa fa-upload"></i><span class="hidden-xs"> 导入</span>
+        </a>
+        {% endif %}
+      </div>
+
+      <div id="list-search" class="input-group input-group-sm pull-left" style="min-width: 150px; max-width: 250px;"
+        hx-target="#list-post-form" hx-push-url="true">
+        <input type="text" name="search" class="form-control input-sm" placeholder="搜索{{ subtitle }}" autocomplete="off"
+          {% if request.GET.search %} value="{{ request.GET.search }}" {% endif %} hx-get="{{ request.path }}"
+          hx-trigger="keyup changed delay:500ms, search"
+          hx-include="[name='search'], #filter-form{% if request.GET.ordering %}, [name='ordering']{% endif %}">
+        <div class="input-group-btn">
+          <button type="button" class="btn btn-default btn-sm margin-r-5" hx-get="{{ request.path }}"
+            hx-include="[name='search'], #filter-form{% if request.GET.ordering %}, [name='ordering']{% endif %}">
+            <i class="fa fa-search"></i>
+          </button>
+        </div>
+      </div>
+      {% if filter_form.visible_fields %}
+      {# 筛选按钮 #}
+      <div class="list-get-buttons">
+        <button type="button" class="btn btn-default btn-sm margin-r-5" id="filter-toggle">
+          <i class="fa fa-filter"></i><span class="hidden-xs"> 筛选</span>
+        </button>
+        {% if extra_urls %}
+        {% for extra in extra_urls %}
+        <a class="btn btn-default btn-sm margin-r-5"
+          href="{{ extra.url }}{% if extra.return_url %}?return_url={{ extra.return_url }}{% endif %}"><i
+            class="{{ extra.icon }}"></i><span class="hidden-xs"> {{ extra.label }}</span></a>
+        {% endfor %}
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% if filter_form.visible_fields %}
+    {# 过滤表 #}
+    <div class="box-body with-border" id="filter-form-container" style="display: none;">
+      {% with field_count=filter_form.visible_fields|length %}
+      <div class="row">
+        {% for field in filter_form.visible_fields %}
+        {% if field.field.is_button_group %}
+        <div class="col-md-12">
+          <div class="scrollable-btn-group-container">
+            <div class="form-group">
+              <label for="{{ field.id_for_label }}">{{ field.label }}:</label> {{ field }}
+            </div>
+          </div>
+        </div>
+        {% else %}
+        {# 动态计算普通筛选项的列宽 #}
+        {% if field_count <= 2 %} <div class="col-md-6">
+          {% elif field_count <= 3 %} <div class="col-md-4">
+            {% elif field_count <= 4 %} <div class="col-md-3">
+              {% else %}
+              <div class="col-md-3 col-sm-4">
+                {% endif %}
+                <div class="form-group">
+                  <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+                  {{ field }}
+                </div>
+              </div>
+              {% endif %}
+              {% endfor %}
+            </div>
+            <div class="pull-left" style="padding-top: 10px;">
+              <button type="button" class="btn btn-default btn-sm" id="filter-reset" hx-get="{{ list_url }}"
+                hx-target="#list-post-form" hx-push-url="true" hx-on:click="ListPage.resetForm()">
+                <i class="fa fa-refresh"></i> 重置
+              </button>
+            </div>
+            {% endwith %}
+          </div>
+          {% endif %}
+  </form>
+  {# 表格 #}
+  <div id="list-post-form" class="list-post-form">
+    {% include "list_htmx.html" %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{# 引入必要的 JS #}
+<script src="{% static 'js/toastify.min.js' %}"></script>
+<script src="{% static 'adminlte/select2/dist/js/select2.min.js' %}"></script>
+<script src="{% static 'adminlte/select2/dist/js/i18n/zh-CN.js' %}"></script>
+<script>
+  // Drawer 控制器
+  const Drawer = {
+    // 初始化
+    init() {
+      this.sidebar = $('.control-sidebar');
+      this.bindEvents();
+      this.setupHtmx();
+    },
+
+    // 绑定事件
+    bindEvents() {
+      // 监听抽屉打开事件
+      $(document).on('click', '[data-toggle="control-sidebar"]', (e) => {
+        const width = $(e.currentTarget).data('drawer-width') || 400;
+        const title = $(e.currentTarget).data('drawer-title') || '';
+
+        // 设置宽度和标题
+        // this.sidebar.css('width', width + 'px');
+        const finalWidth = /^[\d.]+(%|px)$/.test(width) ? width : `${width}px`;
+        this.sidebar.css('width', finalWidth);
+        $('.drawer-title').text(title);
+      });
+    },
+
+    // 设置 HTMX 相关配置
+    setupHtmx() {
+      // HTMX 加载开始时显示加载状态
+      htmx.on('htmx:beforeRequest', (evt) => {
+        if (evt.detail.target.closest('.control-sidebar')) {
+          this.showLoading();
+        }
+      });
+
+      // HTMX 加载完成后隐藏加载状态
+      htmx.on('htmx:afterRequest', (evt) => {
+        if (evt.detail.target.closest('.control-sidebar')) {
+          this.hideLoading();
+        }
+      });
+    },
+
+    // 显示加载状态
+    showLoading() {
+      this.sidebar.append('<div class="drawer-loading">加载中...</div>');
+    },
+
+    // 隐藏加载状态
+    hideLoading() {
+      this.sidebar.find('.drawer-loading').remove();
+    }
+  };
+
+  const ListPage = {
+    // 定义选择器常量
+    selectors: {
+      form: '#filter-form',
+      formContainer: '#filter-form-container',
+      filterToggle: '#filter-toggle',
+      tableContainer: '#list-post-form',
+      buttonGroups: '#filter-form .btn-group[data-toggle="buttons"]',
+      // dateRangePicker: '#filter-form .daterangepicker',
+      selects: '#filter-form select',
+      checkboxes: '#list-post-form input[type="checkbox"]:not(.checkbox-toggle, .select-all)',
+      selectAll: '#list-post-form input.checkbox-toggle',
+      selectCount: '#select-count',
+      actionButtons: '#list-action .btn[name="action"]',
+      buttonLabels: '#filter-form .btn-group[data-toggle="buttons"] label',
+    },
+
+    init() {
+      this.initSelect2();
+      this.initFilterToggle();
+      this.initCheckboxes();
+      this.initButtonGroups();
+      this.updateSelectCount();
+    },
+
+    initButtonGroups() {
+      $(this.selectors.buttonGroups).off('click').on('click', 'label', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const $label = $(this);
+        const $input = $label.find('input[type="checkbox"]');
+
+        // 切换复选框状态
+        const newChecked = !$input.prop('checked');
+        $input.prop('checked', newChecked);
+
+        // 切换按钮样式
+        if (newChecked) {
+          $label.removeClass('btn-default')
+            .addClass('btn-primary');
+        } else {
+          $label.removeClass('btn-primary')
+            .addClass('btn-default');
+        }
+
+        ListPage.submitFilter();
+      });
+    },
+
+    initDateRangePicker() {
+      const dateConfig = {
+        locale: {
+          format: 'YYYY-MM-DD',
+          applyLabel: '确定',
+          cancelLabel: '取消',
+          fromLabel: '从',
+          toLabel: '至'
+        },
+        autoUpdateInput: false,
+        showDropdowns: true,
+        ranges: {
+          '今天': [moment(), moment()],
+          '昨天': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+          '最近7天': [moment().subtract(6, 'days'), moment()],
+          '最近30天': [moment().subtract(29, 'days'), moment()],
+          '本月': [moment().startOf('month'), moment().endOf('month')],
+          '上月': [moment().subtract(1, 'month').startOf('month'),
+          moment().subtract(1, 'month').endOf('month')]
+        }
+      };
+    },
+
+    initSelect2() {
+      const select2Config = {
+        allowClear: true,
+        language: 'zh-CN',
+        // minimumInputLength: 3,
+        cache: true,
+        ajax: {
+          data: (params) => {
+            return {
+              search: params.term,
+              page: params.page,
+            };
+          },
+          processResults: function (data) {
+            return {
+              results: data.results.map(item => ({
+                id: item.id, text: item._repr
+              })),
+            }
+          },
+        }
+      };
+
+      $(this.selectors.selects).select2(select2Config).on('change', function () {
+        const $dateRange = $(this).next('.daterangepicker');
+        $dateRange.prop('disabled', !$(this).val()).val($(this).val() ? $dateRange.val() : '');
+        ListPage.submitFilter();
+      });
+    },
+
+    submitFilter() {
+      const $form = $(this.selectors.form);
+
+      // 使用 jQuery serialize() 获取表单数据
+      let serializedData = $form.serialize();
+
+      // 添加搜索
+      const search = $("#list-search").find('input[name="search"]').val();
+      if (search) {
+        if (serializedData.indexOf('search=') === -1) {
+          serializedData += '&';
+          serializedData += `search=${search}`;
+        } else {
+          // replace
+          serializedData = serializedData.replace(/search=[^&]*/, '');
+          serializedData += '&';
+          serializedData += `search=${search}`;
+        }
+      }
+
+      // 构建完整的 URL
+      const url = new URL(window.location);
+      url.search = serializedData;
+      const fullUrl = url.toString();
+
+      // 发送 HTMX 请求，成功后更新 URL
+      htmx.ajax('GET', fullUrl, {
+        target: this.selectors.tableContainer,
+        swap: 'innerHTML',
+        headers: {
+          'HX-Request': 'true'
+        },
+      }).then(() => {
+        window.history.pushState({}, '', fullUrl);
+      });
+    },
+
+    initFilterToggle() {
+      const $filterToggle = $(this.selectors.filterToggle);
+      const $container = $(this.selectors.formContainer);
+      if (!$container.is(':hidden')) {
+        $filterToggle.addClass('btn-primary').removeClass('btn-default');
+      }
+
+      $filterToggle.on('click', () => {
+        const isHidden = $container.is(':hidden');
+        $container.toggle();
+        $filterToggle.toggleClass('btn-default btn-primary');
+
+        if (isHidden) this.initSelect2();
+      });
+    },
+
+    updateSelectCount() {
+      let count = 0;
+      const objectListInfo = document.getElementById('objects-info');
+      let currentCount = parseInt(objectListInfo.dataset.currentCount);
+      let total = parseInt(objectListInfo.dataset.total);
+      $(this.selectors.checkboxes).each(function () {
+        if ($(this).prop('checked')) {
+          count++;
+        }
+      });
+      if (count > 0) {
+        $(this.selectors.selectCount).text(`已选中 ${count} 条`);
+        $(this.selectors.selectCount).closest('span').show();
+        $(this.selectors.actionButtons).removeClass('disabled').attr('disabled', false);
+        // 显示选中当前查询集的所有对象
+        if ((count === currentCount) && (total > currentCount)) {
+          $("#select-all").closest("div").removeClass('hidden');
+        } else {
+          $("#select-all").closest("div").addClass('hidden');
+        }
+      } else {
+        $(this.selectors.selectCount).closest('span').hide();
+        $(this.selectors.actionButtons).addClass('disabled').attr('disabled', true);
+        // 隐藏选中当前查询集的所有对象
+        $("#select-all").closest("div").addClass('hidden');
+      }
+    },
+
+    initCheckboxes() {
+      let lastChecked;
+      const $checkboxes = $(this.selectors.checkboxes);
+      const $selectAll = $(this.selectors.selectAll);
+
+      $checkboxes.off('click');
+      $selectAll.off('change');
+
+      $selectAll.on('change', function () {
+        const isChecked = $(this).prop('checked');
+        $checkboxes.each(function () {
+          $(this).prop('checked', isChecked)
+            .closest('tr').toggleClass('active', isChecked);
+        });
+        ListPage.updateSelectCount();
+      });
+
+      $checkboxes.on('click', function (e) {
+        const $this = $(this);
+
+        if (e.shiftKey && lastChecked) {
+          let start = $checkboxes.index(this);
+          let end = $checkboxes.index(lastChecked);
+
+          $checkboxes.slice(Math.min(start, end), Math.max(start, end) + 1)
+            .prop('checked', true)
+            .closest('tr').addClass('active');
+        }
+
+        lastChecked = this;
+        $this.closest('tr').toggleClass('active', $this.prop('checked'));
+
+        $selectAll.prop('checked',
+          $checkboxes.length === $checkboxes.filter(':checked').length
+        );
+
+        ListPage.updateSelectCount();
+      });
+    },
+
+    resetForm() {
+      const $form = $(this.selectors.form);
+
+      // 重置表单
+      $form[0].reset();
+
+      // 重置 Select2
+      $(this.selectors.selects).val(null);
+      $('input[name="search"]').val(null);
+      // 重置日期选择器
+      // $(this.selectors.dateRangePicker).val('');
+
+      // 重置按钮组状态
+      $(this.selectors.buttonLabels)
+        .removeClass('btn-primary active')
+        .addClass('btn-default')
+        .find('input[type="checkbox"]')
+        .prop('checked', false);
+
+      var url = "{{ list_url }}";
+      // 发送 HTMX 请求，成功后更新 URL
+      htmx.ajax('GET', url, {
+        target: this.selectors.tableContainer,
+        swap: 'innerHTML',
+        headers: {
+          'HX-Request': 'true'
+        },
+      }).then(() => {
+        window.history.pushState({}, '', url);
+      });
+    }
+  };
+
+  $(document).ready(() => {
+    ListPage.init();
+    Drawer.init();
+  });
+  document.addEventListener('htmx:afterSwap', () => {
+    ListPage.init();
+    Drawer.init();
+  });
+
+</script>
+{% endblock %}

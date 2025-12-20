@@ -1,0 +1,138 @@
+services:
+  web:
+    image: YOUR_USERNAME/idcops:latest
+    container_name: idcops-web
+    command: /entrypoint.sh
+    volumes:
+      - media:${APP_HOME}/media
+      - static:${APP_HOME}/static
+      - logs:${APP_HOME}/logs
+      - db-data:${APP_HOME}/db-data
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgresql:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-idcops.settings}
+      - DEBUG=${DEBUG:-0}
+      - POSTGRES_HOST=postgresql
+      - REDIS_HOST=redis
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_DB=${REDIS_DB:-0}
+    ports:
+      - "${GUNICORN_PORT:-8000}:${GUNICORN_PORT:-8000}"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://127.0.0.1:${GUNICORN_PORT:-8000}/health-check/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.2.0-alpine
+    container_name: idcops-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - cache:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  rq-worker:
+    image: YOUR_USERNAME/idcops:latest
+    container_name: idcops-rqworker
+    command: >
+      python manage.py rqworker high default low --with-scheduler
+    volumes:
+      - media:${APP_HOME}/media
+      - logs:${APP_HOME}/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-idcops.settings}
+      - POSTGRES_HOST=postgresql
+      - REDIS_HOST=redis
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_DB=${REDIS_DB:-0}
+    restart: unless-stopped
+
+  postgresql:
+    image: postgres:15.1-alpine
+    container_name: idcops-postgresql
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-dcrm}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_INITDB_ARGS=--data-checksums
+      - POSTGRES_INITDB_WALDIR=/var/lib/postgresql/wal
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - wal-data:/var/lib/postgresql/wal
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "${POSTGRES_USER:-postgres}", "-d", "${POSTGRES_DB:-dcrm}" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: idcops-nginx
+    environment:
+      - NGINX_PORT=${NGINX_PORT:-80}
+      - NGINX_SERVER_NAME=localhost
+      - NGINX_CLIENT_MAX_BODY_SIZE=${NGINX_CLIENT_MAX_BODY_SIZE:-100m}
+      - NGINX_UPSTREAM_HOST=web
+      - NGINX_UPSTREAM_PORT=${GUNICORN_PORT:-8000}
+      - NGINX_STATIC_PATH=${APP_HOME}/static/
+      - NGINX_MEDIA_PATH=${APP_HOME}/media/
+    volumes:
+      - ./contrib/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - static:${APP_HOME}/static:ro
+      - media:${APP_HOME}/media:ro
+    ports:
+      - "${NGINX_PORT:-80}:${NGINX_PORT:-80}"
+    depends_on:
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:${NGINX_PORT:-80}/ || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+networks:
+  default:
+    name: idcops
+
+volumes:
+  static:
+    driver: local
+  media:
+    driver: local
+  logs:
+    driver: local
+  db-data:
+    driver: local
+  pg-data:
+    driver: local
+  wal-data:
+    driver: local
+  cache:
+    driver: local
+

@@ -1,0 +1,79 @@
+{% load form_filters %}
+{% load i18n %}
+
+{% for field_group in fieldset.field_groups %}
+{% if field_group|length > 1 %}
+{# 内联字段组 #}
+<div style="display: flex; gap: 15px; margin-bottom: 15px;">
+    {% for field_name in field_group %}
+    {% with field=form|get_field:field_name %}
+    <div style="flex: 1;">
+        {% if field|fieldtype == 'BooleanField' %}
+        <div class="form-group {% if field.errors %}has-error{% endif %}" style="margin-bottom: 0;">
+            <div class="checkbox">
+                <label>
+                    {{ field }}
+                    {{ field.label }}
+                </label>
+                {% if field.help_text and user.form_help_mode %}
+                <p class="help-block">{{ field.help_text }}</p>
+                {% endif %}
+                {% if field.errors %}
+                <span class="help-block error">{{ field.errors }}</span>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="form-group {% if field.errors %}has-error{% endif %}" style="margin-bottom: 0;">
+            {{ field.label_tag }}
+            {{ field }}
+            {% if field.help_text and user.form_help_mode %}
+            <p class="help-block">{{ field.help_text }}</p>
+            {% endif %}
+            {% if field.force_help_text %}
+            <p class="help-block">{{ field.help_text }}</p>
+            {% endif %}
+            {% if field.errors %}
+            <span class="help-block error">{{ field.errors.0 }}</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endwith %}
+    {% endfor %}
+</div>
+{% else %}
+{# 单个字段 #}
+{% with field=form|get_field:field_group.0 %}
+{% with attrs=field.field.widget.attrs %}
+{% if field|fieldtype == 'BooleanField' %}
+<div class="form-group {% if field.errors %}has-error{% endif %} {%if attrs.hidden %}hidden{% endif %}">
+    <div class="checkbox">
+        <label>
+            {{ field }}
+            {{ field.label }}
+        </label>
+        {% if field.help_text and user.form_help_mode %}
+        <p class="help-block">{{ field.help_text }}</p>
+        {% endif %}
+        {% if field.errors %}
+        <span class="help-block error">{{ field.errors.0 }}</span>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="form-group {% if field.errors %}has-error{% endif %} {%if attrs.hidden %}hidden{% endif %}">
+    {{ field.label_tag }}
+    {{ field }}
+    {% if field.help_text and user.form_help_mode %}
+    <p class="help-block">{{ field.help_text }}</p>
+    {% endif %}
+    {% if field.errors %}
+    <span class="help-block error">{{ field.errors.0 }}</span>
+    {% endif %}
+</div>
+{% endif %}
+{% endwith %}
+{% endwith %}
+{% endif %}
+{% endfor %}

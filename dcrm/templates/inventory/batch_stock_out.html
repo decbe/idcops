@@ -1,0 +1,55 @@
+{% load i18n %}
+{% load dcrm_extras %}
+
+{% block content %}
+<!-- <h2>批量出库</h2> -->
+<form method="post" class="form">
+  {% csrf_token %}
+  <div class="box-body with-border">
+    {{ formset.management_form }}
+    <div class="table-responsive">
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th width="2%">#.</th>
+            <th width="23%">物品实例</th>
+            <th width="15%">出库数量</th>
+            <th>操作原因</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for form in formset %}
+          <tr>
+            <td style="padding-bottom: 15px;">{{forloop.counter}}.
+              {{ form.id }}
+            </td>
+            {% with instance=form.item_instance %}
+            <td class="bg-success">
+              <input type="hidden" name="pk" value="{{ instance.value }}">
+              <input type="hidden" name="{{ instance.html_name }}" id="{{ instance.id_for_label }}"
+                value="{{ instance.value }}">
+              {% object_as_html 'ItemInstance' instance.value detail_fields %}
+            </td>
+            {% endwith %}
+            <td>{{ form.quantity }}</td>
+            <td>{{ form.reason }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="box-footer" style="padding: 10px 0;">
+      <div class="buttons pull-left">
+        <input type="hidden" name="apply" value="true">
+        <button type="submit" name="action" value="{{ action.action_type }}"
+          class="btn btn-danger btn-sm margin-r-5">{{ action.name }}</button>
+      </div>
+      <div class="info pull-left">
+        <a type="button" class="btn btn-default btn-sm" href="{{next_url}}"><i class="fa fa-times"></i> 取消</a>
+      </div>
+    </div>
+  </div>
+</form>
+<small id="page-subtitle" hx-swap-oob="true">{{action.name}} 总计: {{formset|length}} 条</small>
+
+{% endblock %}

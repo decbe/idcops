@@ -1,0 +1,50 @@
+.node-form {
+    cursor: move;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.node-form.dragging {
+    opacity: 0.4;
+    background-color: #f8f9fa;
+}
+
+.node-form.drag-target {
+    border: 1px dashed transparent;
+}
+
+.node-form.drag-over-top {
+    border-top: 2px dashed #007bff;
+}
+
+.node-form.drag-over-bottom {
+    border-bottom: 2px dashed #007bff;
+}
+
+.node-form .drag-handle {
+    cursor: move;
+    color: #999;
+    margin-left: 8px;
+}
+
+.node-form .drag-handle:hover {
+    color: #666;
+}
+
+/* 拖拽时的视觉反馈 */
+.node-form.dragging .node-row {
+    background: #f8f9fa;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 序号单元格样式 */
+.sequence-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sequence-number {
+    font-weight: bold;
+    color: #666;
+}

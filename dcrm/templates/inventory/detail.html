@@ -1,0 +1,38 @@
+{% extends "detail.html" %}
+{% load i18n %}
+{% load static %}
+{% load dcrm_extras %}
+
+{% block content-extra %}
+<div class="box-body" style="padding-top: 0;">
+  <fieldset>
+    <div class="fieldset-header">
+      <h4>库存历史 ({{object.history_count}}条)</h4>
+    </div>
+    <div class="fieldset-content">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover nowarp">
+          <tbody>
+            <tr class="active">
+              {% with labels=history.labels %}
+              {% for label in labels %}
+              <th class="{{ label }}"">{{ labels|get_item:label }}</th>
+              {% endfor %}
+              {% endwith %}
+            </tr>
+            {% for row in history.rows %}
+            <tr>
+              {% for cell in row %}
+              <td>
+                {{ cell.value|safe }}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </fieldset>
+</div>
+{% endblock %}

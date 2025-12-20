@@ -1,0 +1,40 @@
+{% with notifications=request.user.notifications.unread %}
+<li class="dropdown notifications-menu">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+        <i class="fa fa-bell-o"></i>
+        <span class="label label-warning">
+            {% if notifications|length > 0 %}
+                {{ notifications|length }}
+            {% endif %}
+        </span>
+    </a>
+    <ul class="dropdown-menu">
+        <li class="header">
+            你有 {{ notifications|length }} 条未读通知
+        </li>
+        <li>
+            <!-- 内部菜单 -->
+            <ul class="menu">
+                {% for notification in notifications %}
+                <li>
+                    <a href="{{ notification.data.extra.handle_url|default:'#' }}">
+                        <i class="fa fa-info-circle text-aqua"></i>
+                        {{ notification.description }}
+                        <p><small>{{ notification.timestamp|date:"Y-m-d H:i" }}</small></p>
+                    </a>
+                </li>
+                {% empty %}
+                <li>
+                    <a href="#">
+                        <i class="fa fa-info-circle text-muted"></i> 没有新的通知
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </li>
+        <li class="footer">
+            <a href="#">查看所有</a>
+        </li>
+    </ul>
+</li>
+{% endwith %}

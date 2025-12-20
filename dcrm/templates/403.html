@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block breadcrumb %}{% endblock %}
+{% block content %}
+<div class="box box-warning box-solid" id="box" style="margin-top: 5rem;">
+  <div class="box-header with-border no-print text-center clearfix">
+    <h1 class="box-title">{% trans "403 禁止访问" %}</h1>
+  </div>
+  <div class="box-body text-center" style="padding: 20px;">
+    <p>{% trans "您没有权限访问此页面" %}</p>
+    <p>{% trans "请联系管理员" %}</p>
+    <p class="text-muted">{% trans "系统设置>用户管理>分配组权限" %}</p>
+  </div>
+</div>
+{% endblock %}

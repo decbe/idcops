@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load dcrm_extras %}
+{% load i18n %}
+{% block title %}{{ title }} | DCRM{% endblock %}
+
+{% block extra_css %}
+<style>
+  .form-control.password {
+    -webkit-text-security: disc;
+  }
+  .form-control.password.has-value {
+    cursor: pointer;
+  }
+</style>
+{% endblock %}
+{% block breadcrumb %}
+{% for item in breadcrumbs %}
+<li {% if forloop.last %}class="active" {% endif %}>
+  {% if not forloop.last %}
+  <a href="{{ item.url }}">{% endif %}<i class="{{ item.icon }}"></i> {{ item.name }}{% if not forloop.last %}</a>
+  {% endif %}
+</li>
+{% endfor %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="nav-tabs-custom">
+      <ul class="nav nav-tabs">
+        {% for tab in tabs %}
+        <li class="{% if active_tab == tab.name %}active{% endif %}">
+          <a href="?active_tab={{ tab.name }}" data-toggle="">
+            {{ tab.label|title }}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      <div class="tab-content">
+        <div class="tab-pane active" id="{{ active_tab }}">
+          <form method="post" class="config-form" id="{{ active_tab }}-form">
+            {% csrf_token %}
+            <input type="hidden" name="active_tab" value="{{ active_tab }}">
+            {% for group_key, field_items in active_form.items %}
+            <!-- <div class="box box-solid"> -->
+              <div class="box-header">
+                <span class="text-muted">{{ CONFIG_GROUPS|get_item:active_tab|get_item:"description" }}</span>
+              </div>
+              <div class="box-body">
+                {% for field_item in field_items %}
+                <div class="form-group {% if field_item.errors %}has-error{% endif %}">
+                  {% if field_item.is_boolean %}
+                  {{ field_item.field|safe }}
+                  <label for="id_{{ field_item.name }}">{{ field_item.label }}</label>
+                  {% else %}
+                  <label for="id_{{ field_item.name }}">{{ field_item.label }}</label>
+                  {{ field_item.field|safe }}
+                  {% endif %}
+                  {% if field_item.help_text %}
+                  <p class="help-block">{{ field_item.help_text }}</p>
+                  {% endif %}
+                  {% if field_item.errors %}
+                  <div class="field-error">{{ field_item.errors|join:", " }}</div>
+                  {% endif %}
+                </div>
+                {% endfor %}
+              </div>
+            <!-- </div> -->
+            {% endfor %}
+            <div class="form-group">
+              <button type="submit" class="btn btn-sm btn-primary">保存配置</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+
+<script>
+  // 用原生javascript 将带class属性为 .form-control.password 的输入框，提示双击进行复制和提示复制成功
+  document.addEventListener('DOMContentLoaded', function() {
+    // 获取所有密码输入框
+    const passwordInputs = document.querySelectorAll('.form-control.password');
+    
+    // 为每个密码输入框添加事件监听
+    passwordInputs.forEach(input => {
+      // 添加提示文本
+      const val = input.getAttribute("value");
+      if (!val) {
+        return
+      }
+
+      input.title = '双击复制内容';
+      
+      // 添加双击事件监听
+      input.addEventListener('dblclick', function() {
+        // 选择输入框内容
+        this.select();
+        
+        try {
+          // 执行复制命令
+          const successful = document.execCommand('copy');
+          
+          if (successful) {
+            // 创建提示元素
+            const tooltip = document.createElement('div');
+            tooltip.textContent = '复制成功！';
+            tooltip.style.cssText = `
+              position: fixed;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              background-color: rgba(0, 0, 0, 0.8);
+              color: white;
+              padding: 10px 20px;
+              border-radius: 4px;
+              z-index: 9999;
+              font-size: 14px;
+            `;
+            
+            // 添加到页面
+            document.body.appendChild(tooltip);
+            
+            // 2秒后移除提示
+            setTimeout(() => {
+              document.body.removeChild(tooltip);
+            }, 2000);
+          }
+        } catch (err) {
+          console.error('复制失败:', err);
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% load static %}
+{% load i18n %}
+<form method="post" class="form">
+    {% csrf_token %}
+    <div class="box-body with-border">
+        <div class="alert alert-info">
+            <i class="fa fa-info-circle"></i>
+            {% trans "您选择了" %} <strong>{{ instances.count }}</strong> {% trans "个文档进行操作" %}
+            {% for instance in instances %}
+            <input type="hidden" name="pk" value="{{ instance.id }}">
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            <label for="categories">{% trans "文档分类" %}</label>
+            <select name="categories" id="categories" class="form-control select2" multiple>
+                {% for category in categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+            <p class="help-block">{% trans "可以选择多个分类，不选择则清空现有分类" %}</p>
+        </div>
+        
+        <div class="form-group">
+            <label for="tags">{% trans "文档标签" %}</label>
+            <select name="tags" id="tags" class="form-control select2" multiple>
+                {% for tag in tags %}
+                <option value="{{ tag.id }}">{{ tag.name }}</option>
+                {% endfor %}
+            </select>
+            <p class="help-block">{% trans "可以选择多个标签，不选择则清空现有标签" %}</p>
+        </div>
+        
+        <div class="form-group">
+            <label>{% trans "选中的文档" %}</label>
+            <div class="table-responsive">
+                <table class="table table-bordered table-condensed text-nowrap">
+                    <thead>
+                        <tr>
+                            <th width="5%">#</th>
+                            <th width="30%">{% trans "标题" %}</th>
+                            <th width="25%">{% trans "当前分类" %}</th>
+                            <th width="25%">{% trans "当前标签" %}</th>
+                            <th width="15%">{% trans "状态" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for document in instances %}
+                        <tr>
+                            <td>{{ forloop.counter }}.</td>
+                            <td>{{ document.title }}</td>
+                            <td>
+                                {% for category in document.categories.all %}
+                                    <span class="label label-info">{{ category.name }}</span>
+                                {% empty %}
+                                    <span class="text-muted">{% trans "无" %}</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% for tag in document.tags.all %}
+                                    <span class="label label-primary">{{ tag.name }}</span>
+                                {% empty %}
+                                    <span class="text-muted">{% trans "无" %}</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <span class="label label-{% if document.status == 'published' %}success{% else %}warning{% endif %}">
+                                    {{ document.get_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="box-footer" style="padding: 10px 0;">
+            <div class="info pull-left">
+                <a type="button" class="btn btn-default btn-sm margin-r-5" href="{{ next_url }}">
+                    <i class="fa fa-times"></i> {% trans "取消" %}
+                </a>
+            </div>
+            <div class="buttons pull-right">
+                <input type="hidden" name="action" value="{{ action.action_type }}">
+                <input type="hidden" name="apply" value="true">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    {% trans "确认设置" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<small id="page-subtitle" hx-swap-oob="true">{{ action.name }} 总计: {{ instances.count }} 个</small>
+
+<script type="text/javascript">
+$(document).ready(function() {
+    // 初始化Select2
+    $('.select2').select2({
+        placeholder: "{% trans '请选择...' %}",
+        allowClear: true,
+        language: "zh-CN"
+    });
+});
+</script> 

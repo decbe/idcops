@@ -1,0 +1,6 @@
+<dl>
+    {% for item in data %}
+    <dt class="{{ item.name }}">{{ item.label }}:</dt>
+    <dd><span>{{ item.value }}</span></dd>
+    {% endfor %}
+</dl>

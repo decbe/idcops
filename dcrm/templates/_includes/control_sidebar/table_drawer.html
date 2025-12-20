@@ -1,0 +1,25 @@
+<!-- 抽屉面板 -->
+<div class="table-drawer">
+    <div class="drawer-header">
+        <h4 id="drawer-title">筛选条件</h4>
+        <button type="button" class="close" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="drawer-body" id="drawer-content">
+        <div class="box-body">
+            <ul id="sortable" class="list-group">
+                {% for field in ordered_fields %}
+                    <li class="list-group-item" draggable="true">
+                        <span class="handle pull-left" style="cursor: move; margin-right: 10px;">
+                            <i class="fa fa-arrows"></i>
+                        </span>
+                        <span>{{ field }}</span>
+                        <input type="hidden" name="order" value="{{ field }}">
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+</div>

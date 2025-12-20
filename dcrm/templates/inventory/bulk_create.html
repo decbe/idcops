@@ -1,0 +1,813 @@
+{% extends "form.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .preview-container {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
+  .has-img img {
+    width: 230px !important;
+    height: 230px !important;
+    object-fit: contain;
+  }
+
+  .upload-container {
+    padding: 10px;
+    border: 2px dashed #ddd;
+    border-radius: 10px;
+    text-align: center;
+    transition: border-color 0.3s;
+    margin-bottom: 10px;
+  }
+
+  .upload-container.highlight {
+    border-color: #1677ff;
+    background-color: #f0f6ff;
+  }
+
+  .upload-prompt {
+    font-size: 16px;
+    color: #333;
+    margin: 10px 0;
+  }
+
+  .upload-prompt span {
+    color: #3c8dbc;
+    cursor: pointer;
+  }
+
+  .supported-files {
+    font-size: 12px;
+    color: #666;
+    margin: 15px 0;
+    line-height: 1.5;
+  }
+
+  #file-input {
+    display: none;
+  }
+
+  .item-container {
+    margin-bottom: 20px;
+  }
+
+  .image-preview {
+    width: 100%;
+    min-height: 300px;
+    border: 2px dashed #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    background: #f9f9f9;
+    overflow: hidden;
+  }
+
+  .image-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .image-preview.has-image {
+    border: none;
+    cursor: auto !important;
+  }
+
+  .upload-prompt {
+    text-align: center;
+    color: #666;
+  }
+
+  .form-section {
+    /* padding: 15px; */
+    border-radius: 4px;
+  }
+
+  .form-group {
+    margin-bottom: 10px;
+  }
+
+  .hidden-inputs {
+    display: none;
+  }
+
+  .extra-items {
+    padding-top: 5px;
+    border-bottom: 1px solid #ccc;
+    border-left: 1px solid #ccc;
+    border-right: 1px solid #ccc;
+  }
+
+  .extra-items .label {
+    cursor: pointer;
+  }
+</style>
+{% endblock %}
+
+{% block box_body %}
+
+<form method="post" enctype="multipart/form-data" id="edit-form-htmx" novalidate>
+  {% csrf_token %}
+  <div class="upload-container" id="drop-zone">
+    <div class="upload-prompt" id="uploadArea">
+      拖拽图片至此，或者 <span onclick="document.getElementById('file-input').click()">选择图片</span>
+    </div>
+    <div class="supported-files">
+      仅支持上传图片，每个文件不超过 15MB。
+    </div>
+    <input type="file" id="file-input" accept="image/*" multiple>
+    <div class="file-preview preview-container" id="file-preview"></div>
+  </div>
+  {{ formset.management_form }}
+  {{ formset.non_form_errors }}
+  <div class="form-items" id="items-container">
+    {% for form in formset %}
+    <!-- 单个物品模板 -->
+    <!-- 修改模板，添加row，一个row可以包含两个 form，初始值是一个form-->
+    <div class="row form-row">
+
+      <div class="col-md-6 col-xs-12 item-container">
+        <div class="box box-default box-solid">
+          <div class="box-header with-border">
+            <h3 class="box-title">物品 #{{ forloop.counter }}</h3>
+            <div class="box-tools pull-right">
+              <!-- <div class="btn-group"> -->
+              <button type="button" class="btn btn-box-tool" data-toggle="tooltip" title="删除"
+                onclick="toggleDelete(this)">
+                <i class="fa fa-trash-o"></i>
+              </button>
+              <!-- </div> -->
+            </div>
+          </div>
+          <div class="box-body">
+            <div class="row">
+              <!-- 左侧图片区域 -->
+              <div class="col-md-5 col-xs-12">
+                {% if form.image.value%}
+                <div class="image-preview has-image">
+                  <img src="{{ form.image.value }}" alt="{{ form.instance }}" class="img-responsive">
+                </div>
+                {% else %}
+                <div class="image-preview" onclick="triggerFileInput(this)">
+                  <div class="upload-prompt">
+                    <i class="fa fa-plus"></i><br>
+                    点击上传图片
+                  </div>
+                  <input type="file" style="display: none" accept="image/*" onchange="handleFileSelect(this)">
+                </div>
+                {% endif %}
+              </div>
+
+              <!-- 右侧表单区域 -->
+              <div class="col-md-7 col-xs-12">
+                <div class="form-section">
+                  {{ form.id }}
+                  {% for field in form.visible_fields %}
+                  <div class="form-group">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {% if field.errors %}
+                    <span class="help-block text-red">{{ field.errors }}</span>
+                    {% endif %}
+                  </div>
+                  {% endfor %}
+                  <!-- 隐藏字段 -->
+                  <div class="hidden-inputs">
+                    {% for field in form.hidden_fields %}
+                    {{ field }}
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- 添加新物品按钮 -->
+  <div class="row">
+    <div class="col-xs-12" style="margin-bottom: 15px;">
+      <button type="button" class="btn btn-success btn-sm" onclick="addNewFormset()">
+        <i class="fa fa-plus"></i> 添加库存物品
+      </button>
+    </div>
+  </div>
+
+  <div class="box-footer">
+    <div class="pull-right">
+      <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-default btn-sm margin-r-5">
+        {% trans '返回' %}
+      </a>
+      <button type="submit" name="save" class="btn btn-primary btn-sm">{% trans '保存' %}</button>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/choices.min.js' %}"></script>
+
+<script>
+  function getChoiceOptions(addChices) {
+    return {
+      removeItemButton: true,
+      searchEnabled: true,
+      shouldSort: false,
+      sorter: () => [],
+      addChoices: addChices,
+      position: 'auto',
+      renderChoiceLimit: -1,
+      searchPlaceholderValue: '搜索...',
+      noResultsText: '没有找到匹配项',
+      itemSelectText: '点击选择',
+      loadingText: '加载中...',
+      noChoicesText: '没有可选择的选项',
+      addItemText: (value) => `按回车键添加 "${value}"`,
+      maxItemText: (maxItemCount) => `最多只能选择${maxItemCount}项`,
+      customAddItemText: '只能添加符合此规则的选项',
+      duplicateItemsAllowed: false,
+    }
+  }
+
+  function initChoices() {
+    document.querySelectorAll('select.form-control').forEach(select => {
+      // 如果已经初始化过，跳过
+      if (select._choice) return;
+      const canAddOption = select.dataset.createOption == 'true';
+      const choiceOptions = getChoiceOptions(canAddOption);
+      try {
+        // 创建 Choices 实例
+        const choice = new Choices(select, choiceOptions);
+
+        // 标记已初始化
+        select._choice = choice;
+      } catch (error) {
+        console.error('Error initializing Choices for select:', select, error);
+      }
+    });
+  }
+
+  // 等待 DOM 完全加载后初始化
+  document.addEventListener('DOMContentLoaded', function () {
+    initChoices();
+  });
+
+  // htmx加载完成后重新初始化
+  document.body.addEventListener('htmx:afterSettle', function (evt) {
+    initChoices();
+  });
+
+  const fileManager = {
+    files: [],
+    currentUploads: []
+  };
+
+  const dropZone = document.getElementById('drop-zone');
+  const uploadInput = document.getElementById('file-input');
+
+  // 获取CSRF Token
+  function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+  }
+
+  // 设置拖拽区域样式
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.add('highlight');
+  });
+
+  dropZone.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.remove('highlight');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.remove('highlight');
+    const files = e.dataTransfer.files;
+    handleMultipleFiles(files);
+  });
+
+  // 监听文件输入
+  uploadInput.addEventListener('change', (e) => {
+    handleMultipleFiles(e.target.files);
+  });
+
+  function handleMultipleFiles(files) {
+    // 自动添加编号
+    getAvailableCodes(files, (response) => {
+      if (response.result && response.status != 'error') {
+        const result = response.result;
+        Array.from(result.code).forEach((code, index) => {
+          const codeInput = document.querySelector(`input[name="form-${index}-code"]`);
+          codeInput.value = code;
+        })
+      }
+    });
+
+    let currentFormCount = document.querySelectorAll('.item-container').length;
+
+    Array.from(files).forEach((file, index) => {
+      if (file.type.startsWith('image/')) {
+        if (index >= currentFormCount) {
+          addNewFormset();
+          currentFormCount++;
+        }
+
+        const container = document.querySelectorAll('.item-container')[index];
+        if (container) {
+          const imagePreview = container.querySelector('.image-preview');
+          handleFileUpload(file, imagePreview, container);
+        }
+      } else {
+        alert('只能上传图片文件！');
+      }
+    });
+  }
+
+  function handleFileUpload(file, imagePreview, container) {
+    // 显示加载状态
+    imagePreview.innerHTML = '<div class="upload-prompt"><i class="fa fa-spinner fa-spin"></i><br>正在上传...</div>';
+
+    uploadFile(file, (response) => {
+      if (response.files && response.files.length > 0) {
+        const data = response.files[0];
+        console.log(data);
+
+        // 更新图片预览
+        imagePreview.innerHTML = `<img src="${data.url}" alt="${data.name}" class="img-responsive">`;
+        imagePreview.classList.add('has-image');
+
+        // 更新隐藏字段
+        const imageInput = container.querySelector('input[name$="image"]');
+        const rawTextInput = container.querySelector('input[name$="raw_text"]');
+
+        if (imageInput) imageInput.value = JSON.stringify({ md5sum: data.md5sum, url: data.url, name: data.name });
+
+        // 处理OCR结果
+        if (data.metadata && data.metadata.ocr_texts) {
+          const ocrText = data.metadata.ocr_texts.join("\n");
+          if (rawTextInput) rawTextInput.value = ocrText;
+
+          // 调用 extractItemInfo 获取物品信息
+          extractItemInfo(ocrText, (response) => {
+            if (response.result) {
+              // 自动填充表单
+              autoFillForm(container, response.result);
+            }
+          });
+        }
+      } else {
+        imagePreview.innerHTML = '<div class="upload-prompt"><i class="fa fa-times"></i><br>上传失败</div>';
+      }
+    });
+  }
+
+  // 获取需要的codes编号
+  function getAvailableCodes(files, callback) {
+    let count = files.length || 1;
+    if (count >= 1) {
+      const url = "{% url 'api-0.1:get_available_codes' model_name_lower %}";
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrfToken(),
+        },
+        body: JSON.stringify({ count: count, to_field: 'code' })
+      }).then(response => response.json())
+        .then(data => callback(data))
+        .catch(error => {
+          console.error('Error:', error);
+          callback({ error: '获取失败' });
+        })
+    }
+  }
+  // 修改 uploadFile 函数，添加 OCR 参数
+  function uploadFile(file, callback) {
+    const formData = new FormData();
+    formData.append('files', file);
+    formData.append('require_ocr', true);
+
+    fetch('{% url "upload" %}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCsrfToken(),
+      },
+      body: formData
+    })
+      .then(response => response.json())
+      .then(data => callback(data))
+      .catch(error => {
+        console.error('Error:', error);
+        callback({ error: '上传失败' });
+      });
+  }
+
+  // 上传图片后得到的 rawText 需要再次进行请求后端才能得到物品信息，进行赋值。
+  // 请补上
+  function extractItemInfo(rawText, callback) {
+    const formData = new FormData();
+    formData.append('raw_text', rawText);
+    fetch('', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCsrfToken(),
+      },
+      body: formData
+    })
+      .then(response => response.json())
+      .then(data => callback(data))
+      .catch(error => console.error('Error:', error))
+  }
+
+  function toggleDelete(button) {
+    const container = button.closest('.item-container');
+    const deleteInput = container.querySelector('input[name$="DELETE"]');
+    const panel = container.querySelector('.box');
+
+    if (deleteInput.value === 'true') {
+      deleteInput.value = '';
+      panel.classList.remove('box-danger');
+      button.innerHTML = '<i class="fa fa-trash-o"></i>';
+      button.setAttribute('title', '删除');
+    } else {
+      deleteInput.value = 'true';
+      panel.classList.add('box-danger');
+      button.innerHTML = '<i class="fa fa-undo"></i>';
+      button.setAttribute('title', '恢复');
+    }
+  }
+
+  function addNewFormset() {
+    const container = document.getElementById('items-container');
+    const formCount = container.getElementsByClassName('item-container').length;
+    const template = container.querySelector('.item-container').cloneNode(true);
+
+    // const template = container.children[0].cloneNode(true);
+
+    // 更新表单索引
+    template.innerHTML = template.innerHTML.replace(/-\d+-/g, `-${formCount}-`);
+
+    // 移除扩展信息
+    template.querySelectorAll('div.box-body.extra-items').forEach(e => e.remove());
+    // 移除错误信息
+    template.querySelectorAll('span.help-block').forEach(e => e.remove());
+    // 清理和重置表单元素
+    template.querySelectorAll('select.form-control').forEach(select => {
+      select.classList.remove('choices__input');
+      select.removeAttribute('data-choice');
+      // 移除所有 Choices 相关的包装元素
+      const wrapper = select.closest('.choices');
+      if (wrapper) {
+        wrapper.parentNode.insertBefore(select, wrapper);
+        wrapper.remove();
+      }
+
+    });
+
+
+    // 重置所有输入值
+    template.querySelectorAll('input:not([type="hidden"])').forEach(input => {
+      if (input.type !== 'file') input.value = '';
+    });
+
+    // 更新标题和样式
+    template.querySelector('.box-title').textContent = `物品 #${formCount + 1}`;
+    template.querySelector('.box').classList.remove('box-danger');
+
+    // 重置删除按钮
+    const deleteButton = template.querySelector('.btn-box-tool');
+    deleteButton.innerHTML = '<i class="fa fa-trash-o"></i>';
+    deleteButton.setAttribute('title', '删除');
+
+    // 重置图片预览
+    const imagePreview = template.querySelector('.image-preview');
+    imagePreview.classList.remove('has-image');
+    imagePreview.innerHTML = `
+      <div class="upload-prompt">
+        <i class="fa fa-plus"></i><br>
+        点击上传图片
+      </div>
+      <input type="file" style="display: none" accept="image/*" onchange="handleFileSelect(this)">
+    `;
+
+    // 更新表单计数
+    const totalForms = document.querySelector('[name$="TOTAL_FORMS"]');
+    totalForms.value = formCount + 1;
+    // 确定是否需要新的行
+    let currentRow;
+    if (formCount % 2 === 0) {
+      // 创建新的行
+      currentRow = document.createElement('div');
+      currentRow.className = 'row form-row';
+      container.appendChild(currentRow);
+    } else {
+      // 使用最后一个行
+      currentRow = container.querySelector('.form-row:last-child');
+    }
+    // 添加新表单到容器
+    currentRow.appendChild(template);
+
+    // 初始化新表单的 Choices
+    requestAnimationFrame(() => {
+      template.querySelectorAll('select.form-control').forEach(select => {
+        select.querySelectorAll('option[selected]').forEach((o) => {
+          o.removeAttribute('selected')
+        });
+        if (!select._choice) {
+          const canAddOption = select.dataset.createOption == 'true';
+          const choiceOptions = getChoiceOptions(canAddOption);
+          try {
+            const choice = new Choices(select, choiceOptions);
+            select._choice = choice;
+            select._choice.setChoiceByValue('');
+          } catch (error) {
+            console.error('Error initializing Choices for select:', select, error);
+          }
+        } else {
+          select._choice.setChoiceByValue('');
+        }
+      });
+    });
+  }
+
+  // 添加回单个文件选择的处理函数
+  function triggerFileInput(element) {
+    const fileInput = element.querySelector('input[type="file"]');
+    if (fileInput) fileInput.click();
+  }
+
+  function handleFileSelect(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const container = input.closest('.item-container');
+    const imagePreview = container.querySelector('.image-preview');
+    handleFileUpload(file, imagePreview, container);
+  }
+
+  function updateItemCount(ele) {
+    // 获取唯一标识输入框
+    const identifierInput = ele.querySelector('textarea[name$="identifier"],input[name$="identifier"]');
+    // 获取数量输入框
+    const quantityInput = ele.querySelector('input[name$="quantity"]');
+
+    if (identifierInput && quantityInput) {
+      // 获取唯一标识的值
+      const identifiers = identifierInput.value.trim();
+
+      // 只有在没有SN号时才自动更新数量
+      if (!identifiers || identifiers.length === 0) {
+        // 没有SN号时，数量默认为1
+        if (!quantityInput.value || quantityInput.value < 1) {
+          quantityInput.value = 1;
+        }
+      } else {
+        // 有SN号时，数量等于SN号的数量
+        const count = identifiers.split(',').filter(id => id.trim()).length;
+        quantityInput.value = count > 0 ? count : 1;
+      }
+    }
+  }
+
+  function insertItem(ele, seq = " ", color) {
+    const fieldGroup = ele.closest('div.form-group');
+    const fieldInput = fieldGroup.querySelector('input, textarea');
+    const value = ele.dataset.itemValue;
+    if (!fieldInput.value.includes(value)) {
+      const Values = fieldInput.value ? fieldInput.value.split(seq) : [];
+      Values.push(value);
+      fieldInput.value = Values.join(seq);
+    } else {
+      const newValue = fieldInput.value.split(seq).filter(i => i != value).join(seq);
+      fieldInput.value = fieldInput.value.split(seq).filter(i => i != value).join(seq);
+      newValue.indexOf(`${seq}`) == 0 ? newValue.slice(1) : newValue;
+    };
+    const labelColor = ele.dataset.labelColor;
+    let newColor = labelColor == 'info' ? 'default' : 'info';
+    ele.classList.toggle(`label-${labelColor}`);
+    ele.classList.toggle(`label-${newColor}`);
+    // 获取表单容器并调用更新数量函数
+    const formContainer = fieldGroup.closest('.form-section');
+    updateItemCount(formContainer);
+  }
+
+  function addExtraInfo(field, values, seq, color = "info") {
+    // 给字段添加扩展信息
+    const fieldGroup = field.closest('div.form-group');
+    // 移除旧panel
+    const oldPanel = fieldGroup.querySelector(`div[name="${field.name}-extra"]`);
+    if (oldPanel) oldPanel.remove();
+    const resultHtml = `
+    <div class="box-body extra-items" name="${field.name}-extra">
+      ${values.map(item => `
+          <span name="item-${field.name}"
+          onclick="insertItem(this, '${seq}', '${color}')"
+          data-item-value="${item}" data-label-color="${color}" class="label label-${color}">${item}</span>
+      `).join(' ')}
+    </div>
+    `;
+    let frag = document.createRange().createContextualFragment(resultHtml);
+    fieldGroup.appendChild(frag);
+  }
+
+  // 添加 autoFillForm 函数
+  function autoFillForm(container, itemInfo) {
+    console.log(itemInfo)
+    // 处理文本字段
+    let itemName = itemInfo.describe || '';
+    if (itemInfo.size && itemInfo.size_unit) {
+      itemName = `${itemInfo.size}${itemInfo.size_unit}`;
+    };
+    const textFields = {
+      'item_name': itemName,
+      'identifier': itemInfo.serial_no ? itemInfo.serial_no : [],
+      'interface': itemInfo.interface ? itemInfo.interface : [],
+      'extra_flags': itemInfo.extra_flags ? itemInfo.extra_flags : [],
+      'quantity': itemInfo.serial_no ? itemInfo.serial_no.length : 1  // 默认数量为1
+    };
+    let interfaces = itemInfo.interface
+    if (itemInfo.model) interfaces.push(itemInfo.model);
+
+    // 填充文本字段
+    for (const [fieldName, value] of Object.entries(textFields)) {
+      const input = container.querySelector(`input[name$="${fieldName}"],textarea[name$="${fieldName}"]`);
+      if (input) input.value = value;
+      if ((fieldName == 'item_name') && (interfaces.length > 0)) {
+        addExtraInfo(input, interfaces, " ");
+      }
+      if ((fieldName == 'identifier') && (itemInfo.extra_flags.length > 0) && (value.length <= 0)) {
+        addExtraInfo(input, itemInfo.extra_flags, ",");
+      } else if ((fieldName == 'identifier') && (value.length > 0)) {
+        addExtraInfo(input, value, ",", 'default')
+      }
+    }
+
+    // 处理选择字段
+    const selectFields = {
+      'manufacturer': itemInfo.manufacturer || [],
+      'category': itemInfo.category || [],
+      'tags': itemInfo.tags || []
+    };
+
+    // 填充选择字段
+    for (const [fieldName, values] of Object.entries(selectFields)) {
+      const select = container.querySelector(`select[name$="${fieldName}"]`);
+      if (!select || !select._choice) continue;
+
+      try {
+        const choice = select._choice;
+
+        // 确保 values 是数组
+        const valueArray = Array.isArray(values) ? values : [values];
+
+        // 使用 removeActiveItems 替代 clearStore
+        choice.removeActiveItems();
+
+        if (fieldName === 'tags') {
+
+          // 处理标签（可能是字符串数组）
+          valueArray.filter(item => item)
+            .map(item => {
+              const tagValue = typeof item === 'string' ? item : item.name;
+              [...select.options].map((o) => {
+                if (o.text == tagValue) {
+                  choice.setChoiceByValue(o.value);
+                }
+              }
+              )
+            });
+        } else {
+          // 处理 manufacturer 和 category（对象数组，使用 id）
+          const selectedIds = valueArray
+            .filter(item => item && item.id)
+            .map(item => item.id.toString());
+
+          if (selectedIds.length > 0) {
+            // 检查选项是否存在
+            const validIds = selectedIds.filter(id =>
+              Array.from(select.options).some(option => option.value === id)
+            );
+
+            if (validIds.length > 0 && validIds.length === 1) {
+              // 使用 setChoiceByValue 设置值
+              try {
+                choice.setChoiceByValue(validIds[0]);
+              } catch (e) {
+                console.warn(`Could not set value for ${fieldName}:`, e);
+              }
+            } else {
+              console.log("厂家数量大于1个")
+              try {
+                choice.setChoiceByValue(validIds[0]);
+              } catch (e) {
+                console.warn(`Could not set value for ${fieldName}:`, e);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Error setting value for ${fieldName}:`, error);
+      }
+    }
+  }
+
+  // 自动切换 quantity 字段只读/可编辑状态
+  function bindIdentifierQuantityToggle() {
+    document.querySelectorAll('.item-container').forEach(function (container) {
+      var identifierInput = container.querySelector('input[name$="identifier"],textarea[name$="identifier"]');
+      var quantityInput = container.querySelector('input[name$="quantity"]');
+      if (!identifierInput || !quantityInput) return;
+
+      // 设置 placeholder
+      identifierInput.placeholder = '如有SN/资产编号请填写，多个用逗号分隔，无则留空';
+      quantityInput.placeholder = '有SN时自动设为1，无SN时可填写数量';
+
+      // 监听输入
+      identifierInput.addEventListener('input', function () {
+        const identifiers = identifierInput.value.trim();
+        if (identifiers && identifiers.length > 0) {
+          // 有SN号时，数量自动设为1且只读
+          const count = identifiers.split(',').filter(id => id.trim()).length;
+          quantityInput.value = count > 0 ? count : 1;
+          quantityInput.setAttribute('readonly', 'readonly');
+          quantityInput.style.backgroundColor = '#f5f5f5';
+          // 添加提示
+          if (!quantityInput.nextElementSibling || !quantityInput.nextElementSibling.classList.contains('help-block')) {
+            const helpText = document.createElement('span');
+            helpText.className = 'help-block text-info';
+            helpText.innerHTML = '<i class="fa fa-info-circle"></i> 有SN号时，每个SN创建一个数量为1的库存';
+            quantityInput.parentNode.appendChild(helpText);
+          }
+        } else {
+          // 无SN号时，数量可编辑
+          quantityInput.removeAttribute('readonly');
+          quantityInput.style.backgroundColor = '';
+          // 移除提示
+          const helpText = quantityInput.parentNode.querySelector('.help-block.text-info');
+          if (helpText) {
+            helpText.remove();
+          }
+          // 如果没有数量，设为1
+          if (!quantityInput.value || quantityInput.value < 1) {
+            quantityInput.value = 1;
+          }
+        }
+      });
+
+      // 初始化时同步一次
+      const identifiers = identifierInput.value.trim();
+      if (identifiers && identifiers.length > 0) {
+        const count = identifiers.split(',').filter(id => id.trim()).length;
+        quantityInput.value = count > 0 ? count : 1;
+        quantityInput.setAttribute('readonly', 'readonly');
+        quantityInput.style.backgroundColor = '#f5f5f5';
+        // 添加提示
+        if (!quantityInput.nextElementSibling || !quantityInput.nextElementSibling.classList.contains('help-block')) {
+          const helpText = document.createElement('span');
+          helpText.className = 'help-block text-info';
+          helpText.innerHTML = '<i class="fa fa-info-circle"></i> 有SN号时，每个SN创建一个数量为1的库存';
+          quantityInput.parentNode.appendChild(helpText);
+        }
+      } else {
+        quantityInput.removeAttribute('readonly');
+        quantityInput.style.backgroundColor = '';
+        // 移除提示
+        const helpText = quantityInput.parentNode.querySelector('.help-block.text-info');
+        if (helpText) {
+          helpText.remove();
+        }
+        if (!quantityInput.value || quantityInput.value < 1) {
+          quantityInput.value = 1;
+        }
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    bindIdentifierQuantityToggle();
+  });
+  document.body.addEventListener('htmx:afterSettle', function (evt) {
+    bindIdentifierQuantityToggle();
+  });
+</script>
+{% endblock %}

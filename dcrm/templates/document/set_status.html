@@ -1,0 +1,101 @@
+{% load static %}
+{% load i18n %}
+<form method="post" class="form">
+    {% csrf_token %}
+    <div class="box-body with-border">
+        <div class="alert alert-info">
+            <i class="fa fa-info-circle"></i>
+            {% trans "您选择了" %} <strong>{{ instances.count }}</strong> {% trans "个文档进行操作" %}
+            {% for instance in instances %}
+            <input type="hidden" name="pk" value="{{ instance.id }}">
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            <label for="status">{% trans "文档状态" %}</label>
+            <select name="status" id="status" class="form-control" required>
+                <option value="">{% trans "请选择状态..." %}</option>
+                {% for status_value, status_display in status_choices %}
+                <option value="{{ status_value }}">{{ status_display }}</option>
+                {% endfor %}
+            </select>
+            <p class="help-block">{% trans "请选择要设置的文档状态" %}</p>
+        </div>
+        
+        <div class="form-group">
+            <label>{% trans "选中的文档" %}</label>
+            <div class="table-responsive">
+                <table class="table table-bordered table-condensed text-nowrap">
+                    <thead>
+                        <tr>
+                            <th width="5%">#</th>
+                            <th width="35%">{% trans "标题" %}</th>
+                            <th width="20%">{% trans "当前状态" %}</th>
+                            <th width="20%">{% trans "分类" %}</th>
+                            <th width="20%">{% trans "标签" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for document in instances %}
+                        <tr>
+                            <td>{{ forloop.counter }}.</td>
+                            <td>{{ document.title }}</td>
+                            <td>
+                                <span class="label label-{% if document.status == 'published' %}success{% else %}warning{% endif %}">
+                                    {{ document.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% for category in document.categories.all %}
+                                    <span class="label label-info">{{ category.name }}</span>
+                                {% empty %}
+                                    <span class="text-muted">{% trans "无" %}</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% for tag in document.tags.all %}
+                                    <span class="label label-primary">{{ tag.name }}</span>
+                                {% empty %}
+                                    <span class="text-muted">{% trans "无" %}</span>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="box-footer" style="padding: 10px 0;">
+            <div class="info pull-left">
+                <a type="button" class="btn btn-default btn-sm margin-r-5" href="{{ next_url }}">
+                    <i class="fa fa-times"></i> {% trans "取消" %}
+                </a>
+            </div>
+            <div class="buttons pull-right">
+                <input type="hidden" name="action" value="{{ action.action_type }}">
+                <input type="hidden" name="apply" value="true">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    {% trans "确认设置" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<small id="page-subtitle" hx-swap-oob="true">{{ action.name }} 总计: {{ instances.count }} 个</small>
+
+<script type="text/javascript">
+$(document).ready(function() {
+    // 表单验证
+    $('form').on('submit', function(e) {
+        var status = $('#status').val();
+        if (!status) {
+            e.preventDefault();
+            alert("{% trans '请选择文档状态' %}");
+            $('#status').focus();
+            return false;
+        }
+    });
+});
+</script> 

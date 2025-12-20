@@ -1,0 +1,16 @@
+{% extends "form.html" %}
+{% load static %}
+{% load i18n %}
+{% load form_filters %}
+{% load dcrm_tags rack_tags %}
+
+
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}{% if object %}{% trans '编辑' %}{% else %}{% trans '新增' %}{{ subtitle }}{% endif %}{% endblock %}
+
+
+{% block content %}
+<div class="box box-default" id="device-form">
+  {% include "onlinedevice/form_htmx.html" %}
+</div>
+{% endblock %}

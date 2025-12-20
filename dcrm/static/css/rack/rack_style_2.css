@@ -1,0 +1,173 @@
+/* Rack Style 2: Industrial Tech
+ * 特点：工业科技感，金属质感，强调边框和阴影
+ */
+
+/* 机柜整体容器 */
+.rack-elevation {
+    padding: 4px;
+    background: linear-gradient(145deg, #1e2329, #161a1f);
+    border-radius: 6px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+.rack-elevation .table-responsive {
+    padding: 12px;
+    background: linear-gradient(180deg, #2a3037, #1e2329);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.rack-elevation .table {
+    background: transparent;
+    border: none;
+    margin: 0 !important;
+}
+
+/* 表头和U位编号样式 */
+.rack-elevation .bg-light-blue {
+    background: linear-gradient(180deg, #2d343c, #242a31) !important;
+    color: #8c95a0 !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.rack-elevation .unit-number {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
+    font-size: 0.85em;
+    color: #8c95a0;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    user-select: none;
+}
+
+/* 设备单元格样式 */
+.rack-elevation .device-cell {
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    background: linear-gradient(145deg, #2d343c, #242a31) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05),
+                inset 0 -1px 0 rgba(0,0,0,0.1),
+                0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* 当前选中的设备 */
+.rack-elevation .device-cell.bg-danger {
+    background: linear-gradient(145deg, #0f4c75, #0c3d5d) !important;
+    border: 1px solid rgba(15, 76, 117, 0.5) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1),
+                inset 0 -1px 0 rgba(0,0,0,0.15),
+                0 1px 3px rgba(15, 76, 117, 0.3);
+}
+
+.rack-elevation .device-cell:hover {
+    transform: translateZ(0);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05),
+                inset 0 -1px 0 rgba(0,0,0,0.1),
+                0 2px 6px rgba(0,0,0,0.25);
+}
+
+/* 当前设备悬停效果 */
+.rack-elevation .device-cell.bg-danger:hover {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1),
+                inset 0 -1px 0 rgba(0,0,0,0.15),
+                0 2px 6px rgba(15, 76, 117, 0.35);
+}
+
+.rack-elevation .device-info {
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: #d1d5db;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+    width: 100%;
+}
+
+.rack-elevation .device-name {
+    font-weight: 600;
+    font-size: 0.9em;
+    letter-spacing: 0.02em;
+}
+
+/* 空闲U位样式 */
+.rack-elevation .empty-unit {
+    min-height: 30px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    background: linear-gradient(180deg, #242a31, #1e2329);
+    border: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+.rack-elevation .empty-unit.position {
+    background: linear-gradient(180deg, #fff3cd, #ffeeba) !important;
+    border: 2px dashed #ffc107 !important;
+    box-shadow: inset 0 0 10px rgba(255, 193, 7, 0.2);
+}
+
+.rack-elevation .empty-unit.position .add-device-hint {
+    color: #d39e00;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.rack-elevation .empty-unit:hover {
+    background: linear-gradient(180deg, #2a3037, #242a31);
+}
+
+.rack-elevation .empty-unit.drag-over {
+    background: linear-gradient(180deg, #2d343c, #2a3037);
+    box-shadow: inset 0 0 0 2px rgba(15, 76, 117, 0.5);
+}
+
+/* 添加设备提示样式 */
+.rack-elevation .add-device-hint,
+.rack-elevation .rack-status-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 1px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85em;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    z-index: 100;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.rack-elevation .add-device-hint {
+    background: rgba(15, 76, 117, 0.2);
+    color: #3498db;
+    border: 1px dashed rgba(15, 76, 117, 0.6);
+    box-shadow: 0 2px 8px rgba(15, 76, 117, 0.15);
+}
+
+.rack-elevation .rack-status-hint {
+    background: rgba(241, 196, 15, 0.2);
+    color: #f1c40f;
+    border: 1px dashed rgba(241, 196, 15, 0.6);
+    box-shadow: 0 2px 8px rgba(241, 196, 15, 0.15);
+}
+
+/* 设备链接样式 */
+.rack-elevation .device-link {
+    color: inherit;
+    text-decoration: none;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.rack-elevation .device-link:hover {
+    text-decoration: none;
+    color: inherit;
+}

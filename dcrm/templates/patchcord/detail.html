@@ -1,0 +1,79 @@
+{% extends "detail.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block content-extra %}
+
+<div class="box-body">
+    <ul class="timeline">
+        <!-- timeline time label -->
+        <li class="time-label">
+            <span class="bg-blue">
+                {% trans '跳线连接' %}
+            </span>
+        </li>
+        <!-- /.timeline-label -->
+
+        {% for node in nodes %}
+        <!-- timeline item -->
+        <li>
+            <!-- timeline icon -->
+            <i class="fa fa-link bg-blue"></i>
+            <div class="timeline-item">
+                <span class="time">
+                    <i class="fa fa-hashtag"></i> {{ node.sequence|add:1 }}
+                </span>
+
+                <h3 class="timeline-header">
+                    <a href="{% url 'device_detail' node.device.pk %}">
+                        {% trans '节点' %}#{{ node.sequence|add:1 }}
+                    </a>
+                    {{ node.rack.room }}
+                </h3>
+
+                <div class="timeline-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p>
+                                <i class="fa fa-map-marker text-danger"></i>
+                                <strong> {% trans '位置' %}:</strong> 
+                                {{ node.rack }} / U{{ node.rack_unit }}
+                            </p>
+                            <p>
+                                <i class="fa fa-server text-blue"></i>
+                                <strong> {% trans '设备' %}:</strong> 
+                                {{ node.device }}
+                            </p>
+                            <p>
+                                <i class="fa fa-plug text-success"></i>
+                                <strong> {% trans '端口' %}:</strong> 
+                                {{ node.port_name|default:'-' }} ({{ node.port_name.get_port_type_display }})
+                            </p>
+                            <p>
+                                <i class="fa fa-user text-muted"></i>
+                                <strong> {% trans '租户' %}:</strong> 
+                                {{ node.tenant }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- <div class="timeline-footer">
+                    <a class="btn btn-primary btn-xs">
+                        <i class="fa fa-eye"></i> {% trans '查看详情' %}
+                    </a>
+                </div> -->
+            </div>
+        </li>
+        <!-- END timeline item -->
+        {% endfor %}
+
+        <li>
+            <i class="fa fa-link-o bg-gray"></i>
+        </li>
+    </ul>
+</div>
+
+{% endblock %}

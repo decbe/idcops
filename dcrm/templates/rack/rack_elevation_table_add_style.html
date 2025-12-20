@@ -1,0 +1,362 @@
+{% load rack_tags %}
+{% comment %}
+机柜立面图模板
+三列布局：
+1. 左侧U位编号
+2. 中间设备信息（需要合并单元格）
+3. 右侧U位编号
+
+4. 这个模板是添加style.css 方案之前的。
+{% endcomment %}
+{% with allow_add=rack.allow_add_devices %}
+<div class="rack-elevation">
+    <div class="table-responsive">
+        <table class="table table-bordered table-condensed" style="width: 99%; margin: 0 auto;">
+            <tbody>
+                <tr>
+                    <th style="width:2%" class="text-center bg-light-blue">U</th>
+                    <th class="text-center bg-light-blue">设备信息</th>
+                    <th style="width:2%" class="text-center bg-light-blue">U</th>
+                </tr>
+                {% for u, device, is_start in rack_units %}
+                <tr data-u="{{ u }}" class="rack-unit">
+                    {# 左侧U位编号 #}
+                    <td class="text-center no-padding bg-light-blue unit-number" data-u="{{ u }}">
+                        {{ u|zfill:2 }}
+                    </td>
+
+                    {% if device and is_start %}
+                    {# 设备信息单元格，需要合并 #}
+                    <td style="vertical-align: middle;" rowspan="{{ device.model.height }}"
+                        class="no-padding text-center device-cell {% if device == active_device %}bg-danger{%else%}bg-success{% endif %}"
+                        data-device-id="{{ device.id }}" data-device-height="{{ device.model.height }}"
+                        data-start-u="{{ u }}" onclick="handleDeviceClick.call(this, event)" draggable="true">
+                        <a href="{{device.get_absolute_url}}" class="device-link">
+                            <div class="device-info no-padding">
+                                <span class="device-name">{{ device.name }}</span>
+                            </div>
+                        </a>
+                    </td>
+                    {% elif not device %}
+                    {# 空闲U位 #}
+                    <td class="text-center text-muted no-padding empty-unit" data-u="{{ u }}"
+                        ondragover="event.preventDefault();" ondrop="handleDeviceDrop(event, '{{ u }}')"
+                        onclick="handleEmptyUnitClick(event, '{{ u }}')"
+                        onmouseenter="showAddDeviceHint(event, '{{ u }}')" onmouseleave="hideAddDeviceHint()">
+                        {% if allow_add.0 %}
+                        <div class="add-device-hint">
+                            <i class="fa fa-plus-circle"></i>
+                            <span> {{ allow_add.1 }}</span>
+                        </div>
+                        {% else %}
+                        <div class="rack-status-hint">
+                            <i class="fa fa-exclamation-circle"></i>
+                            <span> {{ allow_add.1 }}</span>
+                        </div>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+
+                    {# 右侧U位编号 #}
+                    <td class="text-center no-padding bg-light-blue unit-number" data-u="{{ u }}">
+                        {{ u|zfill:2 }}
+                    </td>
+                </tr>
+                {% endfor %}
+                <!-- <tr class="rack-base">
+                <td class="text-center no-padding bg-light-blue">-0</td>
+                <td class="text-center no-padding bg-light-blue">-----</td>
+                <td class="text-center no-padding bg-light-blue">-0</td>
+            </tr> -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    /* 机柜整体容器 */
+    .rack-elevation {
+        padding: 2px;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+
+    .rack-elevation .table-responsive {
+        padding: 10px;
+        background: linear-gradient(145deg, #2c3338, #1a1d21);
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .rack-elevation .table {
+        background: #242729;
+        border: none;
+        margin: 0 !important;
+    }
+
+    /* 表头和U位编号样式 */
+    .rack-elevation .bg-light-blue {
+        background: linear-gradient(180deg, #3a4147, #2c3338) !important;
+        color: #a8b3bd !important;
+        border-color: #4a545c !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .rack-elevation .unit-number {
+        font-family: "Courier New", monospace;
+        font-weight: bold;
+        font-size: 0.9em;
+        border-color: #4a545c !important;
+        user-select: none;
+    }
+
+    /* 设备单元格样式 */
+    .rack-elevation .device-cell {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background: linear-gradient(145deg, #34495e, #2c3e50) !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05),
+            0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    /* 当前选中的设备使用更亮的蓝色 */
+    .rack-elevation .device-cell.bg-danger {
+        background: linear-gradient(145deg, #3c8dbc, #367fa9) !important;
+        border: 1px solid rgba(60, 141, 188, 0.4) !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1),
+            0 1px 3px rgba(60, 141, 188, 0.3);
+    }
+
+    .rack-elevation .device-cell:hover {
+        opacity: 0.95;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05),
+            0 2px 4px rgba(0, 0, 0, 0.25);
+    }
+
+    /* 当前设备悬停效果 */
+    .rack-elevation .device-cell.bg-danger:hover {
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1),
+            0 2px 4px rgba(60, 141, 188, 0.35);
+    }
+
+    .rack-elevation .device-info {
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        color: #fff;
+        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+        width: 100%;
+    }
+
+    .rack-elevation .device-name {
+        font-weight: bold;
+        font-size: 0.95em;
+    }
+
+    .rack-elevation .device-model {
+        font-size: 0.85em;
+        opacity: 0.9;
+    }
+
+    /* 设备链接样式 */
+    .rack-elevation .device-link {
+        color: inherit;
+        text-decoration: none;
+        display: flex;
+        width: 100%;
+        height: 100%;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .rack-elevation .device-link:hover {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    /* 空闲U位样式 */
+    .rack-elevation .empty-unit {
+        min-height: 30px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        position: relative;
+        background: linear-gradient(180deg, #2c3338, #242729);
+        border-color: #4a545c !important;
+    }
+
+    .rack-elevation .empty-unit:hover {
+        background: linear-gradient(180deg, #353b42, #2c3338);
+    }
+
+    .rack-elevation .empty-unit.drag-over {
+        background: linear-gradient(180deg, #3a4147, #353b42);
+        box-shadow: inset 0 0 0 2px rgba(52, 152, 219, 0.5);
+    }
+
+    /* 添加设备提示样式 */
+    .rack-elevation .add-device-hint,
+    .rack-elevation .rack-status-hint {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 4px 8px;
+        border-radius: 4px;
+        white-space: nowrap;
+        display: none;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.9em;
+        z-index: 100;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+    }
+
+    .rack-elevation .add-device-hint {
+        background: rgba(52, 152, 219, 0.15);
+        color: #3498db;
+        border: 1px dashed rgba(52, 152, 219, 0.5);
+        box-shadow: 0 2px 6px rgba(52, 152, 219, 0.1);
+    }
+
+    .rack-elevation .rack-status-hint {
+        background: rgba(241, 196, 15, 0.15);
+        color: #f1c40f;
+        border: 1px dashed rgba(241, 196, 15, 0.5);
+        box-shadow: 0 2px 6px rgba(241, 196, 15, 0.1);
+    }
+
+    .rack-elevation .add-device-hint.show,
+    .rack-elevation .rack-status-hint.show {
+        display: flex;
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.95);
+        }
+
+        to {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+    }
+
+    .rack-elevation .add-device-hint i,
+    .rack-elevation .rack-status-hint i {
+        font-size: 1.1em;
+    }
+
+    /* 机柜底座样式 */
+    .rack-elevation .rack-base td {
+        background: linear-gradient(180deg, #2c3338, #1a1d21) !important;
+        border-top: 2px solid #4a545c !important;
+        color: #a8b3bd !important;
+        font-weight: bold;
+    }
+</style>
+
+<script>
+    // 设备拖拽功能
+    document.addEventListener('DOMContentLoaded', function () {
+        const deviceCells = document.querySelectorAll('.rack-elevation .device-cell');
+        const emptyUnits = document.querySelectorAll('.rack-elevation .empty-unit');
+
+        deviceCells.forEach(cell => {
+            cell.addEventListener('dragstart', handleDragStart);
+            cell.addEventListener('dragend', handleDragEnd);
+        });
+
+        emptyUnits.forEach(unit => {
+            unit.addEventListener('dragenter', handleDragEnter);
+            unit.addEventListener('dragleave', handleDragLeave);
+        });
+    });
+
+    function handleDragStart(e) {
+        const deviceId = this.dataset.deviceId;
+        const deviceHeight = this.dataset.deviceHeight;
+        const startU = this.dataset.startU;
+        e.dataTransfer.setData('text/plain', JSON.stringify({ deviceId, deviceHeight, startU }));
+        this.classList.add('dragging');
+    }
+
+    function handleDragEnd(e) {
+        this.classList.remove('dragging');
+    }
+
+    function handleDragEnter(e) {
+        this.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+        this.classList.remove('drag-over');
+    }
+
+    function handleDeviceDrop(e, targetU) {
+        e.preventDefault();
+        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+        // TODO: 发送AJAX请求到后端处理设备移动
+        console.log('Moving device', data.deviceId, 'to position', targetU);
+    }
+
+    function handleDeviceClick(e) {
+        // 如果点击的是链接本身或其子元素，让链接正常工作
+        if (e.target.closest('.device-link')) {
+            return;
+        }
+        // 否则，触发链接点击
+        const link = this.querySelector('.device-link');
+        if (link) {
+            link.click();
+        }
+    }
+
+    function showAddDeviceHint(e, u) {
+        if (!e.target.matches('.empty-unit')) return;
+
+        var canAddDevice = '{{rack.allow_add_devices.0|yesno:"true,false"}}';
+        if (canAddDevice == "true") {
+            const addHint = e.target.querySelector('.add-device-hint');
+            if (addHint) {
+                addHint.classList.add('show');
+            }
+        } else {
+            const statusHint = e.target.querySelector('.rack-status-hint');
+            if (statusHint) {
+                statusHint.classList.add('show');
+            }
+        }
+    }
+
+    function hideAddDeviceHint() {
+        document.querySelectorAll('.rack-elevation .add-device-hint, .rack-elevation .rack-status-hint').forEach(hint =>
+            hint.classList.remove('show')
+        );
+    }
+
+    function handleEmptyUnitClick(e, u) {
+        var canAddDevice = '{{rack.allow_add_devices.0|yesno:"true,false"}}';
+        if (canAddDevice == "false") {
+            return;  // 如果机柜不允许添加设备，不处理点击事件
+        }
+
+        // 添加动画效果
+        const hint = e.target.querySelector('.add-device-hint');
+        if (hint) {
+            hint.style.transform = 'translate(-50%, -50%) scale(0.9)';
+            setTimeout(() => {
+                hint.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 100);
+        }
+
+        var rack_id = "{{rack.pk}}";
+        window.location.href = `{% url "device_create" %}?rack=${rack_id}&position=${u}`;
+    }
+</script>
+
+{% endwith %}

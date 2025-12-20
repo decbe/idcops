@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}批量导入{{ subtitle }} | {{ block.super }}{% endblock %}
+
+{% block breadcrumb %}
+{% for item in breadcrumbs %}
+<li {% if forloop.last %}class="active" {% endif %}>
+  {% if not forloop.last %}<a href="{{ item.url }}">{% endif %}
+    <i class="{{ item.icon }}"></i> {{ item.name }}
+    {% if not forloop.last %}</a>{% endif %}
+</li>
+{% endfor %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="box box-primary">
+      <div class="box-header with-border">
+        <h3 class="box-title">{% trans "批量导入" %} {{ sub_title }}</h3>
+      </div>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="box-body">
+          {% if form.errors %}
+          <div class="alert alert-danger">
+            {% for field in form %}
+            {% for error in field.errors %}
+            <p>{{ field.label }}: {{ error }}</p>
+            {% endfor %}
+            {% endfor %}
+          </div>
+          {% endif %}
+          <div class="form-group">
+            {{ form.csv_data.label_tag }}
+            {{ form.csv_data }}
+            {% if form.csv_data.help_text %}
+            <p class="help-block" style="margin-top: 10px;">
+              <a href="?download_template=1"><i class="fa fa-download"></i> 下载导入模板</a>
+              {{ form.csv_data.help_text }}
+            </p>
+            {% endif %}
+          </div>
+          <div class="form-group" style="border-bottom: 1px solid #f4f4f4; padding-bottom: 10px;">
+            <button type="submit" class="btn btn-primary btn-sm margin-r-5">{% trans "导入" %}</button>
+            <a href="{{ return_url }}" class="btn btn-default btn-sm">{% trans "返回列表" %}</a>
+          </div>
+
+          <div class="">
+            <h4>{% trans "字段说明" %}</h4>
+            <div class="table-responsive">
+              <table class="table table-bordered table-hover table-condensed">
+                <thead>
+                  <tr>
+                    <th>{% trans "字段名" %}</th>
+                    <th>{% trans "字段显示名" %}</th>
+                    <th>{% trans "必填" %}</th>
+                    <th>{% trans "默认值" %}</th>
+                    <th>{% trans "类型" %}</th>
+                    <th>{% trans "说明" %}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for field_name, field_info in field_guide.items %}
+                  <tr>
+                    <td><code>{{ field_name }}</code></td>
+                    <td>{{ field_info.label }}</td>
+                    <td>
+                      {% if field_info.required %}
+                      <i class="fa fa-check text-green"></i>
+                      {% else %}
+                      <span class="text-muted">-</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if field_info.default %}
+                      <code>{{ field_info.default }}</code>
+                      {% else %}
+                      <span class="text-muted">-</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {{ field_info.type }}
+                      {% if field_info.related_model %}
+                      <small class="text-muted">
+                        {% trans "关联" %}: {{ field_info.related_model }}
+                      </small>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {{ field_info.help_text }}
+                      {% if field_info.choices %}
+                      <a href="#" data-toggle="modal" data-target="#id_{{ field_name }}">
+                        <i class="fa fa-question-circle"></i>
+                      </a>
+                      {% include 'generic/choice_field_modal.html' with name=field_name field_info=field_info %}
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <h4>{% trans "CSV 示例" %}</h4>
+            <div class="well">
+              <pre>{{ csv_example }}</pre>
+            </div>
+            <h4>{% trans "Tips：" %}</h4>
+            <div class="help-blocka">
+              <ul>
+                <li>{% trans "有默认值的字段，留空时系统会自动使用默认值"%}</li>
+                <li>{% trans "外键 类型字段填写关联对象的名称或其他查询字段值" %}</li>
+                <li>{% trans "Slug 类型字段只允许小写字母、数字、下划线，且不能以数字开头" %}</li>
+                <li>{% trans "JSON 类型字段填写有效的 JSON 格式数据" %}
+                  <a href="https://www.json.org/json-zh.html" target="_blank">{% trans "JSON 格式说明" %}</a>
+                </li>
+                <li>{% trans "created_by 和 created_at 有值时，系统会自动会按照字段值创建响应时间或用户的操作记录" %}</li>
+              </ul>
+            </div>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

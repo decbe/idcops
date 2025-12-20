@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}IPAM管理 | {{ block.super }}{% endblock %}
+
+{% block before_adminlte_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+
+<!-- <link rel="stylesheet" href="{% static 'adminlte/jstree/dist/themes/default/style.min.css' %}"> -->
+<style>
+	/* 左侧树形菜单样式 */
+	.subnet-tree {
+		background: #f4f4f4;
+		height: calc(100vh - 150px);
+		overflow: auto;
+	}
+
+	.tree-search {
+		padding: 10px;
+		border-bottom: 1px solid #f4f4f4;
+	}
+
+
+
+	.nav-tabs-custom {
+		box-shadow: none;
+		margin-bottom: 0;
+	}
+
+	/* 统计卡片样式 */
+	.stats-cards {
+		display: flex;
+		gap: 15px;
+		margin-bottom: 20px;
+	}
+
+	.stat-card {
+		flex: 1;
+		padding: 15px;
+		border-radius: 3px;
+		background: #f4f4f4;
+		box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+	}
+
+	.stat-card .value {
+		font-size: 24px;
+		font-weight: bold;
+	}
+
+	.stat-card .label {
+		color: #999;
+		font-size: 12px;
+	}
+
+	/* 进度条样式 */
+	.usage-bar {
+		height: 4px;
+		background: #eee;
+		margin-top: 5px;
+		border-radius: 2px;
+	}
+
+	.usage-bar .progress {
+		height: 100%;
+		background: #3c8dbc;
+		border-radius: 2px;
+	}
+
+	/* IP地址表格样式 */
+	.ip-table th {
+		background: #f9f9f9;
+	}
+
+	.ip-status {
+		width: 8px;
+		height: 8px;
+		display: inline-block;
+		border-radius: 50%;
+		margin-right: 5px;
+	}
+
+	.status-active {
+		background: #00a65a;
+	}
+
+	.status-reserved {
+		background: #f39c12;
+	}
+
+	.status-available {
+		background: #ccc;
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="box box-default">
+	<div class="box-header with-border">
+			<h3 class="box-title">{{ object }}</h3>
+			<div class="box-tools pull-right">
+					<div class="btn-group">
+							<a href="{{ object.get_update_url }}" class="btn btn-sm btn-default">
+									<i class="fa fa-pencil"></i><span class="hidden-xs">{% trans "编辑" %}</span>
+							</a>
+							<button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+									<span class="caret"></span>
+							</button>
+							<ul class="dropdown-menu" role="menu">
+									<li>
+											<a href="{{ object.get_delete_url }}" class="text-danger">
+													<i class="fa fa-trash"></i> {% trans "删除" %}
+											</a>
+									</li>
+							</ul>
+					</div>
+			</div>
+	</div>
+	<div class="box-body">
+<div class="row">
+	<!-- 左侧树形菜单 -->
+	<div class="col-md-3">
+		<div class="box box-solid" style="background: #f4f4f4;">
+			<div class="box-header with-border" style="box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);">
+				<div class="input-group input-group-sm">
+					<input type="text" class="form-control" placeholder="搜索..." hx-get="#"
+						hx-trigger="keyup changed delay:500ms" hx-target="#subnet-tree">
+					<span class="input-group-btn">
+						<button class="btn btn-default" type="button">
+							<i class="fa fa-search"></i>
+						</button>
+					</span>
+				</div>
+			</div>
+			<div class="box-body">
+				<div class="subnet-tree">
+					<div id="subnet-tree" hx-get="{% url 'subnet_list' %}" hx-trigger="load">
+						{% include "networks/includes/subnet_tree.html" %}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- 右侧内容区 -->
+	<div class="col-md-9">
+		<div class="nav-tabs-custom">
+			<ul class="nav nav-tabs">
+				<li class="active"><a href="#overview" data-toggle="tab">概览</a></li>
+				<li><a href="#ip-list" data-toggle="tab">地址分配</a></li>
+				<li><a href="#subnet-map" data-toggle="tab">IP视图</a></li>
+				<li><a href="#history" data-toggle="tab">历史记录</a></li>
+			</ul>
+
+			<div class="tab-content">
+				<!-- 概览标签页 -->
+				<div class="tab-pane active" id="overview">
+					<!-- 统计卡片 -->
+					<div class="stats-cards">
+						<div class="stat-card">
+							<div class="value">{{ subnet.total_ips }}</div>
+							<div class="label">总地址数</div>
+						</div>
+						<div class="stat-card">
+							<div class="value">{{ subnet.used_ips }}</div>
+							<div class="label">已分配</div>
+							<div class="usage-bar">
+								<div class="progress" style="width: {{ subnet.usage_percentage }}%"></div>
+							</div>
+						</div>
+						<div class="stat-card">
+							<div class="value">{{ subnet.available_ips }}</div>
+							<div class="label">可用地址</div>
+						</div>
+						<div class="stat-card">
+							<div class="value">{{ subnet.reserved_ips }}</div>
+							<div class="label">预留地址</div>
+						</div>
+					</div>
+
+					<!-- 操作按钮 -->
+					<div class="btn-group">
+						<button type="button" class="btn btn-primary btn-sm" hx-get="#"
+							hx-target="#drawer-content">
+							<i class="fa fa-plus"></i> 添加IP
+						</button>
+						<button type="button" class="btn btn-default btn-sm" hx-post="#"
+							hx-confirm="确定要扫描该子网吗？">
+							<i class="fa fa-refresh"></i> 扫描子网
+						</button>
+					</div>
+
+					<!-- IP地址表格 -->
+					<div class="box-body table-responsive no-padding">
+						<table class="table table-hover ip-table">
+							<thead>
+								<tr>
+									<th>IP地址</th>
+									<th>状态</th>
+									<th>MAC地址</th>
+									<th>关联设备</th>
+									<th>最后更新</th>
+									<th>操作</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for ip in ip_addresses %}
+								<tr>
+									<td>{{ ip.address }}</td>
+									<td>
+										<span class="ip-status status-{{ ip.status }}"></span>
+										{{ ip.get_status_display }}
+									</td>
+									<td>{{ ip.mac_address|default:"-" }}</td>
+									<td>{{ ip.device|default:"-" }}</td>
+									<td>{{ ip.updated_at|date:"Y-m-d H:i" }}</td>
+									<td>
+										<div class="btn-group">
+											<button type="button" class="btn btn-default btn-xs" hx-get="#"
+												hx-target="#drawer-content">
+												<i class="fa fa-pencil"></i>
+											</button>
+											<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown">
+												<span class="caret"></span>
+											</button>
+											<ul class="dropdown-menu pull-right">
+												<li>
+													<a href="#" hx-post="#">
+														<i class="fa fa-refresh"></i> Ping
+													</a>
+												</li>
+												<li>
+													<a href="#" class="text-red" hx-delete="#"
+														hx-confirm="确定要删除该IP吗？">
+														<i class="fa fa-trash"></i> 删除
+													</a>
+												</li>
+											</ul>
+										</div>
+									</td>
+								</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+					</div>
+				</div>
+
+				<!-- 其他标签页 -->
+				<div class="tab-pane" id="ip-list">
+					<!-- IP地址列表视图 -->
+				</div>
+				<div class="tab-pane" id="subnet-map">
+					<!-- IP地址视图 -->
+				</div>
+				<div class="tab-pane" id="history">
+					<!-- 历史记录 -->
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+
+<!-- <script src="{% static 'adminlte/jstree/dist/jstree.min.js' %}"></script> -->
+<script>
+	document.addEventListener('htmx:afterSwap', function (evt) {
+		if (evt.detail.target.id === 'subnet-tree') {
+			$('#subnet-tree').jstree({
+				'core': {
+					'themes': {
+						'name': 'default',
+						'responsive': true
+					}
+				},
+				'plugins': ['wholerow', 'types', 'search'],
+				'types': {
+					'default': {
+						'icon': 'fa fa-folder'
+					},
+					'subnet': {
+						'icon': 'fa fa-network-wired'
+					}
+				}
+			}).on('select_node.jstree', function (e, data) {
+				if (data.node.type === 'subnet') {
+					const subnetId = data.node.id.replace('subnet_', '');
+					htmx.ajax('GET', `/networks/subnet/${subnetId}/`, {
+						target: '#overview'
+					});
+				}
+			});
+		}
+	});
+</script>
+{% endblock %}

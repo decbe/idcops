@@ -1,0 +1,646 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ title }} | {{ block.super }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'daterangepicker/daterangepicker.css' %}">
+{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}{{ subtitle }}{% endblock %}
+
+{% block breadcrumb %}
+<div class="box-tools">
+  <div class="btn-group margin-r-5" style="display: none;">
+    <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+      {% for option in metadata.period_options %}
+      {% if option.selected %}{{ option.label }}{% endif %}
+      {% endfor %}
+      <span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu" role="menu">
+      {% for option in metadata.period_options %}
+      <li class="{% if option.selected %}active{% endif %}"><a href="#"
+          data-value="{{ option.value }}">{{ option.label }}</a></li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="btn-group margin-r-5" id="reportrange">
+    <button type="button" class="btn btn-default btn-sm">
+      <i class="fa fa-calendar"></i>&nbsp;
+      <span></span>
+    </button>
+  </div>
+  <div class="btn-group">
+    <button type="button" class="btn btn-primary btn-sm" id="export-report"><i class="fa fa-download"></i>
+      {% trans '导出报告' %}</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-3 col-md-6 col-sm-6">
+    <div class="info-box">
+      <span class="info-box-icon bg-aqua"><i class="fa fa-server"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">{% trans "所有变更" %}</span>
+        <span class="info-box-number" id="kpis-total"></span>
+        <span class="info-box-text" id="kpis-total-desc" style="font-size:12px;color:#666;"></span>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6 col-sm-6">
+    <div class="info-box">
+      <span class="info-box-icon bg-green"><i class="fa fa-arrow-up"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">{% trans "上架" %}</span>
+        <span class="info-box-number" id="kpis-create"></span>
+        <span class="info-box-text" id="kpis-create-desc" style="font-size:12px;color:#666;"></span>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6 col-sm-6">
+    <div class="info-box">
+      <span class="info-box-icon bg-yellow"><i class="fa fa-exchange"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">{% trans "迁移" %}</span>
+        <span class="info-box-number" id="kpis-migrate"></span>
+        <span class="info-box-text" id="kpis-migrate-desc" style="font-size:12px;color:#666;"></span>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6 col-sm-6">
+    <div class="info-box">
+      <span class="info-box-icon bg-red"><i class="fa fa-arrow-down"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">{% trans "下架" %}</span>
+        <span class="info-box-number" id="kpis-movedown"></span>
+        <span class="info-box-text" id="kpis-movedown-desc" style="font-size:12px;color:#666;"></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="row">
+  <div class="col-md-7">
+    <div class="box box-solid">
+      <div class="box-header with-border">
+        <h3 class="box-title">{% trans "设备变更分析" %}
+          <small style="margin-left:1px;">
+            <a tabindex="0" class="text-muted" data-toggle="popover" data-trigger="focus"
+              data-content="{% trans '所选时间范围内按聚合维度的上架、迁移、下架数量趋势。' %}"><i class="fa fa-info-circle"></i></a>
+          </small>
+        </h3>
+        <div class="box-tools pull-right" id="aggregation-buttons">
+          {% for option in metadata.aggregation_options %}
+          <button class="btn btn-default btn-xs agg-btn{%if option.selected %} active{% endif %}"
+            data-agg="{{ option.value }}">{{ option.label }}</button>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="box-body">
+        <div id="device-trend-chart" style="height: 400px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-5">
+    <div class="box box-solid">
+      <div class="box-header with-border">
+        <h3 class="box-title">{% trans "设备类型分布" %}
+          <small style="margin-left:1px;">
+            <a tabindex="0" class="text-muted" data-toggle="popover" data-trigger="focus"
+              data-content="{% trans '所选时间范围内在线设备在不同类型上的占比。' %}"><i class="fa fa-info-circle"></i></a>
+          </small>
+        </h3>
+      </div>
+      <div class="box-body">
+        <div id="device-type-chart" style="height: 400px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="box box-solid">
+      <div class="box-header with-border">
+        <h3 class="box-title">{% trans "客户设备表现" %}
+          <small style="margin-left:1px;">
+            <a tabindex="0" class="text-muted" data-toggle="popover" data-trigger="focus"
+              data-content="{% trans '统计时间范围内设备变更数量相关操作的客户列表。' %}"><i class="fa fa-info-circle"></i></a>
+          </small>
+        </h3>
+        <div class="box-tools pull-right">
+          <button class="btn btn-primary btn-xs tenant-stats-btn active" data-type="create">上架</button>
+          <button class="btn btn-default btn-xs tenant-stats-btn" data-type="move_down">下架</button>
+          <button class="btn btn-default btn-xs tenant-stats-btn" data-type="migrate">迁移</button>
+        </div>
+      </div>
+      <div class="box-body">
+        <div class="table-responsive">
+          <table class="table table-bordered" id="tenant-stats-table">
+            <thead>
+              <tr class="active">
+                <th>{% trans "客户" %}</th>
+                <th class="text-right">{% trans "设备数" %}
+                  <small style="margin-left:1px;">
+                    <a tabindex="0" class="text-muted" data-toggle="popover" data-trigger="focus"
+                      data-content="{% trans '客户总在线设备数量，不含已下架设备' %}"><i class="fa fa-info-circle"></i></a>
+                  </small>
+                </th>
+                <th class="text-right">{% trans "上架" %}</th>
+                <th class="text-right">{% trans "下架" %}</th>
+                <th class="text-right">{% trans "迁移" %}</th>
+              </tr>
+            </thead>
+            <tbody style="min-height: 380px;">
+              <!-- 数据通过AJAX渲染 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'moment/moment.js' %}"></script>
+<script src="{% static 'daterangepicker/daterangepicker.js' %}"></script>
+<script src="{% static 'js/echarts.min.js' %}"></script>
+<script>
+  (function () {
+    const baseApiUrl = "{% url 'device_report_data' %}";
+    var start = moment().startOf('quarter')
+    var end = moment().endOf('quarter');
+    const labelMap = new Map([
+      ["最近7天", "week"],
+      ["最近30天", "month"],
+      ["上周", "last_week"],
+      ["上月", "last_month"],
+      ["去年", "last_year"],
+      ["本周", "this_week"],
+      ["本月", "this_month"],
+      ["本季度", "this_quarter"],
+      ["今年", "this_year"],
+      ["全部时间", "all"],
+    ]);
+    const defaultLabel = "本季度";
+
+    // 全局变量用于存储当前的日期范围
+    var currentAggregation = getQueryParam('aggregation') || 'week';
+    var currentStart = getQueryParam('start') || start.format('YYYY-MM-DD');
+    var currentEnd = getQueryParam('end') || end.format('YYYY-MM-DD');
+
+    function cb(start, end, label) {
+      // 更新全局变量
+      currentStart = start.format('YYYY-MM-DD');
+      currentEnd = end.format('YYYY-MM-DD');
+
+      if (labelMap.has(label)) {
+        $("#reportrange span").html(label);
+      } else {
+        $("#reportrange span").html(start.format("YYYY-MM-DD") + " - " + end.format("YYYY-MM-DD"));
+      }
+      console.log(`currentAggregation: ${currentAggregation}, currentStart: ${currentStart}, currentEnd: ${currentEnd}`)
+      // 刷新数据
+      refresh();
+    }
+
+    $('#reportrange').daterangepicker({
+      startDate: start,
+      endDate: end,
+      opens: 'auto',
+      locale: {
+        format: "YYYY-MM-DD",
+        separator: " - ",
+        applyLabel: "应用",
+        cancelLabel: "取消",
+        fromLabel: "从",
+        toLabel: "至",
+        customRangeLabel: "自定义范围",
+        weekLabel: "周",
+        daysOfWeek: [
+          "日",
+          "一",
+          "二",
+          "三",
+          "四",
+          "五",
+          "六"
+        ],
+        monthNames: [
+          "1月",
+          "2月",
+          "3月",
+          "4月",
+          "5月",
+          "6月",
+          "7月",
+          "8月",
+          "9月",
+          "10月",
+          "11月",
+          "12月"
+        ],
+        firstDay: 1
+      },
+      ranges: {
+        '最近7天': [moment().subtract(6, 'days'), moment()],
+        '最近30天': [moment().subtract(29, 'days'), moment()],
+        '上周': [moment().subtract(1, 'week').startOf('week'), moment().subtract(1, 'week').endOf('week')],
+        '上月': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+        '本周': [moment().startOf('week'), moment().endOf('week')],
+        '本月': [moment().startOf('month'), moment().endOf('month')],
+        '本季度': [moment().startOf('quarter'), moment().endOf('quarter')],
+        '今年': [moment().startOf('year'), moment().endOf('year')],
+        '全部时间': [-1, moment().endOf('year')]
+      }
+    }, cb);
+
+    cb(start, end, defaultLabel);
+
+    var currentRange = getQueryParam('period') || 'quarter';
+    var tenantStatsCache = tenantStatsCache || []; // 可能已在前面定义
+    var tenantStatsSortState = tenantStatsSortState || { field: 'create', order: 'desc' };
+
+    // 初始化图表
+    var trendChart = echarts.init(document.getElementById('device-trend-chart'));
+    var typeChart = echarts.init(document.getElementById('device-type-chart'));
+
+    // 初始化聚合按钮 active
+    setTimeout(function () {
+      setActiveByValue('#aggregation-buttons .agg-btn', currentAggregation, 'data-agg');
+    }, 0);
+
+    // 绑定聚合按钮
+    document.querySelectorAll('.agg-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        currentAggregation = this.getAttribute('data-agg');
+        setActive(this, '.agg-btn');
+        refresh();
+      });
+    });
+
+    // 绑定时间范围下拉框
+    document.querySelectorAll('.dropdown-menu a').forEach(function (item) {
+      item.addEventListener('click', function (e) {
+        e.preventDefault();
+        currentRange = this.getAttribute('data-value');
+        var dropdownButton = document.querySelector('.btn-group.margin-r-5 button.dropdown-toggle');
+        if (dropdownButton) {
+          dropdownButton.innerHTML = this.textContent + ' <span class="caret"></span>';
+        }
+        // 移除所有 active 类
+        document.querySelectorAll('.dropdown-menu li').forEach(function (li) {
+          li.classList.remove('active');
+        });
+        // 为当前选择的 li 添加 active 类
+        this.closest('li').classList.add('active');
+        refresh();
+      });
+    });
+
+    // 恢复：绑定客户设备变更统计排序按钮（仅前端排序，使用缓存，不再请求后端）
+    document.querySelectorAll('.tenant-stats-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var field = this.getAttribute('data-type') || 'create';
+        // 同一字段二次点击切换排序方向
+        if (tenantStatsSortState.field === field) {
+          tenantStatsSortState.order = (tenantStatsSortState.order === 'desc') ? 'asc' : 'desc';
+        } else {
+          tenantStatsSortState.field = field;
+          tenantStatsSortState.order = (field === 'tenant') ? 'asc' : 'desc';
+        }
+        highlightActiveSortButton(tenantStatsSortState.field, tenantStatsSortState.order);
+        renderTenantStats(tenantStatsCache, tenantStatsSortState.field);
+      });
+    });
+
+    // 导出按钮
+    document.getElementById('export-report').addEventListener('click', function () {
+      var url = '{% url "device_report_data" %}?aggregation=' + currentAggregation + '&period=' + currentRange;
+      window.open(url, '_blank');
+    });
+
+    function getQueryParam(key) {
+      var params = new URLSearchParams(window.location.search);
+      return params.get(key);
+    }
+
+    function setActive(element, selector) {
+      document.querySelectorAll(selector).forEach(function (b) {
+        b.classList.remove('active');
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-default');
+      });
+      element.classList.add('active');
+      element.classList.remove('btn-default');
+      element.classList.add('btn-primary');
+    }
+    function setActiveByValue(selector, value, attr) {
+      var matched = null;
+      document.querySelectorAll(selector).forEach(function (b) {
+        if (b.getAttribute(attr) === value) { matched = b; }
+      });
+      if (matched) { setActive(matched, selector); }
+    }
+
+    function renderChangeBadge(pct) {
+      if (pct === null || pct === undefined) { return '-'; }
+      var color = 'text-gray';
+      var icon = 'fa-minus';
+      if (pct > 0) { color = 'text-red'; icon = 'fa-arrow-up'; }
+      else if (pct < 0) { color = 'text-green'; icon = 'fa-arrow-down'; }
+      return '<span class="' + color + '" style="font-size:12px;">' +
+        '<i class="fa ' + icon + '"></i> ' + pct + '%</span>';
+    }
+
+    function initPopovers() {
+      if (window.jQuery && typeof jQuery.fn.popover === 'function') {
+        jQuery('[data-toggle="popover"]').popover({ container: 'body' });
+      }
+    }
+
+    function refresh() {
+      var apiUrl = baseApiUrl + '?aggregation=' + currentAggregation + '&start=' + currentStart + '&end=' + currentEnd;
+      fetch(apiUrl)
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+          renderKpis(data.kpis);
+          renderTrend(trendChart, data.trend_stats);
+          renderType(typeChart, data.type_stats);
+          tenantStatsCache = Array.isArray(data.tenant_stats) ? data.tenant_stats.slice() : [];
+          if (typeof highlightActiveSortButton === 'function') {
+            highlightActiveSortButton(tenantStatsSortState.field, tenantStatsSortState.order);
+          }
+          if (typeof renderTenantStats === 'function') {
+            renderTenantStats(tenantStatsCache, tenantStatsSortState.field);
+          }
+          initPopovers();
+        })
+        .catch(function (err) { console.error('获取报表数据失败:', err); });
+    }
+
+    function renderKpis(kpis) {
+      // 更新所有变更指标
+      var totalElement = document.getElementById('kpis-total');
+      var totalDescElement = document.getElementById('kpis-total-desc');
+      if (totalElement) {
+        totalElement.textContent = kpis.total || 0;
+      }
+      if (totalDescElement) {
+        var compareLabel = '{% trans "较上期" %}';
+        totalDescElement.innerHTML = renderChangeBadge(kpis.total_change_percent) + ' ' + compareLabel;
+      }
+
+      // 更新上架指标
+      var createElement = document.getElementById('kpis-create');
+      var createDescElement = document.getElementById('kpis-create-desc');
+      if (createElement) {
+        createElement.textContent = kpis.create || 0;
+      }
+      if (createDescElement) {
+        var compareLabel = '{% trans "较上期" %}';
+        createDescElement.innerHTML = renderChangeBadge(kpis.create_change_percent) + ' ' + compareLabel;
+      }
+
+      // 更新迁移指标
+      var migrateElement = document.getElementById('kpis-migrate');
+      var migrateDescElement = document.getElementById('kpis-migrate-desc');
+      if (migrateElement) {
+        migrateElement.textContent = kpis.migrate || 0;
+      }
+      if (migrateDescElement) {
+        var compareLabel = '{% trans "较上期" %}';
+        migrateDescElement.innerHTML = renderChangeBadge(kpis.migrate_change_percent) + ' ' + compareLabel;
+      }
+
+      // 更新下架指标
+      var movedownElement = document.getElementById('kpis-movedown');
+      var movedownDescElement = document.getElementById('kpis-movedown-desc');
+      if (movedownElement) {
+        movedownElement.textContent = kpis.move_down || 0;
+      }
+      if (movedownDescElement) {
+        var compareLabel = '{% trans "较上期" %}';
+        movedownDescElement.innerHTML = renderChangeBadge(kpis.move_down_change_percent) + ' ' + compareLabel;
+      }
+    }
+
+    function renderTrend(chart, data) {
+      var option = {
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { data: ['{% trans "上架" %}', '{% trans "迁移" %}', '{% trans "下架" %}'] },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: [{ type: 'category', data: data.dates, axisTick: { alignWithLabel: true } }],
+        yAxis: [{ type: 'value' }],
+        series: [
+          { name: '{% trans "上架" %}', type: 'bar', stack: '总量', barGap: 0, data: data.create, itemStyle: { color: '#3D9970' } },
+          { name: '{% trans "迁移" %}', type: 'bar', stack: '总量', data: data.device_migrate, itemStyle: { color: '#f39c12' } },
+          { name: '{% trans "下架" %}', type: 'bar', stack: '总量', data: data.device_move_down, itemStyle: { color: '#dd4b39' } }
+        ]
+      };
+      chart.setOption(option);
+    }
+
+    function renderType(chart, data) {
+      var option = {
+        tooltip: { trigger: 'item', formatter: '{a} <br/>{b}: {c} ({d}%)' },
+        legend: { data: data.map(function (i) { return i.name; }) },
+        series: [{
+          name: '{% trans "设备类型" %}', type: 'pie', radius: ['50%', '70%'], avoidLabelOverlap: false,
+          itemStyle: {
+            borderRadius: 10,
+            borderColor: '#fff',
+            borderWidth: 2
+          },
+          label: { show: false, position: 'center', align: 'center', verticalAlign: 'bottom' },
+          emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold', formatter: '{b} \n{c}台 ({d}%)' } },
+          labelLine: { show: false },
+          data: data
+        }]
+      };
+      chart.setOption(option);
+    }
+
+    // 渲染客户设备变更统计表格，支持按客户/上架/下架/迁移排序
+    function renderTenantStats(stats, sortField) {
+      var tbody = document.querySelector('#tenant-stats-table tbody');
+      if (!tbody) { return; }
+
+      var fieldMap = {
+        tenant: 'tenant_name',
+        create: 'create_count',
+        move_down: 'move_down_count',
+        migrate: 'migrate_count',
+
+      };
+      var key = fieldMap[sortField] || 'create_count';
+      var order = tenantStatsSortState.order === 'asc' ? 1 : -1;
+
+      var sorted = (stats || []).slice().sort(function (a, b) {
+        var av = a[key];
+        var bv = b[key];
+        if (key === 'tenant_name') {
+          av = (av || '').toString();
+          bv = (bv || '').toString();
+          return av.localeCompare(bv) * order;
+        }
+        av = Number(av || 0);
+        bv = Number(bv || 0);
+        if (av === bv) { return 0; }
+        return av > bv ? order : -order;
+      });
+
+      var html = [];
+      for (var i = 0; i < sorted.length; i++) {
+        var item = sorted[i];
+        var tenantObj = item.tenant || {};
+        console.log(tenantObj);
+        var tenantName = tenantObj.name || '-';
+        var tenantIcon = (tenantObj.icon_url && tenantObj.icon_url.trim && tenantObj.icon_url.trim().length > 0) ? tenantObj.icon_url : '';
+        var iconHtml = tenantIcon ? '<img src="' + tenantIcon + '" alt="' + tenantName + '" style="width: auto; height: 18px; margin-right: 6px;">' : '<i class="fa fa-user-circle-o"></i> ';
+        html.push(
+          '<tr>' +
+          '<td>' + iconHtml + tenantName + '</td>' +
+          '<td class="text-right">' + (tenantObj.device_count || 0) + '</td>' +
+          '<td class="text-right text-green">' + (item.create_count || 0) + '</td>' +
+          '<td class="text-right text-red">' + (item.move_down_count || 0) + '</td>' +
+          '<td class="text-right text-yellow">' + (item.migrate_count || 0) + '</td>' +
+          '</tr>'
+        );
+      }
+      tbody.innerHTML = html.join('');
+    }
+
+    // 高亮当前排序按钮并保存方向
+    function highlightActiveSortButton(field, order) {
+      var buttons = document.querySelectorAll('.tenant-stats-btn');
+      buttons.forEach(function (b) {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-default');
+      });
+      var active = document.querySelector('.tenant-stats-btn[data-type="' + field + '"]');
+      if (active) {
+        active.classList.remove('btn-default');
+        active.classList.add('btn-primary');
+        active.setAttribute('data-order', order);
+        active.setAttribute('title', (field + ' ' + (order === 'desc' ? '↓' : '↑')));
+      }
+    }
+
+    window.addEventListener('resize', function () {
+      trendChart.resize();
+      typeChart.resize();
+    });
+
+    // 初始化一次，确保标题处的说明可用
+    initPopovers();
+  })();
+</script>
+
+<script>
+  (function () {
+    function ensurePrintStyles() {
+      if (document.getElementById('report-print-styles')) return;
+      var style = document.createElement('style');
+      style.id = 'report-print-styles';
+      style.type = 'text/css';
+      style.textContent = '@page { size: A4; margin: 10mm; }\n' +
+        '@media print {\n' +
+        '  .main-header, .main-sidebar, .control-sidebar, .main-footer, .navbar, .sidebar { display: none !important; }\n' +
+        '  .content-wrapper, .content { margin: 0 !important; }\n' +
+        '  .box { box-shadow: none !important; border: 1px solid #eee !important; }\n' +
+        '  .info-box { page-break-inside: avoid; }\n' +
+        '  .row { page-break-inside: avoid; }\n' +
+        '  table { width: 100% !important; font-size: 12px; }\n' +
+        '  #device-trend-chart, #device-type-chart { height: 380px !important; }\n' +
+        '  #print-header { text-align: center; margin-bottom: 10px; }\n' +
+        '  #print-header h1 { font-size: 24px; margin-bottom: 10px; }\n' +
+        '  #print-header p { font-size: 12px; margin: 0; color: #555; }\n' +
+        '}';
+      document.head.appendChild(style);
+    }
+
+    function buildPrintTitle() {
+      var header = document.getElementById('print-header');
+      if (header && header.parentNode) header.parentNode.removeChild(header);
+      var now = new Date();
+      var y = now.getFullYear();
+      var m = String(now.getMonth() + 1).padStart(2, '0');
+      var d = String(now.getDate()).padStart(2, '0');
+      var dateStr = y + '-' + m + '-' + d;
+      var pageTitle = document.title.split('|')[0].trim();
+      var rangeBtn = document.querySelector('.btn-group.margin-r-5 button.dropdown-toggle');
+      var rangeText = rangeBtn ? rangeBtn.textContent.replace(/\s*\u25BC?$/, '').trim() : '';
+      var aggActive = document.querySelector('#aggregation-buttons .agg-btn.active');
+      var aggText = aggActive ? aggActive.textContent.trim() : '';
+      var title = dateStr + ' - ' + pageTitle + ' - ' + (rangeText || '');
+      var sub = (aggText ? ('聚合: ' + aggText) : '');
+      header = document.createElement('div');
+      header.id = 'print-header';
+      header.innerHTML = '<h1>' + title + '</h1>' + (sub ? ('<p>' + sub + '</p>') : '');
+      var content = document.querySelector('.content-wrapper .content') || document.body;
+      content.insertBefore(header, content.firstChild);
+      return header;
+    }
+
+    function optimizeKpiLayout() {
+      var firstRow = document.querySelector('.content .row');
+      if (!firstRow) return { nodes: [], reset: function () { } };
+      var cols = Array.prototype.slice.call(firstRow.querySelectorAll('.info-box')).map(function (box) { return box.closest('[class*="col-"]'); }).filter(Boolean);
+      var backup = cols.map(function (c) { return { node: c, style: c.getAttribute('style') }; });
+      var n = cols.length || 4;
+      var width = (n >= 3) ? '33.3333%' : (n === 2 ? '50%' : '100%');
+      cols.forEach(function (c) { c.style.width = width; c.style.float = 'left'; });
+      firstRow.style.display = 'block';
+      return { nodes: cols, reset: function () { backup.forEach(function (b) { if (b.style === null) b.node.removeAttribute('style'); else b.node.setAttribute('style', b.style); }); firstRow.style.display = ''; } };
+    }
+
+    function toImagesAndPrint() {
+      ensurePrintStyles();
+      var headerNode = buildPrintTitle();
+      var kpiReset = optimizeKpiLayout();
+      var targets = Array.prototype.slice.call(document.querySelectorAll('[id$="-chart"], .echarts'));
+      var backups = [];
+      targets.forEach(function (el) {
+        if (!window.echarts || !el) return;
+        var inst = echarts.getInstanceByDom(el);
+        if (!inst) return;
+        try { inst.resize(); } catch (e) { }
+        var dataURL = inst.getDataURL({ pixelRatio: 2, backgroundColor: '#ffffff' });
+        var img = new Image();
+        img.src = dataURL;
+        img.style.width = (el.clientWidth || 600) + 'px';
+        img.style.height = (el.clientHeight || 380) + 'px';
+        img.dataset.printReplacement = 'true';
+        backups.push({ el: el, img: img, display: el.style.display });
+        el.style.display = 'none';
+        el.parentNode.insertBefore(img, el.nextSibling);
+      });
+
+      function restore() {
+        backups.forEach(function (b) { if (b.img && b.img.parentNode) { b.img.parentNode.removeChild(b.img); } b.el.style.display = b.display || ''; });
+        backups = [];
+        if (headerNode && headerNode.parentNode) headerNode.parentNode.removeChild(headerNode);
+        if (kpiReset && kpiReset.reset) kpiReset.reset();
+      }
+      var after = function () { restore(); window.removeEventListener('afterprint', after); };
+      window.addEventListener('afterprint', after);
+      window.print();
+    }
+
+    var btn = document.getElementById('export-report');
+    if (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        toImagesAndPrint();
+      }, true);
+    }
+  })();
+</script>
+{% endblock %}

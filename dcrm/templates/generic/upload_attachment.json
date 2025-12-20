@@ -1,0 +1,23 @@
+{% load l10n %
+}
+{
+    "files": [
+        {% for attachment in attachments %
+        }
+    {
+            "name": "{{ attachment.name }}",
+            "size": {
+                { attachment.file.size|unlocalize
+                }
+            },
+            "url": "{{ attachment.file.url|safe }}",
+            "metadata": "{{ attachment.metadata|safe }}"
+        }
+    {% if not forloop.last %
+        },
+        {% endif %
+        }
+{% endfor %
+        }
+    ]
+}

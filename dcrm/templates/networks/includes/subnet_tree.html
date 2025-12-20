@@ -1,0 +1,13 @@
+{% load mptt_tags %}
+<ul data-widget="treeview">
+    {% recursetree object_list %}
+        <li class="treeview" data-jstree='{"type":"subnet"}' id="subnet_{{ node.pk }}">
+            {{ node.name }} ({{ node.network }})
+            {% if not node.is_leaf_node %}
+                <ul class="treeview-menu">
+                    {{ children }}
+                </ul>
+            {% endif %}
+        </li>
+    {% endrecursetree %}
+</ul>

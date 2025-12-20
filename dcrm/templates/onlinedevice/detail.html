@@ -1,0 +1,137 @@
+{% extends "detail.html" %}
+{% load static i18n dcrm_tags rack_tags %}
+
+{% block content %}
+<div class="box box-default">
+	<div class="box-header with-border">
+		<h3 class="box-title">{{ object }}</h3>
+		<div class="box-tools pull-right">
+			<div class="btn-group">
+				{% if object.patch_cord_nodes.exists %}
+				<a href="{% url 'device_topology' object.pk %}" class="btn btn-sm btn-default">
+					<i class="fa fa-sitemap"></i><span class="hidden-xs"> {% trans "设备拓扑" %}</span>
+				</a>
+				{% endif %}
+				{% if 'dcrm.change_onlinedevice' in perms %}
+				<a href="{{ object.get_update_url }}" class="btn btn-sm btn-default">
+					<i class="fa fa-pencil"></i><span class="hidden-xs"> {% trans "编辑" %}</span>
+				</a>
+				{% endif %}
+				{% if 'dcrm.delete_onlinedevice' in perms %}
+				<button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+					<span class="caret"></span>
+				</button>
+				<ul class="dropdown-menu" role="menu">
+					<li>
+						<a href="{{ object.get_delete_url }}" class="text-danger">
+							<i class="fa fa-trash"></i> {% trans "删除" %}
+						</a>
+					</li>
+				</ul>
+				{% endif %}
+			</div>
+		</div>
+	</div>
+	<div class="box-body">
+		<div class="row">
+			{# 左侧详细信息 #}
+			<div class="col-md-9 col-md-push-3">
+				{% for fieldset in fieldsets %}
+				<fieldset class="mb-3">
+					<div class="fieldset-header">
+						<h4>{{ fieldset.title }}</h4>
+					</div>
+					<div class="fieldset-content">
+						<div class="table-responsive">
+							<table class="table table-bordered table-condensed nowarp">
+								<tbody>
+									<!-- 电脑端显示 -->
+									{% for field in fieldset.fields %}
+									{% if forloop.counter0|divisibleby:2 %}
+									<tr class="hidden-xs">
+										{% endif %}
+										<th class="hidden-xs" style="width: 15%">{{ field.label }}</th>
+										<td class="hidden-xs" style="width: 35%">
+											{% if field.value|safe|stringformat:"s"|startswith:"<table" %} {{ field.value|safe }} {% else %}
+												{{ field.value|safe|default:"-" }} {% endif %} </td>
+												{% if forloop.counter|divisibleby:2 or forloop.last %}
+									</tr>
+									{% endif %}
+									{% endfor %}
+
+									<!-- 手机端显示 -->
+									{% for field in fieldset.fields %}
+									<tr class="visible-xs">
+										<th style="width: 30%">{{ field.label }}</th>
+										<td style="width: 70%">
+											{% if field.value|safe|stringformat:"s"|startswith:"<table" %} {{ field.value|safe }} {% else %}
+												{{ field.value|safe|default:"-" }} {% endif %} </td>
+									</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</fieldset>
+				{% endfor %}
+				{% if tabs %}
+				<!-- object 统计信息 不是tabs -->
+				<fieldset class="mb-3">
+				  <div class="fieldset-header">
+					<h4>相关资源</h4>
+				  </div>
+				  <div class="fieldset-content" style="margin-top: 1px;">
+					<div class="row">
+					  {% for tab in tabs %}
+					  {% if tab.count > 0 %}
+					  <div class="col-md-3 col-sm-4 col-xs-12">
+						<div class="info-box" style="border: 1px solid #f4f4f4; box-shadow: none;">
+						  <span class="info-box-icon bg-{% cycle 'aqua' 'light-blue' 'olive' 'teal' 'navy' %}"><i class="{{ tab.icon }}"></i></span>
+			  
+						  <div class="info-box-content">
+							<a href="{{ tab.url }}"><span class="info-box-text">{{ tab.title }}</span></a>
+							<!-- <span class="info-box-text">{{ tab.title }}</span> -->
+							<span class="info-box-number">{{ tab.count }}</span>
+						  </div>
+						  <!-- /.info-box-content -->
+						</div>
+						<!-- /.info-box -->
+					  </div>
+					  {% endif %}
+					  {% endfor %}
+					</div>
+				  </div>
+				</fieldset>
+				{% endif %}
+				<fieldset>
+					<div class="fieldset-header"><h4>创建与更新</h4></div>
+					<div class="fieldset-content">
+						<p>
+						  <span class="margin-r-5" title="已创建 {{object.created_at|timesince}} ({{object.created_by}})">{% trans "创建于" %}{{ object.created_at }} ({{ object.created_by }})</span>
+						{% if object.updated_by %}
+						</br>
+						<!-- <span class="text-muted margin-r-5">•</span> -->
+						  <span title="更新 {{object.updated_at|timesince}} ({{object.updated_by}})">{% trans "更新于" %}{{ object.updated_at }} ({{ object.updated_by }})</span>
+						{% endif %}
+						</p>
+					  </div>
+				  </fieldset>
+			</div>
+			{# 右侧机柜立面图 #}
+			<div class="col-md-3 col-md-pull-9">
+				<div class="box-body no-padding">
+					{% render_rack_elevation object.rack object %}
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="box-footer">
+		<div class="pull-left">
+			<a href="{{ list_url }}" class="btn btn-default btn-sm">
+				<i class="fa fa-list"></i> {% trans "返回列表" %}
+			</a>
+		</div>
+	</div>
+</div>
+
+{% endblock %}

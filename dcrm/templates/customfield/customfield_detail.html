@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans '自定义字段详情' %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-xs-12">
+        <div class="box">
+            <div class="box-header">
+                <h3 class="box-title">{% trans '自定义字段详情' %}</h3>
+                <div class="box-tools">
+                    {% if perms.dcrm.change_customfield %}
+                    <a href="{% url 'customfield_update' object.pk %}" class="btn btn-info btn-sm">
+                        <i class="fa fa-pencil"></i><span class="hidden-xs">{% trans "编辑" %}</span>
+                    </a>
+                    {% endif %}
+                    {% if perms.dcrm.delete_customfield %}
+                    <a href="{% url 'customfield_delete' object.pk %}" class="btn btn-danger btn-sm">
+                        <i class="fa fa-trash"></i> {% trans '删除' %}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="box-body">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label>{% trans '字段名称' %}</label>
+                            <p class="form-control-static">{{ object.name }}</p>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label>{% trans '字段类型' %}</label>
+                            <p class="form-control-static">{{ object.get_field_type_display }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label>{% trans '所属模型' %}</label>
+                            <p class="form-control-static">{{ object.get_content_type_display }}</p>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label>{% trans '必填' %}</label>
+                            <p class="form-control-static">
+                                {% if object.required %}
+                                <span class="label label-success">{% trans '是' %}</span>
+                                {% else %}
+                                <span class="label label-default">{% trans '否' %}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label>{% trans '状态' %}</label>
+                            <p class="form-control-static">
+                                {% if object.is_active %}
+                                <span class="label label-success">{% trans '启用' %}</span>
+                                {% else %}
+                                <span class="label label-danger">{% trans '禁用' %}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label>{% trans '描述' %}</label>
+                            <p class="form-control-static">{{ object.description|default:'-' }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% if object.choices %}
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="form-group">
+                            <label>{% trans '选项列表' %}</label>
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>{% trans '值' %}</th>
+                                        <th>{% trans '显示名称' %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for value, label in object.get_choices %}
+                                    <tr>
+                                        <td>{{ value }}</td>
+                                        <td>{{ label }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="box-footer">
+                <a href="{% url 'customfield_list' %}" class="btn btn-default">
+                    <i class="fa fa-arrow-left"></i> {% trans '返回列表' %}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,377 @@
+{% extends 'form.html' %}
+{% load static i18n %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  /* 添加进度条样式 */
+  .progress-bar {
+    height: 4px;
+    background-color: #ddd;
+    border-radius: 2px;
+    margin-top: 5px;
+  }
+
+  .progress-bar-striped {
+    background-image: linear-gradient(-90deg, #eee, #eee);
+  }
+
+  .progress-bar-success {
+    background-color: #3c8dbc;
+  }
+
+  .progress-bar-warning {
+    background-color: #f4a161;
+  }
+
+  /* 进度提示样式 */
+  .processing-status {
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    padding: 3px 6px;
+    font-size: 12px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 4px;
+  }
+</style>
+{% endblock %}
+
+{% block box_body %}
+<form method="post" enctype="multipart/form-data" id="edit-form-htmx" novalidate>
+  <div class="upload-container">
+    <div class="upload-prompt">拖拽图片至此，或者 <span onclick="document.getElementById('file-input').click()">选择图片</span></div>
+    <input type="file" id="file-input" accept="image/*" multiple style="display:none">
+
+    <div class="image-preview" id="image-preview"></div>
+  </div>
+
+  <div class="form-fields">
+    <div class="field-group">
+      <label for="item_number">物品编号*</label>
+      <input type="text" id="item_number" name="item_number" required>
+    </div>
+
+    <!-- 其他表单字段... -->
+  </div>
+
+  <ul class="mailbox-attachments clearfix" id="previewContainer"></ul>
+
+  <div class="box-footer">
+    <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-default btn-sm margin-r-5">{% trans '返回' %}</a>
+    <button type="submit" class="btn btn-primary btn-sm">{% trans '保存' %}</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.0/spark-md5.min.js"></script>
+
+<script>
+  // 全局状态管理
+  const fileManager = {
+    files: [], // 存储文件信息对象数组
+    currentUploads: [] // 记录正在上传的文件索引
+  };
+
+  // 初始化文件预览容器
+  function initFilePreview() {
+    const container = document.getElementById('image-preview');
+    container.innerHTML = ''; // 清空容器
+
+    fileManager.files.forEach((file, index) => {
+      const li = document.createElement('li');
+      li.className = 'mailbox-attachments clearfix';
+      li.dataset.index = index;
+
+      // 创建图片预览
+      const img = document.createElement('img');
+      img.src = file.previewUrl;
+      img.alt = file.name;
+      img.className = 'img-responsive';
+
+      // 创建删除按钮
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = '删除';
+      deleteBtn.className = 'btn btn-danger btn-xs';
+      deleteBtn.onclick = () => removeFile(index);
+
+      // 创建OCR信息容器
+      const fileInfo = document.createElement('div');
+      fileInfo.className = 'file-info';
+      fileInfo.innerHTML = `
+      <p><strong>名称:</strong> ${file.describe || file.name}</p>
+      <p><strong>SN号:</strong> ${file.serial_no}</p>
+      <p><strong>型号:</strong> ${file.model}</p>
+    `;
+
+      // 创建重新识别按钮
+      const retryBtn = document.createElement('button');
+      retryBtn.textContent = '重新识别';
+      retryBtn.className = 'btn btn-info btn-xs';
+      retryBtn.onclick = () => retryOcr(index);
+
+      // 创建进度提示容器
+      const statusContainer = document.createElement('div');
+      statusContainer.className = 'processing-status';
+
+      // 创建进度条容器
+      const progressBarContainer = document.createElement('div');
+      progressBarContainer.className = 'progress-bar-container';
+
+      li.appendChild(img);
+      li.appendChild(deleteBtn);
+      li.appendChild(fileInfo);
+      li.appendChild(retryBtn);
+      li.appendChild(statusContainer);
+      li.appendChild(progressBarContainer);
+
+      container.appendChild(li);
+    });
+  }
+
+  // 添加文件处理
+  function addFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const md5 = calculateMd5(file); // 计算文件MD5值
+
+      const fileInfo = {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        md5: md5,
+        previewUrl: e.target.result,
+        describe: '',
+        serial_no: '',
+        model: '',
+        part_no: '',
+        interface: '',
+        tags: [],
+        ocrProgress: 0, // OCR进度
+        uploadProgress: 0, // 上传进度
+        uploading: false, // 是否正在上传
+        ocrProcessing: false // 是否正在处理OCR
+      };
+
+      // 调用OCR接口
+      performOcr(file, fileInfo);
+
+      fileManager.files.push(fileInfo);
+      initFilePreview();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // 执行OCR识别（使用XMLHttpRequest监听进度）
+  function performOcr(file, fileInfo) {
+    const formData = new FormData([
+      { name: 'raw_text', value: '' },
+      { name: 'file', value: file }
+    ]);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/extract-item-info/', true);
+
+    // 监听OCR处理进度
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const progress = Math.round((e.loaded / e.total) * 100);
+        fileInfo.ocrProgress = progress;
+        updateProgress(fileInfo, 'ocr', progress);
+      }
+    };
+
+    // 监听OCR完成事件
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const data = JSON.parse(xhr.responseText);
+        fileInfo.describe = data.describe || file.name;
+        fileInfo.serial_no = data.serial_no || '';
+        fileInfo.model = data.model || '';
+        fileInfo.part_no = data.part_no || '';
+        fileInfo.interface = data.interface || '';
+        fileInfo.tags = data.tags || [];
+
+        // 更新UI显示
+        const fileInfoDom = document.querySelector(`li[data-index="${fileInfo.index}"] .file-info`);
+        fileInfoDom.innerHTML = `
+        <p><strong>名称:</strong> ${fileInfo.describe}</p>
+        <p><strong>SN号:</strong> ${fileInfo.serial_no}</p>
+        <p><strong>型号:</strong> ${fileInfo.model}</p>
+      `;
+
+        // 隐藏OCR进度
+        updateProgress(fileInfo, 'ocr', 100);
+      } else {
+        alert('OCR识别失败');
+      }
+      fileInfo.ocrProcessing = false;
+    };
+
+    // 发送OCR请求
+    xhr.send(formData);
+  }
+
+  // 计算文件MD5值
+  function calculateMd5(file) {
+    return new Promise((resolve, reject) => {
+      const spark = new SparkMD5.ArrayBuffer();
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        spark.append(e.target.result);
+        resolve(spark.end());
+      };
+
+      reader.onerror = (e) => {
+        reject('文件读取失败');
+      };
+
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  // 删除文件处理
+  function removeFile(index) {
+    fileManager.files.splice(index, 1);
+    initFilePreview();
+  }
+
+  // 重新识别处理
+  function retryOcr(index) {
+    const file = fileManager.files[index];
+    if (!file.md5) return alert('文件未上传');
+
+    file.ocrProcessing = true;
+    updateProgress(file, 'ocr', 0);
+
+    performOcr(file, file);
+  }
+
+  // 文件上传处理
+  function uploadFiles() {
+    const formData = new FormData();
+    fileManager.files.forEach((file, index) => {
+      if (file.uploaded) {
+        continue;
+      };
+      formData.append('files[]', file.file);
+      formData.append('files_md5[]', file.md5);
+    });
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/upload/', true);
+
+    // 监听上传整体进度
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const totalProgress = Math.round((e.loaded / e.total) * 100);
+        console.log(`整体上传进度: ${totalProgress}%`);
+      }
+    };
+
+    // 监听单个文件上传进度
+    fileManager.files.forEach((file, index) => {
+      if (!file.uploaded) {
+        const fileXhr = new XMLHttpRequest();
+        fileXhr.open('POST', '/upload/', true);
+        fileXhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const progress = Math.round((e.loaded / e.total) * 100);
+            file.uploadProgress = progress;
+            updateProgress(file, 'upload', progress);
+          }
+        };
+
+        fileXhr.onload = () => {
+          if (fileXhr.status >= 200 && fileXhr.status < 300) {
+            file.uploaded = true;
+            file.url = JSON.parse(fileXhr.responseText).files[0].url;
+            updateProgress(file, 'upload', 100);
+          } else {
+            alert(`文件${file.name}上传失败`);
+          }
+        };
+
+        fileXhr.send(new FormData([
+          { name: 'files', value: file.file },
+          { name: 'files_md5', value: file.md5 },
+          { name: 'require_ocr', value: false } // 重新上传不需要OCR
+        ]));
+      }
+    });
+  }
+
+  // 更新进度条显示
+  function updateProgress(file, type, progress) {
+    const li = document.querySelector(`li[data-index="${file.index}"]`);
+    const progressBarContainer = li.querySelector('.progress-bar-container');
+    const statusContainer = li.querySelector('.processing-status');
+
+    // 清除旧进度
+    progressBarContainer.innerHTML = '';
+    statusContainer.textContent = '';
+
+    if (progress === 100) {
+      statusContainer.textContent = '完成';
+      statusContainer.className = 'processing-status success';
+      progressBarContainer.innerHTML = `
+      <div class="progress-bar progress-bar-success" role="progressbar" 
+           style="width: 100%; aria-valuenow: 100" aria-valuemin="0" aria-valuemax="100">
+      </div>
+    `;
+    } else if (progress > 0) {
+      statusContainer.textContent = `进行中... (${progress}%)`;
+      statusContainer.className = 'processing-status warning';
+      progressBarContainer.innerHTML = `
+      <div class="progress-bar progress-bar-striped" role="progressbar" 
+           style="width: ${progress}%; aria-valuenow: ${progress}" aria-valuemin="0" aria-valuemax="100">
+      </div>
+    `;
+    }
+  }
+
+  // MD5计算函数（使用spark-md5）
+  function calculateMd5(file) {
+    return new Promise((resolve, reject) => {
+      const spark = new SparkMD5.ArrayBuffer();
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        spark.append(e.target.result);
+        resolve(spark.end());
+      };
+
+      reader.onerror = (e) => {
+        reject('文件读取失败');
+      };
+
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  // 事件监听
+  document.getElementById('file-input').addEventListener('change', (e) => {
+    Array.from(e.target.files).forEach(file => {
+      addFile(file);
+    });
+  });
+
+  document.getElementById('edit-form-htmx').addEventListener('submit', (e) => {
+    e.preventDefault();
+    uploadFiles();
+    // 提交其他表单数据
+  });
+
+  // 响应式布局处理
+  window.addEventListener('resize', () => {
+    document.body.classList.toggle('desktop-layout', window.innerWidth >= 768);
+  });
+
+  // 初始加载
+  window.addEventListener('DOMContentLoaded', () => {
+    initFilePreview();
+  });
+</script>
+{% endblock %}

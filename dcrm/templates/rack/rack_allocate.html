@@ -1,0 +1,102 @@
+{% load static %}
+{% load i18n %}
+<form method="post" class="form">
+  {% csrf_token %}
+  <div class="box-body with-border">
+    {{ formset.management_form }}
+    <div class="table-responsive">
+      <table class="table table-bordered table-condensed text-nowrap">
+        <thead>
+          <tr>
+            <th width="2%">#</th>
+            <th width="10%"><span class="form-group margin-r-5">机柜房间</span></th>
+            <th width="15%"><span class="form-group margin-r-5">机柜名</span></th>
+            <th width="11%"><span class="form-group margin-r-5">机柜类型</span></th>
+            <th><span class="form-group margin-r-5">分配租户</span>{% if formset|length > 1 %}<button title="应用到全部"
+                type="button" class="btn btn-default btn-xs btn-flat pull-right apply-all-btn" data-field="tenant"><i
+                  class="fa fa-arrows-alt"></i></button>{% endif %}
+            </th>
+            <th width="11%"><span class="form-group margin-r-5">状态</span>{% if formset|length > 1 %}<button
+                title="应用到全部" type="button" class="btn btn-default btn-xs btn-flat pull-right apply-all-btn"
+                data-field="status"><i class="fa fa-arrows-alt"></i></button>{% endif %}</th>
+            <th width="12%"><span class="form-group margin-r-5">开通日期</span>{% if formset|length > 1 %}<button
+                title="应用到全部" type="button" class="btn btn-default btn-xs btn-flat pull-right apply-all-btn"
+                data-field="opening_date"><i class="fa fa-arrows-alt"></i></button>{% endif %}</th>
+            <th width="15%"><span class="form-group margin-r-5">合同电力(A)</span>{% if formset|length > 1 %}<button
+                title="应用到全部" type="button" class="btn btn-default btn-xs btn-flat pull-right apply-all-btn"
+                data-field="contract_power"><i class="fa fa-arrows-alt"></i></button>{% endif %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for form in formset %}
+          <tr>
+            <td>{{forloop.counter}}.
+              {{ form.id }}
+              <input type="hidden" name="pk" value="{{ form.instance.id }}">
+            </td>
+            {% for field in form.visible_fields %}
+            <td>
+              <div class="form-group margin-r-5">
+                {{ field }}
+              </div>
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="box-footer" style="padding: 10px 0;">
+      <div class="info pull-left">
+        <a type="button" class="btn btn-default btn-sm margin-r-5" href="{{next_url}}"><i class="fa fa-times"></i>
+          取消</a>
+      </div>
+      <div class="buttons pull-right">
+        <input type="hidden" name="apply" value="true">
+        <button type="submit" name="action" value="{{action.action_type}}" class="btn btn-primary btn-sm">保存</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<small id="page-subtitle" hx-swap-oob="true">{{action.name}} 总计: {{formset|length}} 个</small>
+
+<script type="text/javascript">
+  $(document).ready(function () {
+    $('select[name$="-room"]').attr("disabled", true);
+    $('select.select').select2();
+    $('select[name$="-tenant"]').select2({
+      placeholder: "请选择一个租户",
+      allowClear: true
+    })
+    $('form').on('submit', function () {
+      $('select[name$="-room"]').attr("disabled", false);
+    });
+
+    // 原生JS实现批量应用功能
+    // 监听所有“应用到全部”按钮
+    document.querySelectorAll('.apply-all-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var field = btn.getAttribute('data-field');
+        // 获取所有同名字段
+        var inputs = document.querySelectorAll('[name$="-' + field + '"]');
+        if (inputs.length < 2) return; // 没有多行
+        var first = inputs[0];
+        var value = first.value;
+        if (!value) return // 跳过
+        // 批量赋值（跳过首行）
+        for (var i = 1; i < inputs.length; i++) {
+          // 针对 select2 需要特殊处理
+          if (inputs[i].tagName.toLowerCase() === 'select') {
+            $(inputs[i]).val(value).trigger('change');
+          } else {
+            inputs[i].value = value;
+            // 触发 input 事件
+            inputs[i].dispatchEvent(new Event('input'));
+          }
+        }
+      });
+    });
+
+  });
+</script>

@@ -1,0 +1,65 @@
+{% extends "auth/base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}登录 - DCRM{% endblock %}
+
+{% block body %}
+
+<body class="hold-transition login-page">
+    <div class="login-box">
+        <div class="login-logo">
+            <a href="/"><b>DC</b>RM</a>
+        </div>
+        {% if messages %}
+        {% for message in messages %}
+        <div id="message"
+            class="alert alert-{% if message.tags %}{{ message.tags }}{% endif %} alert-dismissible no-margin">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        <!-- /.login-logo -->
+        <div class="login-box-body">
+            <p class="login-box-msg">{% trans '登录开始使用系统' %}</p>
+
+            <form action="{% url 'login' %}" method="post">
+                {% if request.GET.next %}
+                <input type="hidden" name="next" value="{{ request.GET.next }}">
+                {% endif %}
+                {% csrf_token %}
+                {% if form.errors %}
+                <div class="alert alert-danger">
+                    {% trans '用户名或密码错误,请重新输入。' %}
+                </div>
+                {% endif %}
+
+                <div class="form-group has-feedback">
+                    <input autofocus type="text" name="username" class="form-control" placeholder="{% trans '用户名' %}">
+                    <span class="glyphicon glyphicon-user form-control-feedback"></span>
+                </div>
+                <div class="form-group has-feedback">
+                    <input type="password" name="password" class="form-control" placeholder="{% trans '密码' %}">
+                    <span class="glyphicon glyphicon-lock form-control-feedback"></span>
+                </div>
+                <div class="row">
+                    <div class="col-xs-8">
+                    </div>
+                    <!-- /.col -->
+                    <div class="col-xs-4">
+                        <button type="submit" class="btn btn-primary btn-block btn-flat">{% trans 'Log in' %}</button>
+                    </div>
+                    <!-- /.col -->
+                </div>
+            </form>
+            <a href="{% url 'password_reset' %}">{% trans 'Forgotten your password or username?' %}</a>
+            <div class="text-center" style="margin-top: 10px;">
+                <p>定制开发，请联系微信</p>
+                <img class="img-responsive" src="{% static 'wx_qrcode.png' %}" alt="wx_qrcode" />
+            </div>
+        </div>
+        <!-- /.login-box-body -->
+    </div>
+    <!-- /.login-box -->
+</body>
+{% endblock %}

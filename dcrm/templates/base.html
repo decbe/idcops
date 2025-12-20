@@ -1,0 +1,316 @@
+{% spaceless %}
+{% load static i18n %}
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>{% block title %}{{ request.user.data_center.name }} - {% trans "DCRM" %}{% endblock %}</title>
+  <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="{% static 'favicon/favicon-96x96.png' %}" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon/favicon.svg' %}" />
+  <link rel="shortcut icon" href="{% static 'favicon/favicon.ico' %}" />
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'favicon/apple-touch-icon.png' %}" />
+  <!-- Base css -->
+  <link rel="stylesheet" href="{% static 'adminlte/font-awesome/css/font-awesome.min.css' %}">
+  <link rel="stylesheet" href="{% static 'adminlte/bootstrap/dist/css/bootstrap.min.css' %}">
+  {% block before_adminlte_css %}{% endblock %}
+  <link rel="stylesheet" href="{% static 'adminlte/css/AdminLTE.min.css' %}">
+  <link rel="stylesheet" href="{% static 'adminlte/css/skins/skin-blue.min.css' %}">
+  {% block prefetch %}
+  {% endblock %}
+  <style>
+    body {
+      font-family: system-ui, -apple-system, 'Source Sans Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+
+    @media print {
+      a[href]:after {
+        content: none !important;
+      }
+
+      th {
+        padding: 3px 4px !important;
+      }
+
+      td {
+        padding: 2px 4px !important;
+      }
+
+      footer {
+        padding: 10px 15px !important;
+      }
+    }
+
+    .bg-gray-light {
+      color: #000 !important;
+    }
+
+    .control-sidebar {
+      position: absolute;
+      padding-top: 50px;
+      z-index: 1010;
+      background-color: #fff;
+      height: 100%;
+      border-left: 1px solid #eee;
+      padding-left: 20px;
+    }
+
+    .table>thead:first-child>tr:first-child>th>a {
+      color: #333 !important;
+    }
+
+    .table>thead:first-child>tr:first-child>th>a:hover,
+    .table>thead:first-child>tr:first-child>th>a:active,
+    .table>thead:first-child>tr:first-child>th>a:focus {
+      color: #111 !important;
+    }
+
+    .django-messages {
+      position: fixed;
+      bottom: 3px;
+      padding: 1rem !important;
+      min-width: 225px;
+      z-index: 1050;
+    }
+
+    .django-messages .alert {
+      margin-bottom: 0 !important;
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+
+  <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+  <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+
+  <!-- Google Font -->
+  <!-- <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic"> -->
+
+</head>
+
+<body class="hold-transition skin-blue sidebar-mini{% if preferences.SIDEBAR_COLLAPSE %} sidebar-collapse{% endif %}">
+  <!-- <div class="wrapper" style="overflow: visible;"> -->
+  <div class="wrapper">
+
+    <!-- Main Header -->
+    <header class="main-header">
+      <!-- Logo -->
+      <a href="{% url 'index' %}" class="logo">
+        <!-- mini logo for sidebar mini 50x50 pixels -->
+        <span class="logo-mini"><b>DC</b>M</span>
+        <!-- logo for regular state and mobile devices -->
+        <span class="logo-lg"><b>DC</b>RM {{sitename}}</span>
+      </a>
+
+      <!-- Header Navbar -->
+      <nav class="navbar navbar-static-top" role="navigation">
+        <!-- Sidebar toggle button-->
+        <a href="#" class="sidebar-toggle" data-toggle="push-menu" role="button">
+          <span class="sr-only">Toggle navigation</span>
+        </a>
+
+        <!-- Navbar Right Menu -->
+        <div class="navbar-custom-menu">
+          <ul class="nav navbar-nav">
+            {% block navbar_right %}
+            <!-- Messages Menu -->
+            <li class="dropdown messages-menu">
+              {% include '_includes/navbar/messages.html' %}
+            </li>
+
+            <!-- Notifications Menu -->
+            <li class="dropdown notifications-menu">
+              {% include '_includes/navbar/notifications.html' %}
+            </li>
+
+            <!-- User Account Menu -->
+            <li class="dropdown user user-menu">
+              {% include '_includes/navbar/user.html' %}
+            </li>
+            {% endblock %}
+          </ul>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Left side column. contains the logo and sidebar -->
+    <aside class="main-sidebar">
+      <!-- sidebar: style can be found in sidebar.less -->
+      <section class="sidebar">
+        {% block sidebar %}
+        <!-- Sidebar user panel (optional) -->
+        {% include '_includes/sidebar/userpanel.html' %}
+
+        <!-- Sidebar Menu -->
+        <ul class="sidebar-menu" data-widget="tree">
+          {% include '_includes/sidebar/menu.html' %}
+        </ul>
+        <!-- /.sidebar-menu -->
+        {% endblock %}
+      </section>
+      <!-- /.sidebar -->
+    </aside>
+
+    <!-- Content Wrapper. Contains page content -->
+    <div class="content-wrapper">
+      <!-- Content Header (Page header) -->
+      <section class="content-header">
+        {% block content_header %}
+        <h1>{% block page_title %}{{ title }}{% endblock %}<small
+            id="page-subtitle">{% block page_subtitle %}{{ subtitle }}{% endblock %}</small></h1>
+        <ol class="breadcrumb">
+          {% block breadcrumb %}
+          <li><a href="#"><i class="fa fa-dashboard"></i> 首页</a></li>
+          <li class="active">仪表盘</li>
+          {% endblock %}
+        </ol>
+        {% endblock %}
+      </section>
+
+      <!-- Main content -->
+      <section class="content container-fluid">
+        {% csrf_token %}
+        {% block content %}{% endblock %}
+      </section>
+      <!-- /.content -->
+      <div class="modal fade" id="modal-lg" role="dialog" aria-labelledby="modal-lg" aria-hidden="true" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <!-- link to object detail -->
+          </div>
+        </div>
+      </div>
+      <div class="modal fade" id="modal-lg-static" tabindex="-1" role="dialog" data-keyboard="false"
+        data-backdrop="static" aria-labelledby="modal-lg-static" aria-hidden="true" style="z-index: 1060;">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <!-- link to object detail -->
+          </div>
+        </div>
+      </div>
+      <div class="modal fade" id="modal-static" tabindex="-1" role="dialog" data-keyboard="false" data-backdrop="static"
+        aria-labelledby="modal-static" aria-hidden="true" style="z-index: 1060;">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <!-- link to object detail -->
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- /.content-wrapper -->
+
+    <!-- Main Footer -->
+    <footer class="main-footer">
+      {% block footer %}
+      <!-- To the right -->
+      <div class="pull-right hidden-xs">
+        Version: {{ version }}
+      </div>
+      <!-- Default to the left -->
+      <strong>Copyright &copy; 2023 - {% now "Y" %} <a href="#" alt="Data Center Resource Manager">DCRM</a>.</strong>
+      All
+      rights reserved.
+      {% endblock %}
+    </footer>
+
+    <div id="django-messages" class="django-messages">
+      {% block messages %}
+      {% include '_includes/messages.html' %}
+      {% endblock %}
+    </div>
+    <!-- Control Sidebar -->
+    <aside class="control-sidebar">
+      <div class="drawer-header">
+        <h3 class="drawer-title"></h3>
+        <button type="button" class="close" data-toggle="control-sidebar">&times;</button>
+      </div>
+      <div id="drawer-content" class="drawer-content">
+        {% block control_sidebar %}
+        <!-- HTMX 将在这里加载内容 -->
+        <!-- {% include '_includes/control_sidebar/drawer.html' %} -->
+        {% endblock %}
+      </div>
+    </aside>
+    <!-- /.control-sidebar -->
+
+    <!-- Add the sidebar's background -->
+    <!-- <div class="control-sidebar-bg"></div> -->
+  </div>
+  <!-- ./wrapper -->
+
+  <!-- REQUIRED JS SCRIPTS -->
+  <!-- jQuery 3 -->
+  <script src="{% static 'adminlte/jquery/dist/jquery.min.js' %}"></script>
+  <!-- Bootstrap 3.3.7 -->
+  <script src="{% static 'adminlte/bootstrap/dist/js/bootstrap.min.js' %}"></script>
+  <!-- AdminLTE App -->
+  <script src="{% static 'adminlte/js/adminlte.min.js' %}"></script>
+  <!-- HTMX -->
+  <script src="{% static 'adminlte/js/htmx.min.js' %}" defer></script>
+
+  {% block extra_js %}{% endblock %}
+
+  <script>
+    function closeMessages(timeout) {
+      const effectiveTimeout = timeout || 60000;
+      const messages = document.querySelectorAll("#django-messages > div[name='message']");
+      if (messages.length > 0) {
+        setTimeout(function () {
+          messages.forEach(function (message) {
+            message.remove();
+          });
+        }, effectiveTimeout);
+        return;
+      }
+    }
+
+    document.addEventListener('htmx:afterSwap', () => {
+      // 消息超时自动关闭
+      closeMessages();
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+      // 消息超时自动关闭
+      closeMessages();
+
+      function update_menu_setup(flag) {
+        var csrftoken = $("input[name='csrfmiddlewaretoken']").val();
+        var data = { 'csrfmiddlewaretoken': csrftoken, 'active_tab': 'user', 'SIDEBAR_COLLAPSE': flag }
+        $.ajax({
+          type: 'POST',
+          dataType: 'json',
+          url: "{% url 'configuration' %}?active_tab=user",
+          data: data,
+          success: function (data) {
+            console.log(`saved success, ${flag}`);
+          },
+          error: function (error) {
+            console.error(`save ${flag}, ${error}`)
+          }
+        });
+      }
+      var collapsed = '{{ preferences.SIDEBAR_COLLAPSE|yesno:"on,off" }}';
+      $(document).on('expanded.pushMenu', function () {
+        // 展开左侧菜单栏
+        if (collapsed === 'on') {
+          update_menu_setup('off');
+        }
+      }).on('collapsed.pushMenu', function () {
+        // 收起左侧菜单栏
+        if (collapsed === 'off') {
+          update_menu_setup('on');
+        }
+      });
+    });
+  </script>
+
+</body>
+
+</html>
+{% endspaceless %}

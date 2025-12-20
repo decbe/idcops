@@ -1,0 +1,113 @@
+{% extends 'auth/base.html' %}
+{% load static %}
+
+{% block title %}初始化系统 - {{ block.super }}{% endblock %}
+{% block style %}
+<link rel="stylesheet" href="{% static 'css/choices.min.css' %}">
+{% endblock %}
+{% block body %}
+<h2 class="text-center">欢迎使用 DCRM 资源管理系统</h2>
+<body class="skin-blue layout-top-nav">
+  <div class="content-wrapper" style="min-height: 585.002px;">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+          <!-- Content Header (Page header) -->
+          <section class="content-header">
+            <h1 class="text-center">请先初始化您的系统
+            </h1>
+          </section>
+          <section class="content">
+            <div class="box-body">
+              <div class="box">
+                <div class="box-header with-border">
+                  <h3 class="box-title">新建一个数据中心</h3>
+                </div>
+                <!-- /.box-header -->
+                <!-- form start -->
+                <form action="" method="POST" role="form" class="form">
+                  {% csrf_token %}
+                  {% for hidden in form.hidden_fields %}
+                  {{ hidden }}
+                  {% endfor %}
+                  <div class="box-body">
+                    <div class="form-group">
+                      {% if messages %}
+                      {% for message in messages %}
+                      <div id="message"
+                        class="alert alert-{% if message.tags %}{{ message.tags }}{% endif %} alert-dismissible no-margin">
+                        {{ message }}
+                      </div>
+                      {% endfor %}
+                      {% endif %}
+                    </div>
+                    {% for field in form.visible_fields %}
+                    <div class="form-group">
+                      <label for="{{ field.id_for_label }}" class="control-label">
+                        {{ field.label }}
+                      </label>
+                      {{ field }}
+                    </div>
+                    {% endfor %}
+                  </div>
+                  <!-- /.box-body -->
+                  <div class="box-footer">
+                    <button type="submit" class="pull-right btn btn-primary">提交</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+</body>
+
+{% block javascript %}
+<script src="{% static 'js/choices.min.js' %}"></script>
+<script>
+  function initChoices() {
+    document.querySelectorAll('select.form-control').forEach(select => {
+      const canAddOption = select.dataset.createOption == 'true';
+      const choiceConfig = {
+        removeItemButton: true,
+        searchEnabled: true,
+        searchResultLimit: -1,
+        shouldSort: false,
+        addChoices: canAddOption,
+        sorter: () => [],
+        allowHTML: true,
+        position: 'auto',
+        renderChoiceLimit: -1,
+        // 所有提示信息改为中文
+        searchPlaceholderValue: '搜索...',
+        noResultsText: '没有找到匹配项',
+        itemSelectText: '点击选择',
+        loadingText: '加载中...',
+        noChoicesText: '没有可选择的选项',
+        // 添加按钮文本
+        addItemText: (value) => {
+          return `按回车键添加 <b>"${value}"</b>`;
+        },
+        maxItemText: (maxItemCount) => {
+          return `最多只能选择${maxItemCount}项`;
+        },
+        // 自定义按钮和占位符文本
+        customAddItemText: '只能添加符合此规则的选项',
+        removeItemButton: true,
+        duplicateItemsAllowed: false,
+        // 分组相关文本
+        classNames: {
+          groupTitle: '选项组标题'
+        },
+      };
+      new Choices(select, choiceConfig);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    initChoices();
+  });
+</script>
+{% endblock %}
+{% endblock %}

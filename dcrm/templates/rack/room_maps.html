@@ -1,0 +1,317 @@
+{% extends "detail.html" %}
+{% load static i18n %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'adminlte/select2/dist/css/select2.min.css' %}">
+<link rel="stylesheet" href="{% static 'adminlte/css/alt/AdminLTE-select2.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/toastify.min.css' %}">
+<style>
+  table>tbody>tr>td.badge {
+    display: table-cell !important;
+    border-radius: 5px !important;
+    background-color: #fff;
+  }
+  /* .badge a {color: #fff !important;} */
+  .bg-white {background-color: #fff !important; color: #000 !important;}
+  /* .badge.text-black {background: white !important;} */
+  td[draggable="true"] {cursor: move !important;}
+  td.badge.over {border: 1px dashed #000 !important;}
+  td[name="status"] span, td[name="status"] small { cursor: pointer }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="nav-tabs-custom">
+  <ul class="nav nav-tabs">
+    {% for room in rooms %}
+    {% if room == object %}
+    <li class="active"><a href="?id={{ object.id }}" data-toggle="">{{ room }}{% if room.cname %} <small>({{ room.cname }})</small>{% endif %}</a></li>
+    {% else %}
+    <li><a href="?id={{ room.id }}" data-toggle="">{{ room }}</a></li>
+    {% endif %}
+    {% endfor %}
+    {% if perms.dcrm.change_rack %}
+    <li class="pull-right hidden-xs">
+      <a title="调整区域机柜分布" href="?id={{ object.id }}&mode=setup"><i class="fa fa-th"></i> 布局机柜</a>
+    </li>
+    {% endif %}
+  </ul>
+  <div class="tab-content">
+    <div class="tab-pane active" id="room_{{object.id}}">
+      <div class="box-body table-responsive no-padding">
+        <table class="table table-condensed table-bordered text-nowarp" nowarp="nowarp">
+          <tbody id="filter_status">{% csrf_token %}
+              {% for field in statistics %}
+              <tr id="{{ field.name }}">
+                <th>按机柜{{ field.verbose_name }}:</th>
+                {% for item in field.stats %}
+                <td name="status">
+                  <i data-toggle="tooltip" title="{{ item.label }}" class="text-{{ item.color|default:'red' }} {% if item.name != 'total' %}fa fa-square fa-lg{% endif %}"></i>
+                  <span name="label" value="{{ item.name }}"> {{ item.label }}</span><small><b> {{ item.count|default:0 }}</b>个</small>
+                </td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+          </tbody>
+        </table>
+        <table class="table table-condensed table-bordered text-nowarp" nowarp="nowarp">
+          <tbody id="filter_tenant">
+            <tr>
+              <th>按租户过滤:</th>
+              <td>
+                <select name="tenant" class="form-control">
+                  <option value="">所有机柜</option>
+                  {% for tenant in tenants %}
+                  <option value="{{ tenant.id }}">{{ tenant.name }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+      <div class="box-body table-responsive no-padding">
+        <table class="table table-condensed table-bordered-del text-nowarp" id="rack_maps">
+          <tbody>
+            {% for cell in cells %}
+            {% if forloop.counter0 == cell.row %}<tr>{% endif %}
+              {% if cell.rack %}
+              <td id="cell-{{cell.row}}-{{cell.col}}" class="badge {{ cell.rack.status.pk|default:'0' }} {{ cell.rack.rack_type }}"
+                draggable="{{ cell.draggable }}" data-drop="false" data-usage="{{ cell.rack.space_usage_percentage }}"
+                style="background: linear-gradient(99deg, {{ cell.tcolor }} 0% 15%, {{ cell.scolor}} 20% 100%); width: 90px;"
+                class="badge" data-rack-id="{{ cell.rack.id }}" data-row="{{ cell.row }}" 
+                data-col="{{ cell.col }}"
+                {%if cell.rack.tenant_id %}
+                title="{{ cell.rack.tenant.name }}" data-tenant-id="{{ cell.rack.tenant_id }}"
+                {%endif%}>
+                {% if cell.draggable == 'false' %}
+                <a href="{{ cell.rack.get_absolute_url }}" class="text-black">{{ cell.rack.name }}</a>
+                {% else %}
+                  <span class="text-black">{{ cell.rack.name }}</span>
+                {% endif %}
+              </td>
+              {% else %}
+              <td id="cell-{{cell.row}}-{{cell.col}}" class="badge text-black"
+                draggable="false" data-drop="true"
+                data-row="{{ cell.row }}" data-col="{{ cell.col }}" style="width: 50px;">-</td>
+              {% endif %}
+              {% if cell.col == object.cols|add:-1 %}</tr>{% endif %}
+            {%endfor%}
+          </tbody>
+        </table>
+        {% if none_position_racks_cells and request.GET.mode == 'setup' %}
+        <table style="position: fixed; bottom: 20px; display: block;" class="table table-condensed table-bordered text-nowarp" id="none-position-racks">
+          <tbody>
+            {% for cell in none_position_racks_cells %}
+            {% if cell.col == 0 %}<tr>{% endif %}
+              <td id="cell-{{cell.row}}-{{cell.col}}" class="badge text-black"
+                data-remove="true"
+                data-rack-id="{{ cell.id }}" draggable="{% if request.GET.mode == 'setup' %}true{% else %}false{% endif %}" data-drop="true"
+                style="background: linear-gradient(105deg, #d33724 0% 30%, #db8b0b 70% 100%); width: 90px;"
+                data-row="{{ cell.row }}" data-col="{{ cell.col }}">{{ cell.name }}</td>
+            {% if cell.col == object.cols|add:-6 %}</tr>{% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+      </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'adminlte/select2/dist/js/select2.min.js' %}"></script>
+<script src="{% static 'adminlte/select2/dist/js/i18n/zh-CN.js' %}"></script>
+<script src="{% static 'js/toastify.min.js' %}"></script>
+<script>
+// document.addEventListener('DOMContentLoaded', () => {
+
+  // clear modal cache
+  $('body').on('hidden.bs.modal', '.modal', function () {
+      $(this).removeData('bs.modal');
+  });
+
+  $('select[name="tenant"]').select2({language:'zh-CN'}).on('change', function () {
+    var val = $(this).children('option:selected').attr('value');
+    if (val) {
+      var racks = $(`#rack_maps tbody tr td[data-tenant-id=${val}]`);
+      if (racks.length > 0){
+        racks.css('opacity', '1');
+      }
+      $(`#rack_maps tbody tr td[data-tenant-id!=${val}]`).css('opacity', '0.2');
+      $("html, body").animate({scrollTop: $(racks).first().offset().top - 200 }, 300);
+    } else {
+      var racks = $("#rack_maps tbody tr td");
+      if (racks.length > 0){
+        racks.css('opacity', '1');
+        $("html, body").animate({scrollTop: $("#filter_status tr td:first").offset().top}, 300);
+      }
+    }
+  });
+
+  $('#filter_status tr td[name="status"]').click(function(){
+    var val = $(this).find('span').attr('value');
+    if (val == 'total') {
+      var selected = $("#rack_maps tbody tr td");
+      if (selected.length > 0){
+        selected.css('opacity','1');
+        $("html, body").animate({scrollTop: $("#filter_status tr td:first").offset().top}, 300);
+      }
+    }else{
+      var selected = $(`#rack_maps tbody tr td.${val}`);
+      if (selected.length > 0){
+        $("#rack_maps tbody tr td").css('opacity', '0.2')
+        selected.css('opacity', '1');
+        $("html, body").animate({scrollTop: $(`#rack_maps tbody tr td.${val}:first`).offset().top - 200 }, 300);
+      }
+    }
+  });
+
+  function update_rack_point(rack_id, row, col) {
+    var csrftoken = $("input[name='csrfmiddlewaretoken']").val();
+    var data = { 'csrfmiddlewaretoken': csrftoken, 'rack_id': rack_id, 'row': row, "col": col }
+    $.ajax({
+      type: 'POST',
+      dataType: 'json',
+      url: "{% url 'room_rack_maps' %}?id={{ object.id }}&mode=setup",
+      data: data,
+      success: function (data) {
+        Toastify({
+          text: data.message || '操作成功',
+          duration: 3000,
+          gravity: "bottom",
+          position: "left",
+          style: {
+              background: "#28a745",
+              // background: "linear-gradient(to right, #00b09b, #96c93d)",
+          }
+        }).showToast();
+      },
+      error: function (error) {
+        Toastify({
+          text: error.message || '操作失败',
+          duration: 5000,
+          gravity: "bottom",
+          position: "left",
+          style: {
+            background: "#d33724",
+          }
+        }).showToast();
+        console.error(error)
+      }
+    });
+  }
+
+  var dragSrcEl = null; //拖拽源
+
+  function handleDragStart(e) {
+    //在拖动操作开始时执行脚本（对象是被拖拽元素）
+    // Target (this) element is the source node.
+    this.style.opacity = '0.5'; //设置被拖拽元素透明度
+    dragSrcEl = this; //记录被拖拽的元素
+    e.dataTransfer.effectAllowed = 'move'; //被拖拽的方式，这里是移动，也可是copy
+    e.dataTransfer.setData('text/html', this.innerHTML); //设置被拖拽的内容
+  }
+
+  function handleDragOver(e) {
+    //只要元素正在合法的放置目标上拖动时，就执行脚本（对象是目标元素）
+    if (e.preventDefault) {
+      e.preventDefault(); // Necessary. Allows us to drop.
+    }
+    e.dataTransfer.dropEffect = 'move';  // See the section on the DataTransfer object.
+    return false;
+  }
+
+  function handleDragEnter(e) {
+    //当元素被拖动到一个合法的放置目标时，执行脚本（对象是目标元素）
+    // this / e.target is the current hover target.
+    this.classList.add('over');
+  }
+
+  function handleDragLeave(e) {
+    //当元素离开合法的放置目标时（对象是目标元素）
+    // this / e.target is previous target element.
+    this.classList.remove('over');
+  }
+
+  function handleDrop(e) {
+    //将被拖拽元素放在目标元素内时运行脚本（对象是目标元素）
+    // this/e.target is current target element.
+    if (e.stopPropagation) {
+      e.stopPropagation(); // Stops some browsers from redirecting.
+    }
+    // 如果被拖拽的元素不是本身时执行的脚本
+    // Don't do anything if dropping the same column we're dragging.
+    if (dragSrcEl != this) {
+      // 获取源和目标的标记值
+      const dragSrc = dragSrcEl.draggable;
+      const dropDst = $(this).attr('data-drop');
+
+      // 2.执行右边机柜拖拽到左边空白可直接放置的判断
+      if ((dragSrcEl.draggable) && (dropDst == 'true')){
+        //获取源机柜号跟当前单元个id，发送后台处理；更新前台数据
+        // 2.1 先执行前端交换
+        dragSrcEl.innerHTML = this.innerHTML;
+        this.innerHTML = e.dataTransfer.getData('text/html');
+        const srcClass = dragSrcEl.className;
+        const rackId = dragSrcEl.dataset.rackId;
+        const tenantId = dragSrcEl.dataset.tenantId;
+        const title = dragSrcEl.title;
+
+        const srcStyle = $(dragSrcEl).attr('style');
+        const dstStyle = $(this).attr('style');
+        const attrs = {
+          'data-rack-id': rackId, 'draggable': 'true',
+          'title': title, 'data-tenant-id': tenantId,
+          'data-drop': 'false', 'style': srcStyle
+        };
+        $(this).attr(attrs).addClass(srcClass);
+        if (dragSrcEl.dataset.remove == 'true') {
+          dragSrcEl.remove();
+        } else {
+          $(dragSrcEl).removeAttr('style title data-tenant-id data-rack-id');
+          $(dragSrcEl).attr({'style': dstStyle, 'data-drop': "true", 'draggable': false});
+          $(dragSrcEl).addClass('text-black');
+        }
+        update_rack_point(rackId, this.dataset.row, this.dataset.col);
+      }
+
+      // 2.执行右边或左边机柜拖拽到左边不可直接放置的处理
+      if (dropDst == 'false') {
+        //获取源和目标的机柜号与目标单元个的id,发送后台处理；更新前台数据
+        alert("位置已经被占用，请先移动占用机柜到空白区");
+      }
+
+      // console.log(this, "new...");
+
+      // console.log(dragSrcEl, "old....");
+    }
+
+    return false;
+  }
+
+  function handleDragEnd(e) {
+    //在拖动操作结束时运行脚本（对象是被拖拽元素）
+    // this/e.target is the source node.
+    [].forEach.call(cols, function (col) {
+      col.classList.remove('over');
+      col.style.removeProperty('opacity');
+    });
+  }
+
+  var cols = document.querySelectorAll('tr td.badge');
+  [].forEach.call(cols, function (col) {
+    col.addEventListener('dragstart', handleDragStart, false);
+    col.addEventListener('dragenter', handleDragEnter, false)
+    col.addEventListener('dragover', handleDragOver, false);
+    col.addEventListener('dragleave', handleDragLeave, false);
+    col.addEventListener('drop', handleDrop, false);
+    col.addEventListener('dragend', handleDragEnd, false);
+  });
+
+// });
+</script>
+{% endblock extra_js %}

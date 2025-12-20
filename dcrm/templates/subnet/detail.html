@@ -1,0 +1,86 @@
+{% extends 'detail.html' %}
+{% load dcrm_extras %}
+{% load static %}
+{# width: 32px; text-align: end; display: inline-block; #}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .ips-box {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+  }
+
+  .ips-box .cell {
+    margin: .3em;
+    padding: .3em;
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+</style>
+<link rel="stylesheet" href="{% static 'css/toastify.min.css' %}">
+{% endblock %}
+{% block content-extra %}
+<div class="box-body" id="object-extra" style="padding-top: 0;">
+  <fieldset>
+    <div class="fieldset-header">
+      <h4>IP地址 ({{ object.total_ips }}个)</h4>
+    </div>
+  <div class="ips-box">
+    {% for ip in object.ip_addresses.all %}
+    <span class="label bg-{{ ip.status_color }} cell" data-ip="{{ ip.address_dot_number }}"
+    style="background: linear-gradient(135deg, {% if ip.is_gateway %}#00c0ef 25%,{% endif %} {{ ip.color_to_hex }} 25% 50%, #dd4b39 50% 100%);">
+    {{ ip.address_dot_number }}</span>
+    {% endfor %}
+  </div>
+  </fieldset>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/toastify.min.js' %}"></script>
+<script>
+  const sse = new EventSource("{% url 'subnet_sse' object.id %}");
+  
+  sse.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    // console.log('Received data:', data);
+    
+    if (data.status === 'complete') {
+      // console.log('扫描完成');
+      sse.close();  // 关闭 SSE 连接
+    } else if (data.status === 'error') {
+      // console.error('扫描出错:', data.message);
+      sse.close();  // 关闭 SSE 连接
+    } else {
+      // 处理扫描结果
+      // const subnetIPs = document.querySelectorAll('.ips-box span');
+      // subnetIPs.forEach(item => {
+      //   item.setAttribute('style', '');
+      // });
+      // console.log(data, ">>>>>>>>>>")
+      const ips = data.results;      
+      ips.forEach(item => {
+        const ip = item.ip;
+        const ipClass = ip.split('.')[3];
+        const ipSpan = document.querySelector(`.ips-box span[data-ip="${ipClass}"]`);
+        if (ipSpan) {
+          // 保存原始背景
+          const originalStyle = ipSpan.getAttribute('style');
+          // 在原有背景基础上添加绿色渐变
+          const newStyle = originalStyle.replace('100%);', '50%, #00a65a 50% 100%);');
+          ipSpan.setAttribute('style', newStyle);
+
+        }
+      });
+    }
+  };
+
+  sse.onerror = function(error) {
+    console.error('SSE 连接错误:', error);
+    sse.close();  // 发生错误时关闭连接
+  };
+</script>
+{% endblock %}

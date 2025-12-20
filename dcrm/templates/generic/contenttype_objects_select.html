@@ -1,0 +1,103 @@
+<div class="form-group">
+  <label>{{ label|default:"对象绑定" }}</label>
+  <div class="nav-tabs-custom">
+    <ul class="nav nav-tabs" id="ct-tabs-{{ contenttype_field }}">
+      {% for ct in contenttype_choices %}
+      <li class="{% if forloop.first %}active{% endif %}">
+        <a href="#ct-{{ ct.id }}-{{ contenttype_field }}" data-toggle="tab" data-ct-id="{{ ct.id }}"
+          data-url="{{ ct.autocomplete_url }}">{{ ct.name }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+    <div class="tab-content" style="padding-top: 10px;">
+      {% for ct in contenttype_choices %}
+      <div class="tab-pane {% if forloop.first %}active{% endif %}" id="ct-{{ ct.id }}-{{ contenttype_field }}">
+        <select class="form-control ct-object-select" data-ct-id="{{ ct.id }}" data-field="{{ object_id_field }}">
+          <option value="">请选择...</option>
+        </select>
+      </div>
+      {% endfor %}
+    </div>
+    <!-- 隐藏域存储最终值 -->
+    <input type="hidden" name="{{ contenttype_field }}" id="id_{{ contenttype_field }}">
+    <input type="hidden" name="{{ object_id_field }}" id="id_{{ object_id_field }}">
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Tab切换
+    var tabNav = document.getElementById('ct-tabs-{{ contenttype_field }}');
+    var tabs = tabNav.querySelectorAll('a[data-toggle="tab"]');
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function (e) {
+        // 切换active
+        tabs.forEach(function (t) { t.parentElement.classList.remove('active'); });
+        tab.parentElement.classList.add('active');
+        // 切换内容
+        document.querySelectorAll('.tab-pane').forEach(function (pane) {
+          pane.classList.remove('active');
+        });
+        var target = tab.getAttribute('href');
+        document.querySelector(target).classList.add('active');
+        // 加载数据
+        loadObjects(tab.dataset.ctId, tab.dataset.url);
+      });
+    });
+
+    // 加载对象列表
+    function loadObjects(ctId, url) {
+      var select = document.querySelector('.ct-object-select[data-ct-id="' + ctId + '"]');
+      select.innerHTML = '<option value="">加载中...</option>';
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          select.innerHTML = '<option value="">请选择...</option>';
+          data.forEach(function (item) {
+            var opt = document.createElement('option');
+            opt.value = item.id;
+            opt.text = item.text || item.name;
+            select.appendChild(opt);
+          });
+        });
+    }
+
+    // 选择对象后赋值
+    document.querySelectorAll('.ct-object-select').forEach(function (select) {
+      select.addEventListener('change', function () {
+        var ctId = this.dataset.ctId;
+        var objectId = this.value;
+        document.getElementById('id_{{ contenttype_field }}').value = ctId;
+        document.getElementById('id_{{ object_id_field }}').value = objectId;
+      });
+    });
+
+    // 页面初始加载第一个Tab的数据
+    var firstTab = tabs[0];
+    if (firstTab) {
+      loadObjects(firstTab.dataset.ctId, firstTab.dataset.url);
+    }
+  });
+</script>
+
+<!--
+from django.contrib.contenttypes.models import ContentType
+
+# 获取 limit_choices_to 过滤后的 ContentType
+ct_qs = ContentType.objects.filter(app_label="dcrm", model__in=["onlinedevice", "deviceport", "devicehost"])
+contenttype_choices = [
+    {
+        "id": ct.id,
+        "name": ct.model,  # 可自定义显示
+        "autocomplete_url": f"/api/{ct.model}/autocomplete/"
+    }
+    for ct in ct_qs
+]
+
+context = {
+    "contenttype_field": "connected_to",
+    "object_id_field": "connected_object_id",
+    "contenttype_choices": contenttype_choices,
+    # 其他表单字段...
+}
+-->

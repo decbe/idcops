@@ -1,0 +1,179 @@
+{% extends "form.html" %}
+{% load i18n static %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .regex-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .regex-items .label {
+    display: inline-block;
+    margin: 2px;
+    font-size: 12px;
+  }
+
+  .regex-toggle {
+    margin-bottom: 10px;
+  }
+
+  .regex-toggle label {
+    cursor: pointer;
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // 获取相关元素
+    const nameInput = document.getElementById('id_name');
+    const formGroup = nameInput.closest('.form-group');
+    
+    // 创建并插入切换按钮
+    const regexToggle = document.createElement('div');
+    regexToggle.className = 'regex-toggle';
+    regexToggle.innerHTML = '<label><input type="checkbox" id="use_regex"> 使用正则模式批量创建</label>';
+    formGroup.parentNode.insertBefore(regexToggle, formGroup);
+
+    // 创建用于显示展开结果的容器
+    const resultContainer = document.createElement('div');
+    resultContainer.className = 'regex-result mt-2';
+    resultContainer.style.display = 'none';
+    formGroup.parentNode.insertBefore(resultContainer, formGroup.nextSibling);
+
+    // 创建用于显示错误信息的容器
+    const errorContainer = document.createElement('span');
+    errorContainer.className = 'help-block';
+    errorContainer.style.display = 'none';
+    formGroup.appendChild(errorContainer);
+
+    // 获取隐藏的正则模式输入
+    const regexPatternInput = document.getElementById('id_use_regex_pattern');
+
+    // 获取CSRF Token的函数
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    // 创建防抖函数
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
+    // 验证并展开正则表达式的函数
+    async function validateAndExpandPattern() {
+      const pattern = nameInput.value.trim();
+      const useRegexChecked = document.getElementById('use_regex').checked;
+      
+      if (!pattern || !useRegexChecked) {
+        resultContainer.style.display = 'none';
+        errorContainer.style.display = 'none';
+        return;
+      }
+
+      try {
+        const csrftoken = getCookie('csrftoken');
+        const response = await fetch("{% url 'api-0.1:expand_regex_pattern_api' %}", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken,
+          },
+          body: JSON.stringify({
+            pattern: pattern
+          })
+        });
+
+        const data = await response.json();
+        errorContainer.style.display = 'none';
+
+        if (data.status === 'success') {
+          const results = data.result;
+          if (results && results.length > 0) {
+            // 构建展开结果的HTML
+            const resultHtml = `
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  展开的机柜名结果 (共 ${data.count} 个），提交将会创建这些机柜
+                </div>
+                <div class="panel-body">
+                  <div class="regex-items">
+                    ${results.map(item => `
+                      <span class="label label-info">${item}</span>
+                    `).join(' ')}
+                  </div>
+                </div>
+              </div>
+            `;
+            formGroup.classList.remove('has-error');
+            resultContainer.innerHTML = resultHtml;
+            resultContainer.style.display = '';
+          } else {
+            formGroup.classList.add('has-error');
+            errorContainer.textContent = '表达式未生成任何结果';
+            errorContainer.style.display = '';
+            resultContainer.style.display = 'none';
+          }
+        } else {
+          formGroup.classList.add('has-error');
+          errorContainer.textContent = data.message || '无效的正则表达式';
+          errorContainer.style.display = '';
+          resultContainer.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        formGroup.classList.add('has-error');
+        errorContainer.textContent = '验证正则表达式时发生错误';
+        errorContainer.style.display = '';
+        resultContainer.style.display = 'none';
+      }
+    }
+
+    // 创建防抖版本的验证函数
+    const debouncedValidateAndExpand = debounce(validateAndExpandPattern, 500);
+
+    // 监听正则模式切换
+    document.getElementById('use_regex').addEventListener('change', function() {
+      const useRegex = this.checked;
+      regexPatternInput.value = useRegex ? '1' : '';
+      if (useRegex) {
+        validateAndExpandPattern();
+      } else {
+        resultContainer.style.display = 'none';
+        errorContainer.style.display = 'none';
+      }
+    });
+
+    // 使用防抖处理输入事件
+    nameInput.addEventListener('input', function() {
+      if (document.getElementById('use_regex').checked) {
+        debouncedValidateAndExpand();
+      }
+    });
+  });
+</script>
+{% endblock %}

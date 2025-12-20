@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <title>图片上传控件</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      font-family: -apple-system, system-ui, sans-serif;
+    }
+
+    .upload-container {
+      width: 400px;
+      padding: 10px;
+      border: 2px dashed #ddd;
+      border-radius: 10px;
+      text-align: center;
+      transition: border-color 0.3s;
+    }
+
+    .upload-container.highlight {
+      border-color: #1677ff;
+      background-color: #f0f6ff;
+    }
+
+    .upload-prompt {
+      font-size: 16px;
+      color: #333;
+      margin: 10px 0;
+    }
+
+    .upload-prompt span {
+      color: #1677ff;
+      cursor: pointer;
+    }
+
+    .supported-files {
+      font-size: 12px;
+      color: #666;
+      margin: 15px 0;
+      line-height: 1.5;
+    }
+
+    #file-input {
+      display: none;
+    }
+
+    .next-button {
+      background: #1677ff;
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    .next-button:hover {
+      background: #4096ff;
+    }
+
+    .file-preview {
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .file-thumbnail {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-right: 10px;
+    }
+
+    .file-name {
+      flex: 1;
+      margin-right: 10px;
+      font-size: 14px;
+    }
+
+    .file-remove {
+      color: #ff4d4f;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="upload-container" id="drop-zone">
+    <div class="upload-prompt">
+      拖拽图片至此，或者 <span onclick="document.getElementById('file-input').click()">选择图片</span>
+    </div>
+    <div class="supported-files">
+      仅支持 JPG、PNG、GIF 格式的图片，每个文件不超过 15MB。
+    </div>
+    <input type="file" id="file-input" accept="image/*" multiple>
+    <div class="file-preview" id="file-preview"></div>
+    <button class="next-button" id="next-button">下一部分</button>
+  </div>
+
+  <script>
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const filePreview = document.getElementById('file-preview');
+    const nextButton = document.getElementById('next-button');
+    let filesToUpload = [];
+
+    // 拖拽事件处理
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('highlight');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('highlight');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('highlight');
+      const files = e.dataTransfer.files;
+      handleFiles(files);
+    });
+
+    // 文件选择处理
+    fileInput.addEventListener('change', (e) => {
+      handleFiles(e.target.files);
+    });
+
+    // 文件处理函数
+    function handleFiles(files) {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+
+      for (const file of files) {
+        if (!allowedTypes.includes(file.type)) {
+          alert(`不支持的文件类型: ${file.name}`);
+          continue;
+        }
+
+        if (file.size > 15 * 1024 * 1024) {
+          alert(`文件大小超过限制: ${file.name}`);
+          continue;
+        }
+
+        filesToUpload.push(file);
+        renderFilePreview(file);
+      }
+    }
+
+    // 渲染文件预览
+    function renderFilePreview(file) {
+      const fileItem = document.createElement('div');
+      fileItem.className = 'file-item';
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        fileItem.innerHTML = `
+                    <img src="${e.target.result}" class="file-thumbnail" alt="${file.name}">
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-remove" onclick="removeFile('${file.name}')">删除</div>
+                `;
+        filePreview.appendChild(fileItem);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // 删除文件
+    function removeFile(fileName) {
+      filesToUpload = filesToUpload.filter(file => file.name !== fileName);
+      filePreview.innerHTML = '';
+      filesToUpload.forEach(renderFilePreview);
+    }
+
+    // 下一部分按钮点击事件
+    nextButton.addEventListener('click', () => {
+      if (filesToUpload.length === 0) {
+        alert('请先选择图片');
+        return;
+      }
+
+      const formData = new FormData();
+      filesToUpload.forEach(file => {
+        formData.append('files', file);
+      });
+
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      })
+        .then(response => response.json())
+        .then(data => {
+          console.log('上传成功:', data);
+          alert('图片上传成功');
+          // 这里可以添加页面跳转或下一步逻辑
+        })
+        .catch(error => {
+          console.error('上传失败:', error);
+          alert('图片上传失败');
+        });
+    });
+  </script>
+</body>
+
+</html>

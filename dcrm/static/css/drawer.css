@@ -1,0 +1,66 @@
+/* 抽屉面板 - PC端 */
+.table-drawer {
+    position: fixed;
+    top: 50px;
+    right: -100%;
+    width: 0;
+    height: calc(100% - 50px);
+    background: #fff;
+    z-index: 1050;
+    transition: right 0.3s ease-in-out, width 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid #ddd;
+}
+
+/* 打开状态 */
+body.drawer-open .table-drawer {
+    right: 0 !important;
+}
+
+/* 移除所有媒体查询中的宽度设置 */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .table-drawer {
+        right: -100%;
+    }
+}
+
+@media (max-width: 767px) {
+    .table-drawer {
+        right: -100%;
+    }
+}
+
+/* 抽屉头部 */
+.drawer-header {
+    padding: 5px 20px 5px 0;
+    border-bottom: 1px solid #f4f4f4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+}
+
+.drawer-header h4 {
+    margin: 0;
+    font-size: 18px;
+}
+
+/* 抽屉内容区 */
+.drawer-body {
+    padding: 20px;
+    flex: 1;
+    overflow-y: auto;
+    background: #fff;
+}
+
+/* 内容包装器相对定位 */
+.content-wrapper {
+    position: relative !important;
+    transition: box-shadow 0.3s ease-in-out;
+}
+
+/* 打开时添加阴影 */
+.drawer-open .content-wrapper {
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}

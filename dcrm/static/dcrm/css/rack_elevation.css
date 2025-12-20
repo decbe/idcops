@@ -1,0 +1,202 @@
+:root {
+    --unit-height: 22px;
+    --rack-width: 280px;
+    --rack-padding: 10px;
+    --ruler-width: 30px;
+    --pdu-width: 20px;
+    --device-border-radius: 4px;
+    
+    /* 颜色变量 */
+    --rack-border: #2c3e50;
+    --rack-bg: #f8f9fa;
+    --unit-border: #dee2e6;
+    --device-text: #fff;
+    --indicator-bg: rgba(0, 0, 0, 0.2);
+}
+
+.rack-elevation {
+    width: var(--rack-width);
+    background: var(--rack-bg);
+    border: 2px solid var(--rack-border);
+    border-radius: 6px;
+    margin: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 机柜头部 */
+.rack-header {
+    padding: var(--rack-padding);
+    border-bottom: 1px solid var(--rack-border);
+    background: #fff;
+    border-radius: 4px 4px 0 0;
+}
+
+.rack-title h3 {
+    margin: 0;
+    font-size: 1.2em;
+    color: #2c3e50;
+}
+
+.rack-location {
+    font-size: 0.8em;
+    color: #6c757d;
+}
+
+.tenant-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    color: white;
+    font-size: 0.8em;
+}
+
+/* 机柜主体 */
+.rack-body {
+    display: flex;
+    padding: var(--rack-padding);
+}
+
+/* U位标尺 */
+.rack-ruler {
+    width: var(--ruler-width);
+    border-right: 1px solid var(--unit-border);
+}
+
+.ruler-mark {
+    height: var(--unit-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7em;
+    color: #6c757d;
+}
+
+/* 设备区域 */
+.rack-units {
+    flex: 1;
+    margin: 0 var(--rack-padding);
+}
+
+.rack-unit {
+    height: var(--unit-height);
+    border-bottom: 1px solid var(--unit-border);
+    position: relative;
+}
+
+.device-block {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    padding: 4px;
+    border-radius: var(--device-border-radius);
+    color: var(--device-text);
+}
+
+/* 设备信息布局 */
+.device-info {
+    flex: 1;
+    overflow: hidden;
+    margin-left: 8px;
+}
+
+.device-name {
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.device-meta {
+    display: flex;
+    gap: 8px;
+    font-size: 0.8em;
+}
+
+.device-status {
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+/* 状态指示器 */
+.device-indicators {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.indicator {
+    padding: 2px 4px;
+    border-radius: 3px;
+    background: var(--indicator-bg);
+    font-size: 0.8em;
+}
+
+/* PDU 区域 */
+.rack-pdus {
+    width: var(--pdu-width);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pdu {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-size: 0.8em;
+    color: #6c757d;
+    text-align: center;
+}
+
+/* 机柜底部 */
+.rack-footer {
+    padding: var(--rack-padding);
+    border-top: 1px solid var(--rack-border);
+    background: #fff;
+    border-radius: 0 0 4px 4px;
+}
+
+.rack-stats {
+    display: flex;
+    justify-content: space-around;
+    font-size: 0.9em;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #6c757d;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .rack-elevation {
+        width: 100%;
+        margin: 10px 0;
+    }
+    
+    :root {
+        --unit-height: 20px;
+        --ruler-width: 25px;
+        --pdu-width: 15px;
+    }
+}
+
+/* 交互效果 */
+.device-block {
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.device-block:hover {
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* 设备状态颜色 */
+.power-on { color: #2ecc71; }
+.power-off { color: #e74c3c; }
+.temperature.warning { color: #f1c40f; }
+.temperature.critical { color: #e74c3c; } 

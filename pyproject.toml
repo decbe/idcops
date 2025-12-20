@@ -1,0 +1,98 @@
+[project]
+name = "idcops"
+version = "0.1.0"
+description = "Data Center Resources Manager(DCRM) 数据中心资源管理是一个专业数据中心运营资源管理系统。"
+readme = "README.md"
+requires-python = ">=3.10,<3.12"
+dependencies = [
+    "baidu-aip>=4.16.13",
+    "dateparser>=1.2.1",
+    "Django>4.2,<=5.2.0",
+    "django-htmx>=1.23.1",
+    "django-mptt>=0.17.0",
+    "django-ninja-jwt[crypto]>=5.3.7",
+    "django-rq>=3.0.1",
+    "pillow>=11.2.1",
+    "python-dotenv>=1.1.0",
+    "str2bool>=1.1",
+    "python-magic>=0.4.27 ; sys_platform == 'linux'",
+    "python-magic-bin>=0.4.14 ; sys_platform == 'win32'",
+    "python-nmap>=0.7.1",
+    "scikit-learn==1.6.1",
+    "django-debug-toolbar>=5.2.0",
+    "exrex>=0.12.0",
+    "lxml>=5.4.0",
+    "chardet>=5.2.0",
+    "pysocks>=1.7.1",
+    "zxing-cpp>=2.3.0",
+    "gunicorn>=23.0.0",
+    "rq-scheduler>=0.14.0",
+    "mammoth>=1.10.0",
+    "markdown>=3.8.2",
+    "requests>=2.32.4",
+    "psycopg[c,pool]>=3.1.8,<3.2",
+]
+
+# Python mirror
+[tool.uv]
+# python-install-mirror = "https://mirror.nju.edu.cn/github-release/indygreg/python-build-standalone/"
+# python-install-mirror = "https://github.com/astral-sh/python-build-standalone"
+# export UV_PYTHON_INSTALL_MIRROR="https://gh-proxy.com/github.com/indygreg/python-build-standalone/releases/download"
+# export UV_INSTALLER_GITHUB_BASE_URL='https://gh-proxy.com/github.com'
+# wget -c https://gh-proxy.com/https://github.com/astral-sh/uv/releases/download/0.9.4/uv-installer.sh
+
+# PyPI mirror
+[[tool.uv.index]]
+url = "https://mirrors.aliyun.com/pypi/simple/"
+default = true
+
+[tool.black]
+# Black 基础配置
+line-length = 88
+target-version = ["py310", "py311", "py312"]  # 按需调整
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | build
+  | dist
+  | migrations  # 排除Django迁移文件
+  | static      # 排除静态文件
+  | templates   # 排除模板文件
+  | media       # 排除媒体文件
+)/
+'''
+
+[tool.isort]
+# 与 Black 兼容配置
+profile = "black"
+line_length = 88
+
+# Django 项目特殊配置
+known_django = "django"  # 将Django视为第三方库
+known_first_party = ["idcops", "dcrm"]  # 替换为你的项目和应用名
+
+sections = [
+    "FUTURE",         # __future__ 导入
+    "STDLIB",         # 标准库
+    "THIRDPARTY",     # 第三方库
+    "DJANGO",         # 单独分组Django核心库
+    "FIRSTPARTY",     # 你的项目代码
+    "LOCALFOLDER",    # 相对导入
+]
+
+default_section = "THIRDPARTY"  # 默认分类到第三方
+
+# 强制绝对导入
+force_single_line = false
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+float_to_top = true
+
+# 多行输出格式 (3=垂直悬挂对齐)
+multi_line_output = 3

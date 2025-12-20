@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% load form_filters %}
+
+{% block title %}
+{% if object %}{% trans '编辑中' %} {{ title }}{% else %}{% trans '新增' %} {{ title }}{% endif %} | {{ block.super }}
+{% endblock %}
+
+{% block before_adminlte_css %}
+<link rel="stylesheet" href="{% static 'css/choices.min.css' %}">
+<style>
+    .choices__inner {
+        padding: 3px 3px 1px !important;
+        border-radius: 2px !important;
+        min-height: 36px !important;
+        background-color: transparent !important;
+    }
+
+    .choices__input {
+        background-color: transparent !important;
+        /* padding: 7px !important; */
+    }
+
+    .choices {
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 1px !important;
+        font-size: 16px
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+{% for item in breadcrumbs %}
+<li {% if forloop.last %}class="active" {% endif %}>
+    {% if not forloop.last %}<a href="{{ item.url }}">{% endif %}
+        <i class="{{ item.icon }}"></i> {{ item.name }}
+        {% if not forloop.last %}</a>{% endif %}
+</li>
+{% endfor %}
+{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}
+{% if object %}{% trans '编辑' %}{{title}}{% else %}{% trans '新增' %}{{title}}{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="box box-default">
+    <div class="box-header with-border">
+        <h3 class="box-title">
+            {% if object %}{% trans '编辑' %}{{ object }}{% else %}{% trans '新增' %}{% endif %}{{ title }}
+        </h3>
+        <div class="box-tools pull-right">
+            <!-- <div class="btn-group margin-r-5">
+                <a class="btn btn-default btn-sm" href="{{ request.META.HTTP_REFERER }}">
+                    <i class="fa fa-arrow-circle-o-left"></i>
+                    <span> {% trans '返回' %}</span>
+                </a>
+            </div> -->
+        </div>
+    </div>
+    <div class="box-body">
+        {% block box_body %}
+        <div id="edit-form">
+            {% include "form_htmx.html" %}
+        </div>
+        {% endblock %}
+        {% block extra_body %}
+        {% endblock %}
+    </div>
+</div>
+{% endblock %}

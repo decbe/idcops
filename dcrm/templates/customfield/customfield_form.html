@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}
+    {% if object %}
+        {% trans '编辑自定义字段' %}
+    {% else %}
+        {% trans '添加自定义字段' %}
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-xs-12">
+        <div class="box">
+            <div class="box-header">
+                <h3 class="box-title">
+                    {% if object %}
+                        {% trans '编辑自定义字段' %}
+                    {% else %}
+                        {% trans '添加自定义字段' %}
+                    {% endif %}
+                </h3>
+            </div>
+            <form method="post" class="form-horizontal">
+                {% csrf_token %}
+                <div class="box-body">
+                    {% for field in form %}
+                        <div class="form-group {% if field.errors %}has-error{% endif %}">
+                            <label for="{{ field.id_for_label }}" class="col-sm-2 control-label">
+                                {{ field.label }}
+                                {% if field.field.required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            <div class="col-sm-8">
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <span class="help-block">{{ field.help_text }}</span>
+                                {% endif %}
+                                {% if field.errors %}
+                                    <span class="help-block">{{ field.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="box-footer">
+                    <div class="col-sm-offset-2 col-sm-8">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save"></i> {% trans '保存' %}
+                        </button>
+                        <a href="{% url 'customfield_list' %}" class="btn btn-default">
+                            <i class="fa fa-arrow-left"></i> {% trans '返回列表' %}
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function() {
+    // 根据字段类型显示/隐藏选项输入框
+    function toggleChoicesField() {
+        var fieldType = $('#id_field_type').val();
+        var choicesGroup = $('#id_choices').closest('.form-group');
+        if (fieldType === 'select' || fieldType === 'radio' || fieldType === 'checkbox') {
+            choicesGroup.show();
+        } else {
+            choicesGroup.hide();
+        }
+    }
+
+    // 初始化时执行一次
+    toggleChoicesField();
+
+    // 字段类型改变时执行
+    $('#id_field_type').change(function() {
+        toggleChoicesField();
+    });
+});
+</script>
+{% endblock %}

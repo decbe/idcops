@@ -1,0 +1,220 @@
+{% extends "form.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  /* 节点表单布局 */
+  .node-form {
+    margin-bottom: 20px;
+  }
+
+  .node-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 节点类型单选按钮组 */
+  .node-type-radio {
+    display: flex;
+    gap: 15px;
+  }
+
+  .node-type-radio>div {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .node-type-radio label {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    font-weight: normal;
+  }
+
+  .node-type-radio input[type="radio"] {
+    margin: 0 5px 0 0;
+    /* 右边距离文字5px */
+  }
+
+  /* 删除按钮 */
+  .delete-row {
+    color: #999;
+    cursor: pointer;
+    margin: 0;
+  }
+
+  .delete-row:hover {
+    color: #dd4b39;
+  }
+
+  /* 边距调整 */
+  .mb-0 {
+    margin-bottom: 0 !important;
+  }
+
+  .mt-3 {
+    margin-top: 15px;
+  }
+
+  /* 移动端响应式布局 */
+  @media (max-width: 768px) {
+    .box-body .row .col-md-6 {
+      padding: 0 15px;
+    }
+
+    .mb-0 {
+      margin-bottom: 15px !important;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<form method="post" id="patch-cord-form">
+  {% csrf_token %}
+  {% if form.non_field_errors or formset.non_form_errors %}
+  <div class="alert alert-danger">
+    {% for error in form.non_field_errors %}
+    <p>{{ error|safe }}</p>
+    {% endfor %}
+    {% for error in formset.non_form_errors %}
+    <p>{{ error|safe }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="box box-default">
+    <div class="box-header with-border">
+      <h3 class="box-title">{% trans '跳线信息' %}</h3>
+      <div class="box-tools pull-right">
+        <!-- <div class="btn-group margin-r-5">
+          <a class="btn btn-default btn-sm" href="{{ request.META.HTTP_REFERER }}">
+            <i class="fa fa-arrow-circle-o-left"></i>
+            <span> {% trans '返回' %}</span>
+          </a>
+        </div> -->
+      </div>
+    </div>
+    <div class="box-body">
+      <div class="row">
+        <!-- 左侧基本信息 -->
+        <div class="col-md-5" id="main-form">
+          <span class="hidden" name="cable-labels-api" data-url="{% url 'api-0.1:get_cable_labels' %}"></span>
+          {% for field in form %}
+          <div
+            class="form-group {% if field.field.required %}required{% endif %} {% if field.errors %}has-error{% endif %}">
+            {{ field.label_tag }}
+            {{ field }}
+            {% if field.errors %}
+            <span class="help-block">{{ field.errors.0 }}</span>
+            {% endif %}
+            {% if field.help_text and user.form_help_mode %}
+            <p class="help-block">{{ field.help_text }}</p>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- 右侧节点信息 -->
+        <div class="col-md-7">
+          {{ formset.management_form }}
+          <div class="node-list">
+            {% for form in formset %}
+            {{ form.room }}
+            <div class="panel panel-default node-form" data-form-index="{{ forloop.counter0 }}">
+              <div class="panel-heading">
+                <h4 class="panel-title">{% trans '节点' %} #{{ forloop.counter }}</h4>
+
+              </div>
+              <div class="panel-body">
+                {{ form.id }}
+                {{ form.sequence }}
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <div class="row">
+                        <div class="col-md-6">
+                          <div class="form-group mb-0">
+                            {{ form.port_type.label_tag }}
+                            {{ form.port_type }}
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <div class="form-group mb-0">
+                            {{ form.node_type.label_tag }}
+                            {{ form.node_type }}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      {{ form.rack.label_tag }}
+                      {{ form.rack }}
+                    </div>
+                    <div class="form-group">
+                      {{ form.device.label_tag }}
+                      {{ form.device }}
+                    </div>
+                    <div class="form-group">
+                      {{ form.port_name.label_tag }}
+                      {{ form.port_name }}
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      {{ form.rack_unit.label_tag }}
+                      {{ form.rack_unit }}
+                    </div>
+                    <div class="form-group">
+                      {{ form.tenant.label_tag }}
+                      {{ form.tenant }}
+                    </div>
+                    <div class="form-group">
+                      {{ form.color.label_tag }}
+                      {{ form.color }}
+                    </div>
+                    <div class="form-group">
+                      {{ form.length.label_tag }}
+                      {{ form.length }}
+                    </div>
+                    <div class="form-group">
+                      {% if formset.can_delete %}
+                      <label for="{{form.DELETE.id_for_label}}" class="delete-row checkbox-inline">
+                        {{ form.DELETE }}
+                        <i class="fa fa-trash-o"></i> {% trans '删除此节点' %}
+                      </label>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="mt-3">
+            <button type="button" class="btn btn-success btn-sm" id="add-node-btn">
+              <i class="fa fa-plus"></i> {% trans '添加节点' %}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="box-footer">
+      <div class="pull-right">
+        <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-default btn-sm margin-r-5">{% trans '返回' %}</a>
+        <button type="submit" class="btn btn-primary btn-sm">{% trans '保存' %}</button>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/choices.min.js' %}"></script>
+{{ block.super }}
+<script src="{% static 'js/patch-cord-form.js' %}"></script>
+{% endblock %}

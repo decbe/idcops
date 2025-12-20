@@ -1,0 +1,158 @@
+/* Rack Style 3: Enterprise Datacenter
+ * 特点：专业数据中心风格，高对比度，强调可读性
+ */
+
+/* 机柜整体容器 */
+.rack-elevation {
+    padding: 3px;
+    background: #0a0c0e;
+    border-radius: 6px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.1);
+}
+
+.rack-elevation .table-responsive {
+    padding: 15px;
+    background: #141618;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.rack-elevation .table {
+    background: transparent;
+    border: none;
+    margin: 0 !important;
+}
+
+/* 表头和U位编号样式 */
+.rack-elevation .bg-light-blue {
+    background: #1a1d20 !important;
+    color: #7f8c98 !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    font-weight: 600;
+}
+
+.rack-elevation .unit-number {
+    font-family: "SF Mono", "Monaco", monospace;
+    font-weight: 500;
+    font-size: 0.85em;
+    color: #7f8c98;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    background: #1a1d20;
+    user-select: none;
+}
+
+/* 设备单元格样式 */
+.rack-elevation .device-cell {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    background: linear-gradient(to bottom right, #1e2226, #171a1d) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04),
+                0 1px 2px rgba(0,0,0,0.2);
+}
+
+/* 当前选中的设备 */
+.rack-elevation .device-cell.bg-danger {
+    background: linear-gradient(to bottom right, #1a5fb4, #1552a0) !important;
+    border: 1px solid rgba(26, 95, 180, 0.4) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08),
+                0 1px 2px rgba(26, 95, 180, 0.2);
+}
+
+.rack-elevation .device-cell:hover {
+    background: linear-gradient(to bottom right, #23272b, #1b1e21) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04),
+                0 2px 4px rgba(0,0,0,0.15);
+}
+
+/* 当前设备悬停效果 */
+.rack-elevation .device-cell.bg-danger:hover {
+    background: linear-gradient(to bottom right, #1b64bd, #1657a8) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08),
+                0 2px 4px rgba(26, 95, 180, 0.25);
+}
+
+.rack-elevation .device-info {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: #e2e8f0;
+    width: 100%;
+}
+
+.rack-elevation .device-name {
+    font-weight: 500;
+    font-size: 0.9em;
+    letter-spacing: 0.01em;
+}
+
+/* 空闲U位样式 */
+.rack-elevation .empty-unit {
+    min-height: 30px;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    position: relative;
+    background: #1a1d20;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+}
+
+.rack-elevation .empty-unit:hover {
+    background: #1e2226;
+}
+
+.rack-elevation .empty-unit.drag-over {
+    background: #23272b;
+    box-shadow: inset 0 0 0 2px rgba(26, 95, 180, 0.4);
+}
+
+/* 添加设备提示样式 */
+.rack-elevation .add-device-hint,
+.rack-elevation .rack-status-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 2px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85em;
+    font-weight: 500;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.rack-elevation .add-device-hint {
+    background: rgba(26, 95, 180, 0.15);
+    color: #4299e1;
+    border: 1px dashed rgba(26, 95, 180, 0.4);
+    box-shadow: 0 2px 8px rgba(26, 95, 180, 0.1);
+}
+
+.rack-elevation .rack-status-hint {
+    background: rgba(236, 201, 75, 0.15);
+    color: #ecc94b;
+    border: 1px dashed rgba(236, 201, 75, 0.4);
+    box-shadow: 0 2px 8px rgba(236, 201, 75, 0.1);
+}
+
+/* 设备链接样式 */
+.rack-elevation .device-link {
+    color: inherit;
+    text-decoration: none;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.rack-elevation .device-link:hover {
+    text-decoration: none;
+    color: inherit;
+}

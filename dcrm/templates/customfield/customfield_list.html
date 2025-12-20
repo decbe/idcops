@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans '自定义字段' %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-xs-12">
+        <div class="box">
+            <div class="box-header">
+                <h3 class="box-title">{% trans '自定义字段列表' %}</h3>
+                {% if perms.dcrm.add_customfield %}
+                <div class="box-tools">
+                    <a href="{% url 'customfield_create' %}" class="btn btn-primary btn-sm">
+                        <i class="fa fa-plus"></i> {% trans '添加字段' %}
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            <div class="box-body table-responsive no-padding">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>{% trans '字段名称' %}</th>
+                            <th>{% trans '字段类型' %}</th>
+                            <th>{% trans '所属模型' %}</th>
+                            <th>{% trans '必填' %}</th>
+                            <th>{% trans '状态' %}</th>
+                            <th>{% trans '操作' %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for field in object_list %}
+                        <tr>
+                            <td>{{ field.name }}</td>
+                            <td>{{ field.get_field_type_display }}</td>
+                            <td>{{ field.get_content_type_display }}</td>
+                            <td>
+                                {% if field.required %}
+                                <span class="label label-success">{% trans '是' %}</span>
+                                {% else %}
+                                <span class="label label-default">{% trans '否' %}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if field.is_active %}
+                                <span class="label label-success">{% trans '启用' %}</span>
+                                {% else %}
+                                <span class="label label-danger">{% trans '禁用' %}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if perms.dcrm.change_customfield %}
+                                <a href="{% url 'customfield_update' field.pk %}" class="btn btn-info btn-xs">
+                                    <i class="fa fa-pencil"></i> {% trans '编辑' %}
+                                </a>
+                                {% endif %}
+                                {% if perms.dcrm.delete_customfield %}
+                                <a href="{% url 'customfield_delete' field.pk %}" class="btn btn-danger btn-xs">
+                                    <i class="fa fa-trash"></i> {% trans '删除' %}
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">{% trans '暂无数据' %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if is_paginated %}
+            <div class="box-footer clearfix">
+                {% include "_includes/pagination.html" %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+/* 标签基础样式 */
+.label {
+    display: inline;
+    padding: .2em .6em .3em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: .25em;
+}
+
+/* 链接标签样式 */
+a.label:hover,
+a.label:focus {
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* 设备状态标签颜色 */
+.label-success {
+    background-color: #00a65a;
+}
+
+.label-warning {
+    background-color: #f39c12;
+}
+
+.label-danger {
+    background-color: #dd4b39;
+}
+
+.label-info {
+    background-color: #00c0ef;
+}
+
+.label-default {
+    background-color: #d2d6de;
+}
+
+.label-primary {
+    background-color: #3c8dbc;
+}
+
+/* 标签组样式 */
+.label-group {
+    display: inline-block;
+}
+
+.label-group .label {
+    margin-right: 5px;
+}
+
+.label-group .label:last-child {
+    margin-right: 0;
+}

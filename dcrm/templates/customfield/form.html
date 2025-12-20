@@ -1,0 +1,133 @@
+{% extends 'form.html' %}
+
+{% block extra_js %}
+<script>
+	// 定义全局 selects Map
+	if (!window.isNewField) {
+		window.isNewField = new Boolean("{{ is_create }}")
+	}
+	if (!window.HTMX_TRIGGER_FIELDS) {
+		window.HTMX_TRIGGER_FIELDS = ['type',];
+	}
+
+	// 保存表单数据,但排除触发字段
+	function saveFormData(triggerFieldName) {
+		const form = document.getElementById('edit-form-htmx');
+		if (!form) return;
+
+		const formData = {
+			triggerField: triggerFieldName,
+			values: {}
+		};
+
+		// 定义 rack 变化时需要排除的字段
+		const excludeFields = [
+			'default', 'unique', 'required', 'choices', 'related_model', 'filter_params',
+			'validation_minimum', 'validation_maximum', 'validation_regex',
+		];
+
+		// 保存普通输入字段
+		form.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(input => {
+			if (input.name && input.name !== triggerFieldName) {
+				// 当 rack 发生变化时，排除指定字段
+				if (triggerFieldName === 'type' && excludeFields.includes(input.name)) {
+					return;
+				}
+				formData.values[input.name] = input.value;
+			}
+		});
+
+		// 保存选择字段
+		form.querySelectorAll('select').forEach(select => {
+			if (select.name && select.name !== triggerFieldName) {
+				// 当 rack 发生变化时，排除指定字段
+				if (triggerFieldName === 'type' && excludeFields.includes(select.name)) {
+					return;
+				}
+				if (select.multiple) {
+					formData.values[select.name] = Array.from(select.selectedOptions).map(option => option.value);
+				} else {
+					formData.values[select.name] = select.value;
+				}
+			}
+		});
+
+		localStorage.setItem('formData', JSON.stringify(formData));
+	}
+
+	// 恢复表单数据
+	function restoreFormData() {
+		const savedData = localStorage.getItem('formData');
+		if (!savedData) return;
+
+		try {
+			const formData = JSON.parse(savedData);
+			const triggerField = formData.triggerField;
+
+			// 恢复表单数据
+			Object.entries(formData.values).forEach(([name, value]) => {
+				// 跳过触发字段
+				if (name === triggerField) return;
+
+				const element = document.querySelector(`[name="${name}"]`);
+				if (!element) return;
+
+				if (element.tagName === 'SELECT') {
+					const choice = element._choice;
+					if (choice.initialisedOK && choice._elementType == 'select-multiple') {
+						choice.setChoiceByValue(value);
+					} else {
+						if (value) {
+							choice.setChoiceByValue(value.toString());
+						}
+					}
+				} else {
+					element.value = value;
+				}
+			});
+
+		} catch (error) {
+			console.error('恢复表单数据失败:', error);
+			clearFormStorage();
+		}
+	}
+
+	// 清除存储的表单数据
+	function clearFormStorage() {
+		localStorage.removeItem('formData');
+	}
+
+	// HTMX 事件监听
+	document.body.addEventListener('htmx:beforeRequest', function (evt) {
+		const triggerElement = evt.detail.elt;
+		const triggerFieldName = triggerElement.name;
+		if (!window.isNewField) {
+			return
+		}
+		if (window.HTMX_TRIGGER_FIELDS.includes(triggerFieldName)) {
+			saveFormData(triggerFieldName);
+		}
+	});
+
+	document.addEventListener('DOMContentLoaded', function () {
+		clearFormStorage();
+	});
+
+	document.body.addEventListener('htmx:responseError', function (evt) {
+		if (evt.detail.elt.tagName === 'FORM' && window.isNewField) {
+			clearFormStorage();
+		}
+	});
+
+	document.body.addEventListener('htmx:afterSettle', function (evt) {
+		// 如果是表单提交后的响应，且响应成功
+		if (evt.detail.elt.tagName === 'FORM' && evt.detail.xhr.status === 200) {
+			clearFormStorage();
+		}
+		if (!window.isNewField) {
+			return;
+		}
+		restoreFormData();
+	});
+</script>
+{% endblock %}

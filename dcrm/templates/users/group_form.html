@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load static %}
+{% load form_tags %}
+{% load i18n %}
+
+{% block content %}
+<div class="box">
+    <div class="box-header with-border">
+        <h3 class="box-title">{% if form.instance.pk %}编辑{% else %}新建{% endif %}用户组</h3>
+    </div>
+    <form method="post" class="form">
+        {% csrf_token %}
+        <div class="box-body">
+            {# 基本信息 #}
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        {{ form.name.label_tag }}
+                        {{ form.name }}
+                        {{ form.name.errors }}
+                    </div>
+                </div>
+            </div>
+
+            {# 权限表格 #}
+            {% include "users/perm_table.html" %}
+        </div>
+        <div class="box-footer">
+            <div class="pull-right">
+                <a href="{% url 'group_list' %}" class="btn btn-default btn-sm margin-r-5">取消</a>
+                <button type="submit" class="btn btn-primary btn-sm">保存</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.table th {
+    background-color: #f4f4f4;
+    vertical-align: middle !important;
+}
+.table td {
+    vertical-align: middle !important;
+}
+.checkbox-wrapper {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+}
+.checkbox-wrapper input[type="checkbox"] {
+    margin: 0;
+    vertical-align: middle;
+}
+.checkbox {
+    margin: 0;
+    padding: 2px 0;
+}
+.checkbox label {
+    min-height: 20px;
+    padding-left: 20px;
+    margin-bottom: 0;
+    font-weight: normal;
+    cursor: pointer;
+}
+.checkbox input[type="checkbox"] {
+    position: absolute;
+    margin-left: -20px;
+    margin-top: 2px;
+}
+.select-all-wrapper {
+    margin-top: 5px;
+}
+.btn-xs {
+    padding: 1px 5px;
+    font-size: 12px;
+    line-height: 1.5;
+    border-radius: 3px;
+}
+.column-header, .row-header {
+    cursor: pointer;
+    user-select: none;
+}
+.column-header:hover, .row-header:hover {
+    background-color: #e8e8e8;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    // 列头点击处理（纵向全选/取消）
+    document.querySelectorAll('.column-header').forEach(header => {
+        header.style.cursor = 'pointer';
+        let isColumnSelected = false;
+        
+        header.addEventListener('click', () => {
+            const type = header.dataset.type;
+            const checkboxes = document.querySelectorAll(`input[type="checkbox"][data-perm-type="${type}"]:not([disabled])`);
+            
+            isColumnSelected = !isColumnSelected;
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = isColumnSelected;
+            });
+        });
+    });
+
+    // 行头点击处理（横向全选/取消）
+    document.querySelectorAll('.row-header').forEach(header => {
+        header.style.cursor = 'pointer';
+        let isRowSelected = false;
+        
+        header.addEventListener('click', () => {
+            const row = header.closest('tr');
+            const checkboxes = row.querySelectorAll('input[type="checkbox"]:not([disabled])');
+            
+            isRowSelected = !isRowSelected;
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = isRowSelected;
+            });
+        });
+    });
+})();
+</script>
+{% endblock %} 

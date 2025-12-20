@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}删除 {{ title }} ??? | {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .delete-warning {
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+  }
+
+  .protected-objects {
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+
+  .protected-objects h4 {
+    color: #721c24;
+    margin-bottom: 10px;
+  }
+
+  .protected-objects .model-group {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+  }
+
+  .related-objects {
+    margin-top: 20px;
+  }
+
+  .related-objects h4 {
+    color: #856404;
+    margin-bottom: 10px;
+  }
+
+  .related-objects ul {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .related-objects .model-group {
+    margin-bottom: 15px;
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+    padding: 10px;
+    border-radius: 4px;
+  }
+
+  .model-group-title {
+    font-weight: 600;
+    color: #856404;
+    margin-bottom: 8px;
+  }
+
+  .model-group-count {
+    font-size: 0.9em;
+    color: #666;
+  }
+
+  .model-group-items {
+    margin-top: 5px;
+    padding-left: 15px;
+    border-left: 3px solid #ffeeba;
+  }
+
+  .model-group-item {
+    padding: 3px 0;
+  }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+{% for item in breadcrumbs %}
+<li {% if forloop.last %}class="active" {% endif %}>
+  {% if not forloop.last %}
+  <a href="{{ item.url }}">{% endif %}<i class="{{ item.icon }}"></i>{{ item.name }}{% if not forloop.last %}</a>
+  {% endif %}
+</li>
+{% endfor %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="box box-danger">
+      <div class="box-header with-border">
+        <h3 class="box-title">{% trans "确认删除" %}</h3>
+      </div>
+      <form method="post" class="form-horizontal">
+        {% csrf_token %}
+        <div class="box-body">
+          <div class="delete-warning">
+            <h4><i class="fa fa-exclamation-triangle"></i> {% trans "警告" %}</h4>
+            <p>{% blocktrans with object_name=object %}您确定要删除 "{{ object_name }}" 吗？{% endblocktrans %}</p>
+            {% if object.description %}
+            <p class="text-muted">{{ object.description }}</p>
+            {% endif %}
+          </div>
+
+          {% if protected_objects %}
+          <div class="protected-objects">
+            <h4><i class="fa fa-ban"></i> {% trans "无法删除，因为以下对象正在引用它：" %}</h4>
+            {% for model_name, objects in protected_objects.items %}
+            <div class="model-group">
+              <h5>{{ model_name }} (共 {{ objects|length }} 个)</h5>
+              <ul>
+                {% for obj_info in objects %}
+                {% if forloop.counter < 20 %}
+                <li>
+                  {% if obj_info.url %}
+                  <a href="{{ obj_info.url }}" target="_blank">{{ obj_info.object }}</a>
+                  {% else %}
+                  {{ obj_info.object }}
+                  {% endif %}
+                </li>
+                {% elif forloop.last %}
+                <li>
+                  <span>... 其余{{ forloop.counter|add:-20 }}个</span>
+                </li>
+                {% endif %}
+                {% endfor %}
+              </ul>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {% if related_objects %}
+          <div class="related-objects">
+            <h4><i class="fa fa-link"></i> {% trans "以下关联对象也将被删除：" %}</h4>
+            {% for model_name, objects in related_objects %}
+            <div class="model-group">
+              <h5>{{ model_name }} (共 {{ objects|length }} 个)</h5>
+              <ul>
+                {% for obj_info in objects %}
+                {% if forloop.counter < 20 %}
+                <li>
+                  {% if obj_info.url %}
+                  <a href="{{ obj_info.url }}" target="_blank">{{ obj_info.object }}</a>
+                  {% else %}
+                  {{ obj_info.object }}
+                  {% endif %}
+                </li>
+                {% elif forloop.last %}
+                <li>
+                  <span>... 其余{{ forloop.counter|add:-20 }}个</span>
+                </li>
+                {% endif %}
+                {% endfor %}
+              </ul>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        <div class="box-footer">
+          <div class="btn-group">
+            {% if can_delete %}
+            <button type="submit" class="btn btn-danger btn-sm">
+              <i class="fa fa-trash"></i> {% trans "确认删除" %}
+            </button>
+            {% endif %}
+            <a href="{{ cancel_url }}" class="btn btn-default btn-sm">
+              <i class="fa fa-times"></i> {% trans "取消" %}
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% if messages %}
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  {% for message in messages %}
+  <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-delay="5000">
+    <div class="toast-header bg-{{ message.tags }}">
+      <strong class="me-auto">{% trans "系统消息" %}</strong>
+      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div class="toast-body">
+      {{ message }}
+      {% if undo_url %}
+      <div class="mt-2">
+        <a href="{{ undo_url }}" class="btn btn-sm btn-outline-secondary">
+          <i class="fa fa-undo"></i> {% trans "撤销" %}
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+  $(document).ready(function () {
+    // 初始化 Toast 提示
+    //$('.toast').toast('show');
+
+    // 删除确认
+    $('form').on('submit', function (e) {
+      if (!confirm('{% trans "此操作不可逆，您确定要继续吗？" %}')) {
+        e.preventDefault();
+      }
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% load static %}
+{% load i18n %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>{% block title %}{% trans "DCRM" %}{% endblock %}</title>
+  <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="{% static 'favicon/favicon-96x96.png' %}" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon/favicon.svg' %}" />
+  <link rel="shortcut icon" href="{% static 'favicon/favicon.ico' %}" />
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'favicon/apple-touch-icon.png' %}" />
+  <meta name="apple-mobile-web-app-title" content="DCRM" />
+  <!-- Base css -->
+  <link rel="stylesheet" href="{% static 'adminlte/bootstrap/dist/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'adminlte/font-awesome/css/font-awesome.min.css' %}">
+  <link rel="stylesheet" href="{% static 'adminlte/css/AdminLTE.min.css' %}">
+  <!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+  <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+  {% block style %}{% endblock %}
+</head>
+{% block body %}
+{% block javascript %}{% endblock %}
+{% endblock %}
+</html>

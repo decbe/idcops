@@ -1,0 +1,26 @@
+<div class="drawer-body" id="drawer-content">
+    <div class="box-body">
+        <ul id="sortable" class="list-group">
+            {% for field in ordered_fields %}
+                <li class="list-group-item" draggable="true">
+                    <span class="handle pull-left" style="cursor: move; margin-right: 10px;">
+                        <i class="fa fa-arrows"></i>
+                    </span>
+                    <span>{{ field }}</span>
+                    <input type="hidden" name="order" value="{{ field }}">
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+<style>
+.control-sidebar {
+    position: absolute;
+    padding-top: 50px;
+    z-index: 1010;
+    background-color: #fff;
+    height: 100%;
+    border-left: 1px solid #eee;
+    padding-left: 20px;
+}
+</style>

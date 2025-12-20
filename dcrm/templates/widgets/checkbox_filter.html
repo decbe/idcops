@@ -1,0 +1,21 @@
+<div class="form-group">
+    <label>{{ widget.label }}</label>
+    <div class="row">
+        <div class="col-xs-12">
+            {% for group, options, index in widget.optgroups %}
+                {% for option in options %}
+                <div class="checkbox">
+                    <label>
+                        <input type="{{ option.type }}" 
+                               name="{{ option.name }}"
+                               value="{{ option.value }}"
+                               {% if option.selected %}checked{% endif %}
+                               {{ option.attrs.attrs }}>
+                        {{ option.label }}
+                    </label>
+                </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+</div> 

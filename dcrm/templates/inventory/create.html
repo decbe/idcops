@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="box">
+  <div class="box-header with-border">
+    <h3 class="box-title">添加库存</h3>
+  </div>
+  <form method="post" class="form-horizontal">
+    {% csrf_token %}
+    <div class="box-body">
+      <!-- 物品基本信息 -->
+      <div class="form-section">
+        <h4>物品信息</h4>
+        {{ form.as_p }}
+      </div>
+
+      <!-- 库存实例表单集 -->
+      <div class="form-section">
+        <h4>库存实例
+          <button type="button" class="btn btn-sm btn-success" hx-get="{% url 'add-instance-form' %}"
+            hx-target="#instances-container" hx-swap="beforeend">
+            添加实例
+          </button>
+        </h4>
+
+        {{ instances_formset.management_form }}
+        <div id="instances-container">
+          {% for instance_form in instances_formset %}
+          <div class="instance-form">
+            {{ instance_form.as_p }}
+            {% if not forloop.first %}
+            <button type="button" class="btn btn-sm btn-danger remove-form">删除</button>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="box-footer">
+      <button type="submit" class="btn btn-primary">保存</button>
+    </div>
+  </form>
+</div>
+
+{% block extra_js %}
+<script>
+  // 删除表单处理
+  document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('remove-form')) {
+      const formDiv = e.target.closest('.instance-form');
+      const deleteCheckbox = formDiv.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      if (deleteCheckbox) {
+        deleteCheckbox.checked = true;
+        formDiv.style.display = 'none';
+      }
+      updateFormIndexes();
+    }
+  });
+
+  // HTMX 事件处理：在新表单添加后更新索引
+  document.body.addEventListener('htmx:afterSwap', function (evt) {
+    if (evt.detail.target.id === 'instances-container') {
+      console.log('HTMX afterSwap triggered');
+      updateFormIndexes();
+    }
+  });
+
+  // 更新表单索引
+  function updateFormIndexes() {
+    const container = document.getElementById('instances-container');
+    if (!container) {
+      console.error('Container not found');
+      return;
+    }
+
+    const forms = container.getElementsByClassName('instance-form');
+    const totalForms = document.querySelector('[name="instances_formset-TOTAL_FORMS"]');
+
+    if (!totalForms) {
+      console.error('Total forms input not found');
+      return;
+    }
+
+    // 只计算可见的表单
+    const visibleForms = Array.from(forms).filter(form =>
+      form.style.display !== 'none'
+    );
+
+    console.log(`Updating total forms to: ${visibleForms.length}`);
+    totalForms.value = visibleForms.length;
+
+    visibleForms.forEach((form, index) => {
+      form.querySelectorAll('input,select,textarea').forEach(input => {
+        if (!input.name) return;
+
+        // 替换 __prefix__ 占位符
+        let newName = input.name.replace(/__prefix__/g, index.toString());
+
+        // 统一使用 instances_formset 前缀
+        newName = newName.replace(/iteminstance_set-\d+/, `instances_formset-${index}`);
+        newName = newName.replace(/instances_formset-\d+/, `instances_formset-${index}`);
+
+        if (newName !== input.name) {
+          console.log(`Updating name from ${input.name} to ${newName}`);
+          input.name = newName;
+        }
+
+        // 更新 id 属性
+        if (input.id) {
+          const newId = input.id
+            .replace(/__prefix__/g, index.toString())
+            .replace(/iteminstance_set-\d+/, `instances_formset-${index}`)
+            .replace(/instances_formset-\d+/, `instances_formset-${index}`);
+
+          if (newId !== input.id) {
+            input.id = newId;
+
+            // 更新关联的 label
+            const labels = form.querySelectorAll(`label[for="${input.id}"]`);
+            labels.forEach(label => {
+              label.setAttribute('for', newId);
+            });
+          }
+        }
+      });
+    });
+  }
+
+  // 页面加载完成后初始化
+  document.addEventListener('DOMContentLoaded', function () {
+    updateFormIndexes();
+  });
+</script>
+{% endblock %}
+{% endblock %}

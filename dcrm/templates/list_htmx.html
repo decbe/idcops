@@ -1,0 +1,167 @@
+{% spaceless %}
+{% load static %}
+{% load i18n %}
+<form method="post" post="{{ request.path }}">
+  {% csrf_token %} {% if actions %}
+  <div class="box-header with-border">
+    {# action #}
+    <div class="pull-left no-print actions" hx-boost="true" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+      hx-include='tr td input[name="pk"]:checked' id="list-action">
+      {% for action in actions %}
+      {% if action.is_htmx %}
+      <button hx-post="{{ request.path }}" {% if action.confirm_message %} hx-confirm="{{ action.confirm_message }}"
+        {% endif %} hx-target="#list-post-form" hx-push-url="true" name="action" disabled="disabled"
+        value="{{ action.action_type }}" title="{{ action.description }}"
+        class="btn btn-{{action.color}} btn-sm margin-r-5 disabled">
+        <i class="{{ action.icon }}"></i> <span class="hidden-xs"> {{ action.name }}</span>
+      </button>
+      {% else %}
+      <button data-post-url="{{ request.path }}" name="action" type="submit" disabled="disabled"
+        value="{{ action.action_type }}" class="btn btn-{{action.color}} btn-sm margin-r-5 disabled"
+        title="{{ action.description }}">
+        <i class="{{ action.icon }}"></i> <span class="hidden-xs"> {{ action.name }}</span>
+      </button>
+      {% endif %}
+      {% endfor %}
+      <div class="pull-right">
+        <div class="checkbox no-margin hidden" style="padding: 5px;">
+          <label for="select-all">
+            <input type="checkbox" name="_all" class="select-all checkbox" id="select-all">选择 <b class="text-danger">所有的
+              <span>{{ page_obj.paginator.count }}</span> 条</b> 记录
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  <div class="box-body" id="table-container">
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover table-condensed text-nowrap"
+        style="margin-bottom: 0px; overflow: hidden;">
+        <thead>
+          <tr>
+            {% for header in table_headers %}
+            <th scope="col" name="{{ header.field }}" class="{{ header.classes }}" title="{{ header.sort_tooltip }}">
+              {% if header.sortable %}
+              <a href="{{ header.sort_url }}" class="sort-link" hx-get="{{ header.sort_url }}"
+                hx-target="#list-post-form" hx-push-url="true" hx-indicator="#loading">
+                {{ header.label }}
+                {% if header.sort_icon %}{{ header.sort_icon|safe }}{% endif %}
+              </a>
+              {% if header.remove_url %}
+              <a class="sort-link pull-right" href="{{ header.remove_url }}" hx-get="{{ header.remove_url }}"
+                hx-target="#list-post-form" hx-push-url="true" hx-indicator="#loading">
+                <i class="fa fa-remove text-danger"></i>
+              </a>
+              {% endif %}
+              {% else %}
+              {{ header.label|safe }}
+              {% endif %}
+            </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% if object_list %}
+          <div id="loading" class="htmx-indicator" style="display: none;"></div>
+          {% for row in table_rows %}
+          <tr data-pk="{{ row.pk }}">
+            {% for cell in row.cells %}
+            <td class="{{ cell.classes }}">
+              {{ cell.value|safe }}
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+          {% else %}
+          <tr>
+            <td colspan="{{ table_headers|length }}" class="text-center text-muted"><i class="fa fa-inbox fa-3x"></i>
+              <p>没有数据</p>
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</form>
+<div class="box-footer clearfix">
+
+  {# 分页 #}
+  {% if is_paginated %}
+  <div class="pull-right no-print" id="list-pagination">
+    <ul class="pagination pagination-sm no-margin pull-right">
+      {% if per_page_li %}
+      <div class="btn-group dropup pull-left">
+        <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown"
+          aria-expanded="true">
+          <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu">
+          {{ per_page_li|safe }}
+        </ul>
+      </div>
+      {% endif %}
+      {% if page_obj.has_previous %}
+      <li><a href="?page=1{% if current_params %}&{{ current_params }}{% endif %}"
+          hx-get="?page=1{% if current_params %}&{{ current_params }}{% endif %}" hx-target="#list-post-form"
+          hx-push-url="true" hx-swap="innerHTML show:window:top">首页</a>
+      </li>
+      <li><a href="?page={{ page_obj.previous_page_number }}{% if current_params %}&{{ current_params }}{% endif %}"
+          hx-get="?page={{ page_obj.previous_page_number }}{% if current_params %}&{{ current_params }}{% endif %}"
+          hx-target="#list-post-form" hx-push-url="true" hx-swap="innerHTML show:window:top">上一页</a>
+      </li>
+      {% else %}
+      <li class="previous disabled"><a>上一页</a></li>
+      {% endif %}
+      <li class="previous disabled">
+        <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      </li>
+      {% if page_obj.has_next %}
+      <li><a href="?page={{ page_obj.next_page_number }}{% if current_params %}&{{ current_params }}{% endif %}"
+          hx-get="?page={{ page_obj.next_page_number }}{% if current_params %}&{{ current_params }}{% endif %}"
+          hx-target="#list-post-form" hx-push-url="true" hx-swap="innerHTML show:window:top">下一页</a>
+      </li>
+      <li><a href="?page=last{% if current_params %}&{{ current_params }}{% endif %}"
+          hx-get="?page=last{% if current_params %}&{{ current_params }}{% endif %}" hx-target="#list-post-form"
+          hx-push-url="true" hx-swap="innerHTML show:window:top">末页</a></li>
+      {% else %}
+      <li class="previous disabled"><a>下一页</a></li>
+      {% endif %}
+    </ul>
+  </div>
+  {% endif %}
+</div>
+
+{% if request.htmx %}
+<small id="page-subtitle" hx-swap-oob="true">
+  {# 数据条目数量 #}
+  {% if page_obj.paginator.count > 0 %}
+  显示 {{ page_obj.start_index }}-{{ page_obj.end_index }} / {{ page_obj.paginator.count }}
+  <span id="select_count" style="display: none;">.</span>
+  <span id="objects-info" style="display: none;" data-total="{{ page_obj.paginator.count }}"
+    data-current-count="{{ object_list.count }}">
+  </span>
+  <a id="select_all" data-page-start="{{ page_obj.start_index }}" data-page-end="{{ page_obj.end_index }}"
+    data-page-total="{{ page_obj.paginator.count }}" style="display: none;" class="hidden-xs" href="javascript:void(0)">
+    选中所有的 {{ page_obj.paginator.count }} 条</a>
+  {% else %}
+  没有数据...
+  {% endif %}
+</small>
+
+{% if messages %}
+<div id="django-messages" hx-swap-oob="innerHTML:#django-messages">
+  {% for message in messages %}
+  <div name="message" style="padding:10px; margin-bottom:15px;"
+    class="alert alert-{% if message.tags %}{{ message.tags }}{% endif %} no-print">
+    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+    <b style="margin-right: 20px;">{{message}}</b>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endif %}
+{% endspaceless %}

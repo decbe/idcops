@@ -1,0 +1,167 @@
+{% extends "detail.html" %}
+{% load static %}
+
+{% block title %}设备拓扑关系图 | {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="box">
+            <div class="box-header with-border">
+                <h3 class="box-title">设备拓扑关系图</h3>
+                <div class="box-tools pull-right">
+                    <a href="{{ return_url }}" class="btn btn-default btn-sm margin-r-5">
+                        <i class="fa fa-arrow-left"></i> 返回
+                    </a>
+                    <button class="btn btn-default btn-sm" onclick="downloadChart()">
+                        <i class="fa fa-download"></i> 下载图片
+                    </button>
+                </div>
+            </div>
+            <div class="box-body">
+                {% if error %}
+                    <div class="alert alert-danger">
+                        {{ error }}
+                    </div>
+                {% else %}
+                    <div id="topology-chart" style="width: 100%; height: 780px;"></div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if not error %}
+<script src="{% static 'js/echarts.min.js' %}"></script>
+<script>
+let chart;  // 声明全局变量以便访问
+
+function isFirefox() {
+    return navigator.userAgent.toLowerCase().includes('firefox');
+}
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    let formatter = isFirefox() ? 'svg' : 'canvas';
+    console.log(formatter);
+    try {
+        const chartDom = document.getElementById('topology-chart');
+        chart = echarts.init(chartDom, null, {
+            renderer: formatter
+        });
+        
+        // 解析JSON数据
+        const nodes = JSON.parse('{{ nodes_json|safe }}');
+        const edges = JSON.parse('{{ edges_json|safe }}');
+        const categories = JSON.parse('{{ categories_json|safe }}');
+        
+        const option = {
+            title: {
+                text: '设备拓扑关系图',
+                subtext: '{{ object.name }}',
+                top: 'top',
+            },
+            tooltip: {
+                trigger: 'item',
+                formatter: function(params) {
+                    if (params.dataType === 'edge') {
+                        return '<b>' + params.data.name + '</b><br/>' + params.data.value;
+                    }
+                    return '<b>' + params.data.value + '</b><br/>' + params.data.name;
+                }
+            },
+            edgeLabel: {
+                show: true,
+                position: 'top',
+                formatter: function(params) {
+                    if (params.dataType === 'edge') {
+                        return params.data.value;
+                    }
+                    return '<b>' + params.data.value + '</b><br/>' + params.data.name;
+                }
+            },
+            legend: [{
+                data: categories
+            }],
+            series: [{
+                type: 'graph',
+                layout: 'none',
+                data: nodes,
+                links: edges,
+                categories: categories,
+                roam: true,
+                label: {
+                    show: true,
+                    position: 'top'
+                },
+                scaleLimit: {
+                    min: 0.4,
+                    max: 1
+                },
+                lineStyle: {
+                    color: '#000',
+                    width: 2,           // 减小线条宽度
+                    curveness: 0,
+                    // opacity: 0.7        // 调整线条透明度
+                }
+            }]
+        };
+        
+        // 设置图表选项
+        chart.setOption(option);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            chart.resize();
+        });
+        
+    } catch (error) {
+        console.error('Error initializing chart:', error);
+        document.getElementById('topology-chart').innerHTML = 
+            '<div class="alert alert-danger">加载图表时出错: ' + error.message + '</div>';
+    }
+    // 双击节点时跳转到设备详情页
+    chart.on('dblclick', function(params) {
+    if (params.dataType === 'node') {
+        var nodeId = params.data.id;
+        if (nodeId.startsWith('device_')) {
+            var deviceId = nodeId.replace('device_', '');
+            window.location.href = '/devices/online/' + deviceId + '/';
+        } else if (nodeId.startsWith('rack_')) {
+            var rackId = nodeId.replace('rack_', '');
+            window.location.href = '/racks/' + rackId + '/';
+        }
+    }
+    if (params.dataType === 'edge') {
+        var edgeId = params.data.id;
+        if (edgeId.startsWith('edge_')) {
+            var edgeId = edgeId.replace('edge_', '');
+            window.location.href = '/devices/ports/' + edgeId + '/';
+        }
+    }
+});
+});
+
+// 下载图表函数
+function downloadChart() {
+    if (chart) {
+        const url = chart.getDataURL({
+            type: 'png',
+            pixelRatio: 2,  // 提高导出图片的清晰度
+            backgroundColor: '#fff'  // 设置背景色为白色
+        });
+        
+        // 创建下载链接
+        const link = document.createElement('a');
+        link.download = '{{ object }}设备拓扑关系图.png';
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+</script>
+{% endif %}
+{% endblock %} 

@@ -1,0 +1,100 @@
+/* 仪表盘样式 */
+.box {
+    border-top: 3px solid #d2d6de;
+}
+
+.box.box-primary {
+    border-top-color: #3c8dbc;
+}
+
+.box.box-info {
+    border-top-color: #00c0ef;
+}
+
+.box.box-success {
+    border-top-color: #00a65a;
+}
+
+.info-box-icon {
+    border-top-left-radius: 2px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 2px;
+    display: block;
+    float: left;
+    height: 90px;
+    width: 90px;
+    text-align: center;
+    font-size: 45px;
+    line-height: 90px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.info-box-content {
+    padding: 5px 10px;
+    margin-left: 90px;
+}
+
+.info-box-text {
+    text-transform: uppercase;
+}
+
+.info-box-number {
+    display: block;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+/* 下拉菜单样式 */
+.dropdown-menu>li>a {
+    padding: 3px 20px;
+}
+
+.dropdown-menu>li>a:hover {
+    background-color: #3c8dbc;
+    color: white;
+}
+
+/* 图表容器 */
+#device-trend-chart,
+#device-type-chart {
+    width: 100%;
+}
+
+/* 图表盒子样式 */
+.box .box {
+    border-top: none;
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.box .box .box-header {
+    padding: 10px;
+}
+
+.box .box .box-body {
+    padding: 10px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .info-box-icon {
+        height: 70px;
+        width: 70px;
+        font-size: 35px;
+        line-height: 70px;
+    }
+
+    .info-box-content {
+        margin-left: 70px;
+    }
+
+    .info-box-number {
+        font-size: 16px;
+    }
+
+    /* 移动端图表布局调整 */
+    .box .box {
+        margin-bottom: 15px;
+    }
+}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block content %}
+<div class="box box-primary">
+    <div class="box-header with-border">
+        <h3 class="box-title">
+            {% if is_bulk_create %}
+            {% trans "批量创建设备" %}
+            {% else %}
+            {% trans "批量更新设备" %}
+            {% endif %}
+        </h3>
+    </div>
+
+    <form method="post" class="form-horizontal" id="bulk-form" hx-post="{{ request.path }}" hx-target="#bulk-form"
+        hx-swap="outerHTML">
+        {% csrf_token %}
+
+        {% if is_bulk_create %}
+        <div class="box-body">
+            <div class="form-group">
+                <label class="col-sm-2 control-label">{% trans "表单数量" %}</label>
+                <div class="col-sm-4">
+                    <input type="number" name="form_count" id="formCount" class="form-control"
+                        value="{{ forms|length }}" min="{{ min_num }}" max="{{ max_num }}" hx-get="{{ request.path }}"
+                        hx-target="#formsContainer" hx-trigger="change" hx-swap="innerHTML">
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div id="formsContainer">
+            {% include "_includes/bulk_form_container.html" %}
+        </div>
+
+        <div class="box-footer">
+            <div class="col-sm-offset-2 col-sm-10">
+                <button type="submit" class="btn btn-primary">
+                    {% trans "保存" %}
+                </button>
+                <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-default">
+                    {% trans "返回" %}
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% block extra_js %}
+<script>
+    document.body.addEventListener('htmx:responseError', function (evt) {
+        if (evt.detail.xhr.status === 400) {
+            // 表单验证失败，更新表单内容
+            document.getElementById('bulk-form').outerHTML = evt.detail.xhr.response;
+        }
+    });
+
+    document.body.addEventListener('htmx:beforeRequest', function (evt) {
+        // 禁用提交按钮
+        const submitBtn = evt.detail.elt.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
+    });
+
+    document.body.addEventListener('htmx:afterRequest', function (evt) {
+        // 启用提交按钮
+        const submitBtn = evt.detail.elt.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.disabled = false;
+
+        // 处理成功响应
+        if (evt.detail.successful) {
+            try {
+                const response = JSON.parse(evt.detail.xhr.response);
+                if (response.message) {
+                    toastr.success(response.message);
+                }
+                if (response.redirect_url) {
+                    window.location.href = response.redirect_url;
+                }
+            } catch (e) {
+                // 不是JSON响应，可能是HTML更新
+            }
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

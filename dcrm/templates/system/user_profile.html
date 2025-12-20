@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %} {% trans "个人资料" %} | {{ block.super }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}{% trans "个人资料" %}{% endblock %}
+
+{% block breadcrumb %}
+{% for item in breadcrumbs %}
+<li {% if forloop.last %}class="active" {% endif %}>
+  {% if not forloop.last %}<a href="{{ item.url }}">{% endif %}
+    <i class="{{ item.icon }}"></i> {{ item.name }}
+    {% if not forloop.last %}</a>{% endif %}
+</li>
+{% endfor %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-3">
+
+    <!-- Profile Image -->
+    <div class="box box-primary">
+      <div class="box-body box-profile">
+        <div class="avatar-upload-container" style="position: relative; display: block; text-align: center;">
+          <img id="profile-avatar" class="profile-user-img img-responsive img-circle"
+            src="{{ request.user.avatar_url }}" alt="User profile picture"
+            style="cursor: pointer; width: 90px; height: 90px; object-fit: cover; object-position: center;">
+          <div class="avatar-overlay" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); 
+                     width: 90px; height: 90px; border-radius: 50%; background: rgba(0,0,0,0.5); 
+                     display: none; align-items: center; justify-content: center; color: white; 
+                     font-size: 12px; text-align: center; cursor: pointer;">
+            <i class="fa fa-camera"></i><br>点击修改
+          </div>
+          <input type="file" id="avatar-input" accept="image/*" style="display: none;">
+        </div>
+
+        <h3 class="profile-username text-center">{{ request.user.get_full_name|default:request.user.username }}</h3>
+
+        <p class="text-muted text-center">{{ request.user.data_center }}<br>{{ request.user.email }}</p>
+
+        <ul class="list-group list-group-unbordered">
+          {% for related in objects_collections %}
+          <li class="list-group-item {{ related.name }}">
+            <b><i class="fa {{ related.icon }}"></i> {{ related.verbose_name }}</b><a href="{{ related.url }}"
+              class="pull-right" style="padding-left: 30px;">{{ related.count }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+
+        <!-- <a href="#" class="btn btn-primary btn-block"><b>Follow</b></a> -->
+      </div>
+      <!-- /.box-body -->
+    </div>
+    <!-- /.box -->
+
+  </div>
+  <!-- /.col -->
+  <div class="col-md-9">
+    <div class="nav-tabs-custom">
+      <ul class="nav nav-tabs">
+        <!-- <li class="active"><a href="#activity" data-toggle="tab">活动</a></li> -->
+        <!-- <li><a href="#timeline" data-toggle="tab">时间轴</a></li> -->
+        <li class="active"><a href="#settings" data-toggle="tab">修改资料</a></li>
+      </ul>
+      <div class="tab-content">
+
+        <div class="active tab-pane" id="settings">
+          <form class="form" method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="form-group{% if field.name == 'avatar' %} hidden{% endif %}">
+              <label>{{ field.label}}:</label>
+              {{ field }}
+              <div class="help-block">{{ field.help_text }}</div>
+            </div>
+            {% endfor %}
+            <div class="form-group">
+              <button type="submit" class="btn btn-sm btn-primary">{% trans '提交' %}</button>
+            </div>
+          </form>
+        </div>
+        <!-- /.tab-pane -->
+      </div>
+      <!-- /.tab-content -->
+    </div>
+    <!-- /.nav-tabs-custom -->
+  </div>
+  <!-- /.col -->
+</div>
+
+<!-- 加载遮罩 -->
+<div id="avatar-loading" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+     background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: white; padding: 20px; border-radius: 5px; text-align: center;">
+    <i class="fa fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i><br>
+    <span>正在上传头像...</span>
+  </div>
+</div>
+
+<script>
+  // 获取CSRF Token
+  function getCsrfToken() {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'csrftoken') {
+        return value;
+      }
+    }
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+  }
+
+  // 头像上传功能
+  document.addEventListener('DOMContentLoaded', function () {
+    const avatarContainer = document.querySelector('.avatar-upload-container');
+    const avatarImg = document.getElementById('profile-avatar');
+    const avatarOverlay = document.querySelector('.avatar-overlay');
+    const avatarInput = document.getElementById('avatar-input');
+    const loadingDiv = document.getElementById('avatar-loading');
+
+    // 鼠标悬停显示叠加层
+    avatarContainer.addEventListener('mouseenter', function () {
+      avatarOverlay.style.display = 'flex';
+    });
+
+    avatarContainer.addEventListener('mouseleave', function () {
+      avatarOverlay.style.display = 'none';
+    });
+
+    // 点击头像或叠加层打开文件选择
+    avatarContainer.addEventListener('click', function () {
+      avatarInput.click();
+    });
+
+    // 文件选择变化事件
+    avatarInput.addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // 验证文件类型
+      if (!file.type.startsWith('image/')) {
+        alert('请选择有效的图片文件');
+        return;
+      }
+
+      // 验证文件大小 (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('头像文件不能超过5MB');
+        return;
+      }
+
+      // 预览图片
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        avatarImg.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+
+      // 上传头像
+      uploadAvatar(file);
+    });
+
+    // 上传头像函数
+    function uploadAvatar(file) {
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      // 显示加载状态
+      loadingDiv.style.display = 'flex';
+
+      fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': getCsrfToken()
+        },
+        credentials: 'include'
+      })
+        .then(response => {
+          return response.json();
+        })
+        .then(data => {
+          // 隐藏加载状态
+          loadingDiv.style.display = 'none';
+
+          if (data.success) {
+            // 添加时间戳防止缓存问题
+            const timestamp = new Date().getTime();
+            const newAvatarUrl = data.avatar_url + '?t=' + timestamp;
+
+            // 更新主头像显示
+            avatarImg.src = newAvatarUrl;
+
+            // 更新导航栏中的头像
+            const navAvatars = document.querySelectorAll('img.user-image, .user-header img');
+            navAvatars.forEach((img, index) => {
+              img.src = newAvatarUrl;
+            });
+
+            // 更新所有可能的头像位置
+            const allAvatars = document.querySelectorAll('img[src*="avatar"], img[alt*="User"], img[alt*="profile"]');
+            allAvatars.forEach((img, index) => {
+              // 只更新当前用户的头像，不影响其他用户的头像
+              if (img.src.includes('{{ request.user.username }}') ||
+                img.src.includes('avatar') ||
+                img.classList.contains('user-image') ||
+                img.classList.contains('profile-user-img')) {
+                img.src = newAvatarUrl;
+              }
+            });
+
+            // 显示成功消息
+            showMessage('成功', data.message, 'success');
+          } else {
+            // 显示错误消息
+            showMessage('错误', data.message, 'error');
+
+            // 还原原始头像
+            avatarImg.src = '{{ request.user.avatar_url }}';
+          }
+        })
+        .catch(error => {
+          // 隐藏加载状态
+          loadingDiv.style.display = 'none';
+
+          showMessage('错误', '头像上传失败，请重试', 'error');
+
+          // 还原原始头像
+          avatarImg.src = '{{ request.user.avatar_url }}';
+        });
+    }
+
+    // 显示消息函数
+    function showMessage(title, message, type) {
+      // 使用 AdminLTE 的通知样式
+      const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+      const iconClass = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+
+      const messageHtml = `
+            <div class="alert ${alertClass} alert-dismissible" style="position: fixed; top: 20px; right: 20px; z-index: 10000; min-width: 300px;">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                <h4><i class="icon fa ${iconClass}"></i> ${title}</h4>
+                ${message}
+            </div>
+        `;
+
+      document.body.insertAdjacentHTML('beforeend', messageHtml);
+
+      // 3秒后自动消失
+      setTimeout(() => {
+        const alert = document.querySelector('.alert:last-of-type');
+        if (alert) {
+          alert.remove();
+        }
+      }, 3000);
+    }
+  });
+</script>
+{% endblock %}

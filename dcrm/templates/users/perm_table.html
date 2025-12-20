@@ -1,0 +1,66 @@
+
+{% load form_tags %}
+<div class="form-group" style="margin-bottom: 0px;">
+    <label for="id_permissions">权限:</label>
+</div>
+<div class="table-responsive">
+    <table class="table table-bordered table-hover table-condensed text-nowrap">
+        <thead>
+            <tr>
+                <th width="20%">模块名称</th>
+                <th width="10%" class="text-center column-header" data-type="view">查看</th>
+                <th width="10%" class="text-center column-header" data-type="add">新增</th>
+                <th width="10%" class="text-center column-header" data-type="change">修改</th>
+                <th width="10%" class="text-center column-header" data-type="delete">删除</th>
+                <th width="50%" class="column-header" data-type="custom">其他权限</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in form.permissions_table %}
+            <tr data-row="{{ forloop.counter }}">
+                <td class="row-header">
+                    <b>{{ row.verbose_name }}</b>
+                </td>
+                <td class="text-center">
+                    {% if row.permissions.view %}
+                    <div class="checkbox-wrapper">
+                        {{ form|get_form_field:row.permissions.view.field_name }}
+                    </div>
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    {% if row.permissions.add %}
+                    <div class="checkbox-wrapper">
+                        {{ form|get_form_field:row.permissions.add.field_name }}
+                    </div>
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    {% if row.permissions.change %}
+                    <div class="checkbox-wrapper">
+                        {{ form|get_form_field:row.permissions.change.field_name }}
+                    </div>
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    {% if row.permissions.delete %}
+                    <div class="checkbox-wrapper">
+                        {{ form|get_form_field:row.permissions.delete.field_name }}
+                    </div>
+                    {% endif %}
+                </td>
+                <td>
+                    {% for perm in row.permissions.custom %}
+                    <div class="checkbox">
+                        <label>
+                            {{ form|get_form_field:perm.field_name }}
+                            {{ perm.name }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

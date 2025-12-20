@@ -1,0 +1,64 @@
+{% load i18n menu_tags %}
+
+{% for section, items in menu_items.items %}
+<li class="header">{{ menu_sections|get:section|default:section }}</li>
+{% for item in items %}
+<li class="{% if item.children %}treeview{% endif %} {% if item.active %}active{% endif %}">
+  <a href="{{ item.url }}" {% if item.target %}target="{{ item.target }}" {% endif %}>
+    <i class="fa {{ item.icon }} {% if item.icon_color %}{{ item.icon_color }}{% endif %}"></i>
+    <span>{{ item.name }}</span>
+    {% if item.children or item.get_badge_text %}
+    <span class="pull-right-container">
+      {% if item.children %}
+      <i class="fa fa-angle-left pull-right"></i>
+      {% endif %}
+      {% if item.get_badge_text %}
+      <small class="label {{ item.badge_class|default:'bg-primary' }} pull-right">{{ item.get_badge_text }}</small>
+      {% endif %}
+    </span>
+    {% endif %}
+  </a>
+  {% if item.children %}
+  <ul class="treeview-menu">
+    {% for child in item.children %}
+    <li class="{% if child.children %}treeview{% endif %} {% if child.active %}active{% endif %}">
+      <a href="{{ child.url }}">
+        <i
+          class="fa {{child.icon}} {% if child.icon_color %}{{ child.icon_color }}{% endif %}{% if child.active %}text-aqua{% endif %}"></i>
+        {{ child.name }}
+        {% if child.children or child.badge_text %}
+        <span class="pull-right-container">
+          {% if child.children %}
+          <i class="fa fa-angle-left pull-right"></i>
+          {% endif %}
+          {% if child.badge_text %}
+          <small class="label {{ child.badge_class|default:'bg-primary' }} pull-right">{{ child.badge_text }}</small>
+          {% endif %}
+        </span>
+        {% endif %}
+      </a>
+      {% if child.children %}
+      <ul class="treeview-menu">
+        {% for grandchild in child.children %}
+        <li class="{% if grandchild.active %}active{% endif %}">
+          <a href="{{ grandchild.url }}">
+            <i class="fa {{grandchild.icon}} {% if grandchild.icon_color %}{{ grandchild.icon_color }}{% endif %}"></i>
+            {{ grandchild.name }}
+            {% if grandchild.badge_text %}
+            <span class="pull-right-container">
+              <small
+                class="label {{ grandchild.badge_class|default:'bg-primary' }} pull-right">{{ grandchild.badge_text }}</small>
+            </span>
+            {% endif %}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</li>
+{% endfor %}
+{% endfor %}

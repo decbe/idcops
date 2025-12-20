@@ -1,0 +1,756 @@
+{% load static %}
+{% load i18n %}
+{% load form_filters %}
+{% load dcrm_tags rack_tags %}
+
+{% block content %}
+<div class="box-header with-border">
+  <h3 class="box-title">
+    {% if object %}{% trans '编辑' %}{{ object }}{% else %}{% trans '新增' %}{{ subtitle }}{% endif %}
+  </h3>
+  <div class="box-tools pull-right">
+    <!-- <div class="btn-group margin-r-5">
+      <a class="btn btn-default btn-sm" href="{{ request.META.HTTP_REFERER }}">
+        <i class="fa fa-arrow-circle-o-left"></i>
+        <span> {% trans '返回' %}</span>
+      </a>
+    </div> -->
+  </div>
+</div>
+<div class="box-body">
+  <div class="row">
+    {# 左侧表单 #}
+    <div class="col-md-9 col-md-push-3">
+      <div id="edit-form">
+        <form method="post" enctype="multipart/form-data" id="edit-form-htmx" novalidate>
+          <div class="box-body no-padding">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+              {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            {% for fieldset in fieldsets|slice:"2" %}
+            {% if forloop.first %}
+            <div class="row">
+              {% endif %}
+              <div class="col-md-6">
+                <div class="form-group">
+                  <div class="clearfix" style="margin-bottom: 10px;">
+                    <h4 class="margin-r-5" style="display: inline;">{{ fieldset.name }}</h4>
+                    {% if fieldset.description %}
+                    <span class="text-muted">{{ fieldset.description }}</span>
+                    {% endif %}
+                  </div>
+                  {% include "field_group.html" %}
+                </div>
+              </div>
+              {% if forloop.last %}
+            </div>
+            <br>
+            {% endif %}
+            {% endfor %}
+
+            {% for fieldset in fieldsets|slice:"2:" %}
+            {% if forloop.first %}
+            <div class="row">
+              {% endif %}
+              <div class="col-md-6">
+                <div class="form-group">
+                  <div class="clearfix" style="margin-bottom: 10px;">
+                    <h4 class="margin-r-5" style="display: inline;">{{ fieldset.name }}</h4>
+                    {% if fieldset.description %}
+                    <span class="text-muted">{{ fieldset.description }}</span>
+                    {% endif %}
+                  </div>
+                  {% include "field_group.html" %}
+                </div>
+              </div>
+              {% if forloop.last %}
+            </div>
+            {% endif %}
+            {% endfor %}
+          </div>
+          <div class="box-footer">
+            <div class="pull-right">
+              <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-default btn-sm margin-r-5"
+                title="{% trans '取消并返回' %}">
+                {% trans '返回' %}
+              </a>
+              <button type="submit" name="save" class="btn btn-primary btn-sm margin-r-5">{% trans '保存'%}</button>
+              <button type="submit" name="_clone_add" class="btn btn-primary btn-sm">{% trans '复制并添加'%}</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+    {# 右侧机柜立面图 #}
+    <div class="col-md-3 col-md-pull-9">
+      <div class="box-body no-padding">
+        {% if rack %}
+        {% if object %}
+        {% render_rack_elevation rack object edit_device=True %}
+        {% else %}
+        {% render_rack_elevation rack %}
+        {% endif %}
+        {% else %}
+        {# 提示选择机柜 #}
+        <h3 class="text-center">{% trans '请在表单中选择机柜' %}</h3>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+<script src="{% static 'js/choices.min.js' %}"></script>
+<script>
+
+  // 定义全局 selects Map
+  if (!window.selects) {
+    window.selects = new Map();
+  }
+
+  if (!window.HTMX_TRIGGER_FIELDS) {
+    window.HTMX_TRIGGER_FIELDS = ['rack', 'position'];
+  }
+
+  function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+  }
+
+  // 保存表单数据,但排除触发字段
+  function saveFormData(triggerFieldName) {
+    const form = document.getElementById('edit-form-htmx');
+    if (!form) return;
+
+    const formData = {
+      triggerField: triggerFieldName,
+      values: {}
+    };
+
+    // 定义 rack 变化时需要排除的字段
+    const rackExcludeFields = ['position', 'rack_pdus', 'tenant', 'rack'];
+
+    // 保存普通输入字段
+    form.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(input => {
+      if (input.name && input.name !== triggerFieldName) {
+        // 当 rack 发生变化时，排除指定字段
+        if (triggerFieldName === 'rack' && rackExcludeFields.includes(input.name)) {
+          return;
+        }
+        formData.values[input.name] = input.value;
+      }
+    });
+
+    // 保存选择字段
+    form.querySelectorAll('select').forEach(select => {
+      if (select.name && select.name !== triggerFieldName) {
+        // 当 rack 发生变化时，排除指定字段
+        if (triggerFieldName === 'rack' && rackExcludeFields.includes(select.name)) {
+          return;
+        }
+        if (select.multiple) {
+          formData.values[select.name] = Array.from(select.selectedOptions).map(option => option.value);
+        } else {
+          formData.values[select.name] = select.value;
+        }
+      }
+    });
+
+    localStorage.setItem('deviceFormData', JSON.stringify(formData));
+  }
+
+  // 恢复表单数据
+  function restoreFormData() {
+    const savedData = localStorage.getItem('deviceFormData');
+    if (!savedData) return;
+
+    try {
+      const formData = JSON.parse(savedData);
+      const triggerField = formData.triggerField;
+
+      // 恢复表单数据
+      Object.entries(formData.values).forEach(([name, value]) => {
+        // 跳过触发字段
+        if (name === triggerField) return;
+
+        const element = document.querySelector(`[name="${name}"]`);
+        if (!element) return;
+
+        if (element.tagName === 'SELECT') {
+          if (element.multiple) {
+            const choicesInstance = window.selects.get(element)?.choice;
+            if (choicesInstance) {
+              choicesInstance.setChoiceByValue(value);
+            }
+          } else {
+            const choicesInstance = window.selects.get(element)?.choice;
+            if (choicesInstance && value) {
+              choicesInstance.setChoiceByValue(value.toString());
+            }
+          }
+        } else {
+          element.value = value;
+        }
+      });
+
+    } catch (error) {
+      console.error('恢复表单数据失败:', error);
+      clearFormStorage();
+    }
+  }
+
+  // 清除存储的表单数据
+  function clearFormStorage() {
+    localStorage.removeItem('deviceFormData');
+  }
+
+  // 将 debouncedPredictDeviceModel 声明为全局变量
+  if (!window.debouncedPredictDeviceModel) {
+    window.debouncedPredictDeviceModel = debounce(function (serialNumber) {
+      var modelSelect = document.querySelector('select[name="model"]');
+      var modelValue = modelSelect.value;
+      if (!serialNumber || modelValue) return;
+      const predictCount = parseInt('{{ preferences.PREDICT_DEV_MODEL_COUNT }}');
+      if (predictCount <= 0) return;
+      fetch('{% url "api-0.1:predict_device_model" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({ sn: serialNumber.toUpperCase(), count: predictCount })
+      })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`预测请求失败: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          const predictionContainer = $('#prediction-container');
+          if (data.status === 'success' && data.result && data.result.length > 0) {
+            const resultHtml = `
+						<div class="panel panel-default">
+              <div class="panel-heading" style="padding: 2px 5px;">
+                有 ${data.result.length} 个预测推荐的型号，点击可选择
+              </div>
+              <div class="panel-body" style="padding: 5px 10px;">
+                <div class="prediction-items">
+                ${data.result.map(([id, modelName, confidence]) => `
+                  <span class="label bg-olive prediction-item" 
+                    style="padding: 5px 5px; cursor: pointer; margin: 3px; display: inline-block;"
+                    data-model-id="${id}">
+                    ${modelName} (${(confidence * 100).toFixed(2)}%)
+                  </span>
+                `).join(' ')}
+                </div>
+              </div>
+						</div>
+                `;
+            const serialNumber = document.querySelector('input[name="serial_number"]');
+            // const serialFormGroup = document.querySelector('input[name="serial_number"]').closest('.form-group');
+            serialNumber.closest('.form-group').style.marginBottom = '3px';
+            predictionContainer.html(resultHtml).show();
+
+            // 为预测结果添加点击事件
+            predictionContainer.find('.prediction-item').on('click', function () {
+              const modelId = $(this).data('model-id');
+              const modelSelect = document.querySelector('select[name="model"]');
+              const choicesInstance = window.selects.get(modelSelect).choice;
+              choicesInstance.setChoiceByValue(modelId.toString());
+              modelSelect.dispatchEvent(new Event('choice'));
+              autoCompleteType();
+            });
+          } else {
+            console.log('没有预测结果');
+            predictionContainer.hide();
+          }
+        })
+        .catch(error => {
+          console.error('预测请求错误:', error);
+          $('#prediction-container').hide();
+        });
+    }, 500);
+  }
+
+  function initSerialNumberListener() {
+    const serialInput = document.querySelector('input[name="serial_number"]');
+    if (!serialInput) {
+      return;
+    }
+
+    // 检查是否已经初始化过
+    if (serialInput.hasAttribute('data-sn-listener-initialized')) {
+      return;
+    }
+
+    // 创建预测结果容器
+    const predictionContainer = $('<div>', {
+      id: 'prediction-container',
+      class: 'prediction-result mt-2',
+      style: 'display: none'
+    }).insertAfter($(serialInput).closest('.form-group'));
+
+    serialInput.addEventListener('input', function () {
+      if (this.value.length >= 5) {
+        window.debouncedPredictDeviceModel(this.value);
+      } else {
+        $('#prediction-container').hide();
+      }
+    });
+
+    // 标记为已初始化
+    serialInput.setAttribute('data-sn-listener-initialized', 'true');
+  }
+
+  function initChoices() {
+    const form = document.getElementById('edit-form-htmx');
+    if (!form) return;
+
+    // 清理旧的 choices 实例和 selects Map
+    document.querySelectorAll('select.form-control').forEach(select => {
+      if (select._choice) {
+        select._choice.destroy();
+        select._choice = null;
+      }
+    });
+    window.selects.clear();  // 清空全局 selects Map
+    // 定义触发 HTMX 请求的字段名称
+    window.HTMX_TRIGGER_FIELDS.forEach(fieldName => {
+      const field = form.querySelector(`[name="${fieldName}"]`);
+      if (field) {
+        field.addEventListener('change', function () {
+          saveFormData(fieldName);
+        });
+      }
+    });
+
+    document.querySelectorAll('select.form-control').forEach(select => {
+      if (select._choice) return;
+
+      const originalTrigger = select.getAttribute('hx-trigger');
+      if (originalTrigger) {
+        select.removeAttribute('hx-trigger');
+      }
+
+      if (select.required && !select.value) {
+        const defaultOption = select.querySelector('option[value=""]');
+        if (!defaultOption) {
+          const placeholder = select.getAttribute('placeholder') || '请选择';
+          const option = document.createElement('option');
+          option.value = '';
+          option.text = placeholder;
+          option.disabled = true;
+          option.selected = true;
+          select.insertBefore(option, select.firstChild);
+        }
+      }
+      let choiceOptions = {
+        removeItemButton: true,
+        searchEnabled: true,
+        shouldSort: false,
+        sorter: () => [],
+        allowHTML: true,
+        placeholderValue: '请选择',
+        position: 'auto',
+        renderChoiceLimit: -1,
+        searchResultLimit: -1,
+        searchPlaceholderValue: '搜索...',
+        noResultsText: '没有找到匹配项',
+        itemSelectText: '点击选择',
+        loadingText: '加载中...',
+        noChoicesText: '没有可选择的选项',
+        addItemText: (value) => `按回车键添加 "${value}"`,
+        maxItemText: (maxItemCount) => `最多只能选择${maxItemCount}项`,
+        customAddItemText: '只能添加符合此规则的选项',
+        duplicateItemsAllowed: false,
+      }
+      // ['model', 'tags'] 这两个字段需要添加选项, model 暂时不支持
+      if (['tags'].includes(select.name)) {
+        Object.assign(choiceOptions, { addChoices: true });
+      }
+      const choice = new Choices(select, choiceOptions);
+
+      select._choice = choice;
+
+      if (originalTrigger) {
+        select.setAttribute('hx-trigger', originalTrigger);
+      }
+
+      window.selects.set(select, {
+        choice,
+        hasError: false
+      });
+
+      choice.passedElement.element.addEventListener('choice', function (event) {
+        const value = choice.getValue(true);
+        if (value) {
+          const errorElement = select.parentElement.querySelector('.help-block');
+          if (errorElement) {
+            errorElement.remove();
+          }
+          select.parentElement.classList.remove('has-error');
+          window.selects.get(select).hasError = false;
+        } else if (select.required) {
+          const errorElement = select.parentElement.querySelector('.help-block') ||
+            document.createElement('span');
+          errorElement.className = 'help-block';
+          errorElement.textContent = '此字段是必填项。';
+          if (!select.parentElement.querySelector('.help-block')) {
+            select.parentElement.appendChild(errorElement);
+          }
+          select.parentElement.classList.add('has-error');
+          window.selects.get(select).hasError = true;
+        }
+      });
+
+      // choice.passedElement.element.addEventListener('removeItem', function (event) {
+      //   if (select.required && !choice.getValue(true)) {
+      //     const errorElement = select.parentElement.querySelector('.help-block') ||
+      //       document.createElement('span');
+      //     errorElement.className = 'help-block';
+      //     errorElement.textContent = '此字段是必填项。';
+      //     if (!select.parentElement.querySelector('.help-block')) {
+      //       select.parentElement.appendChild(errorElement);
+      //     }
+      //     select.parentElement.classList.add('has-error');
+      //     window.selects.get(select).hasError = true;
+      //   }
+      // });
+
+      const errorContainer = select.parentElement.querySelector('.help-block');
+      if (errorContainer && errorContainer.textContent) {
+        const errorElement = select.parentElement.querySelector('.help-block');
+        errorElement.textContent = errorContainer.textContent;
+        errorElement.style.display = 'block';
+        select.parentElement.classList.add('has-error');
+        window.selects.get(select).hasError = true;
+      }
+    });
+
+    form.addEventListener('submit', function (e) {
+      evt.preventDefault();
+      let hasErrors = false;
+
+      for (const [select, data] of window.selects) {
+        const value = data.choice.getValue(true);
+        if (select.required && !value) {
+          const errorElement = select.parentElement.querySelector('.help-block') ||
+            document.createElement('span');
+          errorElement.className = 'help-block';
+          errorElement.textContent = '此字段是必填项。';
+          if (!select.parentElement.querySelector('.help-block')) {
+            select.parentElement.appendChild(errorElement);
+          }
+          select.parentElement.classList.add('has-error');
+          data.hasError = true;
+          hasErrors = true;
+          if (!document.querySelector('.choices__input--cloned:focus')) {
+            data.choice.showDropdown();
+          }
+        }
+      }
+
+      if (!hasErrors) {
+        clearFormStorage();
+        form.submit();
+      } else {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    });
+
+    // 在 Choices 初始化完成后调用验证
+    validateDeviceModel();
+    const modelSelect = document.querySelector('select[name="model"]');
+    if (modelSelect) {
+      autoCompleteType();
+    }
+
+    // 监听 Choices 的选择变化
+    document.querySelectorAll('select.form-control').forEach(select => {
+      select.addEventListener('change', function () {
+        validateDeviceModel();
+        if (modelSelect) {
+          autoCompleteType();
+        }
+      });
+    });
+  }
+
+  function autoCompleteType() {
+    const modelSelect = document.querySelector('select[name="model"]');
+    const heightInput = document.querySelector('input[name="height"]');
+    const typeSelect = document.querySelector('select[name="type"]');
+
+    if (!modelSelect || !heightInput || !typeSelect) return;
+
+    // 标记是否已经手动修改过
+    if (!heightInput.hasAttribute('data-manual-edit')) {
+      heightInput.setAttribute('data-manual-edit', 'false');
+      // 添加手动编辑监听器
+      heightInput.addEventListener('input', function () {
+        this.setAttribute('data-manual-edit', 'true');
+      });
+    }
+
+    if (!typeSelect.hasAttribute('data-manual-edit')) {
+      typeSelect.setAttribute('data-manual-edit', 'false');
+      // 添加手动选择监听器
+      typeSelect.addEventListener('change', function () {
+        this.setAttribute('data-manual-edit', 'true');
+      });
+    }
+
+    // 当 model 发生变化时
+    modelSelect.addEventListener('change', function () {
+      if (!this.value) return;
+
+      const selectedOption = this.options[this.selectedIndex];
+      const modelHeight = parseInt(selectedOption.getAttribute('data-model-height')) || 0;
+      const modelType = selectedOption.getAttribute('data-model-pk') || '1';
+
+      // 只有在未手动编辑的情况下才自动填充
+      if (heightInput.getAttribute('data-manual-edit') === 'false') {
+        heightInput.value = modelHeight;
+      }
+
+      if (typeSelect.getAttribute('data-manual-edit') === 'false') {
+        window.selects.get(typeSelect).choice.setChoiceByValue(modelType);
+      }
+    });
+
+    // 初始化时，如果已选择 model 且未手动编辑，则自动填充
+    if (modelSelect.value) {
+      const selectedOption = modelSelect.options[modelSelect.selectedIndex];
+      const modelHeight = parseInt(selectedOption.getAttribute('data-model-height')) || 0;
+      const modelType = selectedOption.getAttribute('data-model-pk') || '1';
+
+      if (heightInput.getAttribute('data-manual-edit') === 'false') {
+        heightInput.value = modelHeight;
+      }
+
+      if (typeSelect.getAttribute('data-manual-edit') === 'false') {
+        window.selects.get(typeSelect).choice.setChoiceByValue(modelType);
+      }
+    }
+  }
+
+  function validateDeviceModel() {
+    const modelSelect = document.querySelector('select[name="model"]');
+    const positionSelect = document.querySelector('select[name="position"]');
+    const pduSelect = document.querySelector('select[name="rack_pdus"]');
+    const rackMaxHeight = parseInt('{{ rack.u_height }}');
+    const form = document.getElementById('edit-form-htmx');
+
+    // 必需的表单元素检查
+    if (!modelSelect || !positionSelect) return;
+
+    function getOccupiedUnits() {
+      const occupiedUnits = new Set();
+      document.querySelectorAll('.rack-unit').forEach(row => {
+        const u = parseInt(row.getAttribute('data-u'));
+        if (row.classList.contains('occupied') && u) {
+          occupiedUnits.add(u);
+        }
+      });
+      return occupiedUnits;
+    }
+
+    function validatePosition() {
+      if (!modelSelect.selectedIndex) return true;
+
+      const selectedOption = modelSelect.options[modelSelect.selectedIndex];
+      const height = parseInt(selectedOption.getAttribute('data-model-height')) || 0;
+      const position = parseInt(positionSelect.value) || 0;
+      const selectedModelId = selectedOption.value;
+
+      if (height === 0) return true;
+
+      // 检查是否超出机柜高度
+      if (position + height - 1 > rackMaxHeight) {
+        showError(positionSelect, `设备高度(${height}U)超出机柜高度限制(${rackMaxHeight}U)`);
+        return false;
+      }
+
+      // 检查是否与已有设备重叠
+      const deviceCells = document.querySelectorAll('.device-cell');
+      const currentDeviceId = "{{object.pk}}";
+      const originalPosition = parseInt("{{object.position|default:0}}") || 0;
+      const originalHeight = parseInt("{{object.model.height|default:0}}") || 0;
+
+      for (const deviceCell of deviceCells) {
+        const existingDeviceId = deviceCell.getAttribute('data-device-id');
+        const existingDeviceStartU = parseInt(deviceCell.getAttribute('data-start-u'));
+        // 如果是编辑设备，位置没变，且新设备高度小于等于原设备高度，则跳过检查
+        if (currentDeviceId !== "None" &&
+          existingDeviceId === currentDeviceId &&
+          position === originalPosition &&
+          height <= originalHeight) {
+          continue;
+        }
+        // 如果是编辑设备，位置发生变化，且设备高度在原来U位范围内，则跳过检查
+        if (currentDeviceId !== "None" &&
+          position <= originalPosition + originalHeight - 1 &&
+          position >= originalPosition - 1) {
+          continue;
+        }
+        const existingDeviceHeight = parseInt(deviceCell.getAttribute('data-device-height'));
+        const existingDeviceEndU = existingDeviceStartU - existingDeviceHeight + 1;
+
+        // 检查新设备的范围是否与现有设备重叠
+        const newDeviceEndU = position;
+        const newDeviceStartU = position + height - 1;
+        if ((newDeviceStartU >= existingDeviceEndU && newDeviceStartU <= existingDeviceStartU) ||
+          (newDeviceEndU >= existingDeviceEndU && newDeviceEndU <= existingDeviceStartU) ||
+          (newDeviceStartU >= existingDeviceStartU && newDeviceEndU <= existingDeviceEndU)) {
+          const existingDeviceName = deviceCell.querySelector('.device-name').textContent;
+          showError(positionSelect, `设备位置与现有设备"${existingDeviceName}"重叠`);
+          return false;
+        }
+      }
+
+      clearError(positionSelect);
+      return true;
+    }
+
+    function validatePDUs() {
+      // 检查是否有足够的字段被填写来触发验证
+      const hasModel = modelSelect.selectedIndex > 0;
+      const hasPosition = positionSelect.value !== '';
+      const hasPDUs = pduSelect && Array.from(pduSelect.selectedOptions).length > 0;
+
+      // 计算已填写的字段数
+      const filledFields = [hasModel, hasPosition, hasPDUs].filter(Boolean).length;
+
+      // 如果填写的字段少于2个，不进行验证
+      if (filledFields < 2) return true;
+
+      // 如果选择了设备型号，获取电源端口数量
+      const powerCount = hasModel ?
+        (parseInt(modelSelect.options[modelSelect.selectedIndex].getAttribute('data-model-power-count')) || 0) : 0;
+
+      // 如果选择了PDU
+      if (hasPDUs) {
+        const selectedPdus = Array.from(pduSelect.selectedOptions).length;
+
+        // 如果已选择设备型号
+        if (hasModel) {
+          // 如果设备没有电源端口，不允许选择PDU
+          if (powerCount === 0) {
+            showError(pduSelect, '该设备没有电源端口，不能选择PDU');
+            return false;
+          }
+
+          // 如果PDU数量超过端口数
+          if (selectedPdus > powerCount) {
+            showError(pduSelect, `选择的PDU数量(${selectedPdus})超出设备电源端口数量(${powerCount})`);
+            return false;
+          }
+        }
+        clearError(pduSelect);
+      }
+
+      clearError(pduSelect);
+      clearError(modelSelect);
+      return true;
+    }
+
+    function showError(element, message) {
+      const container = element.closest('.form-group');
+      container.classList.add('has-error');
+      let errorElement = container.querySelector('.help-block');
+      if (!errorElement) {
+        errorElement = document.createElement('span');
+        errorElement.className = 'help-block';
+        container.appendChild(errorElement);
+      }
+      errorElement.textContent = message;
+      errorElement.style.display = 'block';
+    }
+
+    function clearError(element) {
+      const container = element.closest('.form-group');
+      container.classList.remove('has-error');
+      const errorElement = container.querySelector('.help-block');
+      if (errorElement) {
+        errorElement.remove();
+      }
+    }
+
+    function validateAll() {
+      // 检查是否有足够的字段被填写来触发验证
+      const hasModel = modelSelect.selectedIndex > 0;
+      const hasPosition = positionSelect.value !== '';
+      const hasPDUs = pduSelect && Array.from(pduSelect.selectedOptions).length > 0;
+
+      // 计算已填写的字段数
+      const filledFields = [hasModel, hasPosition, hasPDUs].filter(Boolean).length;
+
+      // 如果填写的字段少于2个，不进行验证
+      if (filledFields < 2) return true;
+
+      // 如果选择了设备型号和位置，验证位置
+      if (hasModel && hasPosition) {
+        const positionValid = validatePosition();
+        if (!positionValid) return false;
+      }
+
+      // 验证PDU
+      return validatePDUs();
+    }
+
+    // 移除旧的事件监听器
+    modelSelect.removeEventListener('change', validateAll);
+    positionSelect.removeEventListener('change', validateAll);
+    if (pduSelect) {
+      pduSelect.removeEventListener('change', validateAll);
+    }
+
+    // 添加新的事件监听器
+    modelSelect.addEventListener('change', () => setTimeout(validateAll, 100));
+    positionSelect.addEventListener('change', validateAll);
+    if (pduSelect) {
+      pduSelect.addEventListener('change', validateAll);
+    }
+    // 初始验证
+    setTimeout(validateAll, 100);
+  }
+
+  // HTMX 事件监听
+  document.body.addEventListener('htmx:beforeRequest', function (evt) {
+    const triggerElement = evt.detail.elt;
+    const triggerFieldName = triggerElement.name;
+
+    if (window.HTMX_TRIGGER_FIELDS.includes(triggerFieldName)) {
+      saveFormData(triggerFieldName);
+    }
+  });
+  document.addEventListener('DOMContentLoaded', function () {
+    initChoices();
+    initSerialNumberListener();
+    clearFormStorage();
+  });
+  document.body.addEventListener('htmx:responseError', function (evt) {
+    if (evt.detail.elt.tagName === 'FORM') {
+      clearFormStorage();
+    }
+  });
+  document.body.addEventListener('htmx:afterSettle', function (evt) {
+    // 如果是表单提交后的响应，且响应成功
+    if (evt.detail.elt.tagName === 'FORM' && evt.detail.xhr.status === 200) {
+      clearFormStorage();
+    }
+
+    initChoices();
+    initSerialNumberListener();
+    restoreFormData();
+  });
+</script>
+{% endblock %}

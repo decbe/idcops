@@ -1,0 +1,473 @@
+{% extends "form.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block extra_css %}
+{{ block.super }}
+{{ form.media.css }}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+{{ form.media.js }}
+<script type="text/javascript">
+  $(document).ready(function () {
+
+    // 智能分类相关变量和函数
+    let classificationTimeout;
+
+    // 防抖函数
+    function debounce(func, wait) {
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(classificationTimeout);
+          func(...args);
+        };
+        clearTimeout(classificationTimeout);
+        classificationTimeout = setTimeout(later, wait);
+      };
+    }
+
+    // 获取CSRF Token
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    // 获取 Choices 实例（兼容全局 selects Map 与 _choice 属性）
+    function getChoicesInstance(selectEl) {
+      try {
+        if (window.selects && typeof window.selects.get === 'function') {
+          const data = window.selects.get(selectEl);
+          if (data && data.choice) return data.choice;
+        }
+      } catch (_) {}
+      if (selectEl && selectEl._choice) return selectEl._choice;
+      if (window.choicesMap && typeof window.choicesMap.get === 'function') {
+        const inst = window.choicesMap.get(selectEl);
+        if (inst) return inst;
+      }
+      return null;
+    }
+
+    function isValueSelected(selectEl, value) {
+      const val = $(selectEl).val();
+      const str = String(value);
+      if (Array.isArray(val)) return val.includes(str);
+      return val === str;
+    }
+
+    // 使用 Choices.js 选中（必要时追加）
+    function selectWithChoices(selectEl, value, label) {
+      const instance = getChoicesInstance(selectEl);
+      const stringValue = value != null ? String(value) : '';
+      if (instance) {
+        if (typeof instance.setChoiceByValue === 'function') {
+          instance.setChoiceByValue(stringValue);
+        } else if (typeof instance.setValueByChoice === 'function') {
+          instance.setValueByChoice(stringValue);
+        }
+        // 校验是否已选中
+        const currentVal = $(selectEl).val();
+        const selected = Array.isArray(currentVal) ? currentVal.includes(stringValue) : currentVal === stringValue;
+        if (!selected) {
+          if (typeof instance.setChoices === 'function') {
+            instance.setChoices([
+              { value: stringValue, label: label || stringValue, selected: true, disabled: false }
+            ], 'value', 'label', false);
+          } else {
+            let $opt = $(selectEl).find(`option[value="${stringValue}"]`);
+            if ($opt.length === 0) {
+              $(selectEl).append(`<option value="${stringValue}">${label || stringValue}</option>`);
+            }
+            $(selectEl).val([...(currentVal || []), stringValue]);
+          }
+        }
+      } else {
+        // 无 Choices 实例
+        let $opt = $(selectEl).find(`option[value="${stringValue}"]`);
+        if ($opt.length === 0) {
+          $(selectEl).append(`<option value="${stringValue}">${label || stringValue}</option>`);
+        }
+        const curr = $(selectEl).val();
+        if (Array.isArray(curr)) {
+          if (!curr.includes(stringValue)) $(selectEl).val([...curr, stringValue]);
+        } else {
+          $(selectEl).val(stringValue);
+        }
+      }
+      $(selectEl).trigger('change');
+    }
+
+    // 使用 Choices.js 取消选中
+    function unselectWithChoices(selectEl, value) {
+      const instance = getChoicesInstance(selectEl);
+      const stringValue = value != null ? String(value) : '';
+      if (instance && typeof instance.removeActiveItemsByValue === 'function') {
+        instance.removeActiveItemsByValue(stringValue);
+      } else {
+        const curr = $(selectEl).val();
+        if (Array.isArray(curr)) {
+          $(selectEl).val(curr.filter(v => String(v) !== stringValue));
+        } else if (String(curr) === stringValue) {
+          $(selectEl).val('');
+        }
+        // 同时取消原生 option 的 selected（若存在）
+        $(selectEl).find(`option[value="${stringValue}"]`).prop('selected', false);
+      }
+      $(selectEl).trigger('change');
+    }
+
+    // 在分类与标签字段下方创建推荐容器（AdminLTE 风格）
+    function ensureSuggestionContainers() {
+      const tagsField = $('#id_tags');
+      const categoriesField = $('#id_categories');
+
+      if (tagsField.length) {
+        const tagsGroup = tagsField.closest('.form-group');
+        if (tagsGroup.length && tagsGroup.next('.box.tag-suggestions-box').length === 0) {
+          const tagBox = $(
+            '<div class="box box-solid box-default tag-suggestions-box" style="display:none; margin-top:5px;">\
+              <div class="box-header with-border" style="padding: 5px 10px;">\
+                <h3 class="box-title"><i class="fa fa-tags"></i> 推荐标签</h3>\
+              </div>\
+              <div class="box-body">\
+                <div class="tag-suggestions-items"></div>\
+              </div>\
+            </div>'
+          );
+          tagsGroup.after(tagBox);
+        }
+      }
+
+      if (categoriesField.length) {
+        const categoriesGroup = categoriesField.closest('.form-group');
+        if (categoriesGroup.length && categoriesGroup.next('.box.category-suggestions-box').length === 0) {
+          const categoryBox = $(
+            '<div class="box box-solid box-default category-suggestions-box" style="display:none; margin-top:5px;">\
+              <div class="box-header with-border" style="padding: 5px 10px;">\
+                <h3 class="box-title"><i class="fa fa-folder-open"></i> 推荐分类</h3>\
+              </div>\
+              <div class="box-body">\
+                <div class="category-suggestions-items"></div>\
+              </div>\
+            </div>'
+          );
+          categoriesGroup.after(categoryBox);
+        }
+      }
+    }
+
+    function renderTagSuggestions(suggested_tags) {
+      ensureSuggestionContainers();
+      const box = $('.tag-suggestions-box');
+      const container = box.find('.tag-suggestions-items');
+      container.empty();
+
+      if (suggested_tags && suggested_tags.length > 0) {
+        suggested_tags.forEach(function (tag) {
+          if (!(tag.score || tag.score === 0)) return; // 无分数不展示
+          if (Number(tag.score) < 0.65) return; // 小于65%不展示
+          const percent = (tag.score || tag.score === 0) ? (Number(tag.score) * 100).toFixed(2) : null;
+          const labelText = percent ? `${tag.name} (${percent}%)` : tag.name;
+          const item = $(
+            `<span class="label label-info" style="display:inline-block; margin:3px; cursor:pointer;"\
+                    data-tag-id="${tag.id}" data-selected="false" title="🤖 智能推荐">${labelText}</span>`
+          );
+          container.append(item);
+        });
+        box.show();
+      } else {
+        box.hide();
+      }
+
+      bindSuggestionClickEvents();
+    }
+
+    function renderCategorySuggestions(suggested_categories) {
+      ensureSuggestionContainers();
+      const box = $('.category-suggestions-box');
+      const container = box.find('.category-suggestions-items');
+      container.empty();
+
+      if (suggested_categories && suggested_categories.length > 0) {
+        suggested_categories.forEach(function (category) {
+          if (!(category.score || category.score === 0)) return; // 无分数不展示
+          if (Number(category.score) < 0.65) return; // 小于65%不展示
+          const percent = (category.score || category.score === 0) ? (Number(category.score) * 100).toFixed(2) : null;
+          const labelText = percent ? `${category.name} (${percent}%)` : category.name;
+          const item = $(
+            `<span class="label label-success" style="display:inline-block; margin:3px; cursor:pointer;"\
+                    data-category-id="${category.id}" data-selected="false" title="🤖 智能推荐">${labelText}</span>`
+          );
+          container.append(item);
+        });
+        box.show();
+      } else {
+        box.hide();
+      }
+
+      bindSuggestionClickEvents();
+    }
+
+    // 根据当前选择状态刷新推荐项颜色
+    function refreshSuggestionVisuals() {
+      const tagSelect = document.getElementById('id_tags');
+      $('.tag-suggestions-items .label').each(function () {
+        const value = String($(this).data('tag-id'));
+        const selected = tagSelect ? isValueSelected(tagSelect, value) : false;
+        $(this).attr('data-selected', selected ? 'true' : 'false');
+        $(this).toggleClass('label-primary', selected);
+        $(this).toggleClass('label-info', !selected);
+      });
+
+      const categorySelect = document.getElementById('id_categories');
+      $('.category-suggestions-items .label').each(function () {
+        const value = String($(this).data('category-id'));
+        const selected = categorySelect ? isValueSelected(categorySelect, value) : false;
+        $(this).attr('data-selected', selected ? 'true' : 'false');
+        $(this).toggleClass('label-primary', selected);
+        $(this).toggleClass('label-success', !selected);
+      });
+    }
+
+    // 智能分类推荐函数
+    async function getClassificationSuggestions() {
+      const contentElement = $('#id_content');
+      const titleElement = $('#id_title');
+
+      // 获取内容
+      let content = '';
+      if (contentElement.length) {
+        // 如果是summernote编辑器，获取text内容
+        if (contentElement.hasClass('note-editor') || contentElement.next('.note-editor').length) {
+          content = contentElement.summernote('code');
+          // 移除HTML标签，只保留文本
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = content;
+          content = tempDiv.textContent || tempDiv.innerText || '';
+        } else {
+          content = contentElement.val() || '';
+        }
+      }
+
+      // 加上标题内容
+      const title = titleElement.val() || '';
+      if (title) {
+        content = title + '\n' + content;
+      }
+
+      // 内容太短不进行推荐
+      if (content.trim().length < 10) {
+        $('.tag-suggestions-box, .category-suggestions-box').hide();
+        return;
+      }
+
+      try {
+        const csrftoken = getCookie('csrftoken');
+        const url = "{% url 'api-0.1:document_classify_suggest' %}";
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken,
+          },
+          body: JSON.stringify({
+            'content': content,
+            'title': title
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.status === 'success') {
+          const { suggested_tags, suggested_categories } = data;
+          renderTagSuggestions(suggested_tags);
+          renderCategorySuggestions(suggested_categories);
+          refreshSuggestionVisuals();
+        } else {
+          console.error('分类推荐失败:', data.message);
+          $('.tag-suggestions-box, .category-suggestions-box').hide();
+        }
+      } catch (error) {
+        console.error('分类推荐请求错误:', error);
+        $('.tag-suggestions-box, .category-suggestions-box').hide();
+      }
+    }
+
+    // 绑定推荐项点击事件（切换选中/取消）
+    function bindSuggestionClickEvents() {
+      // 标签点击事件
+      $('.tag-suggestions-items .label').off('click').on('click', function () {
+        const tagId = $(this).data('tag-id');
+        const tagName = $(this).text();
+        const selectEl = document.getElementById('id_tags');
+        if (!selectEl) return;
+        const selected = isValueSelected(selectEl, tagId);
+        if (selected) {
+          unselectWithChoices(selectEl, tagId);
+        } else {
+          selectWithChoices(selectEl, tagId, tagName);
+        }
+        // 更新视觉，不隐藏条目
+        refreshSuggestionVisuals();
+      });
+
+      // 分类点击事件
+      $('.category-suggestions-items .label').off('click').on('click', function () {
+        const categoryId = $(this).data('category-id');
+        const categoryName = $(this).text();
+        const selectEl = document.getElementById('id_categories');
+        if (!selectEl) return;
+        const selected = isValueSelected(selectEl, categoryId);
+        if (selected) {
+          unselectWithChoices(selectEl, categoryId);
+        } else {
+          selectWithChoices(selectEl, categoryId, categoryName);
+        }
+        // 更新视觉，不隐藏条目
+        refreshSuggestionVisuals();
+      });
+    }
+
+    // 选择框变化时同步刷新推荐视觉
+    $('#id_tags, #id_categories').on('change', function () {
+      refreshSuggestionVisuals();
+    });
+
+    // 创建防抖版本的分类推荐函数（自动触发）
+    const debouncedGetClassificationSuggestions = debounce(getClassificationSuggestions, 1000);
+
+    // Summernote 初始化与事件
+    function sendFile(file, el) {
+      var form_data = new FormData();
+      var csrfmiddlewaretoken = $('form input[name="csrfmiddlewaretoken"]').val()
+      form_data.append("csrfmiddlewaretoken", csrfmiddlewaretoken);
+      form_data.append('files', file);
+      $.ajax({
+        data: form_data,
+        type: "POST",
+        url: "{%url 'upload' %}",
+        cache: false,
+        contentType: false,
+        processData: false,
+        success: function (data) {
+          $.each(data.files, function (index, file) {
+            $(el).summernote("insertImage", file.url);
+          });
+        }
+      });
+    }
+
+    function convertDocToHtml(file) {
+      var form_data = new FormData();
+      var csrfmiddlewaretoken = $('form input[name="csrfmiddlewaretoken"]').val();
+      form_data.append("csrfmiddlewaretoken", csrfmiddlewaretoken);
+      form_data.append('upload_file', file);
+      $.ajax({
+        data: form_data,
+        type: "POST",
+        url: "{% url 'document_convert_upload' %}",
+        cache: false,
+        contentType: false,
+        processData: false,
+        success: function (data) {
+          if (data.status === 'true') {
+            if (!$('#id_title').val() && data.title) {
+              $('#id_title').val(data.title);
+            }
+            if (data.html) {
+              $('#id_content').summernote('code', data.html);
+            }
+            if (data.raw_content !== undefined) {
+              $('#id_raw_content').val(data.raw_content);
+            }
+            // 文档内容变化后触发智能分类推荐
+            debouncedGetClassificationSuggestions();
+          } else if (data.message) {
+            alert(data.message);
+          }
+        },
+        error: function (xhr) {
+          alert('上传转换失败: ' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '未知错误'));
+        }
+      });
+    }
+
+    $('#id_content').summernote({
+      height: 500,
+      tabsize: 2,
+      lang: 'zh-CN',
+      codeviewFilter: false,
+      codeviewIframeFilter: true,
+      // popover: {
+      //   image: [],
+      //   link: [],
+      //   air: []
+      //   },
+      callbacks: {
+        onImageUpload: function (files, editor, welEditable) {
+          for (var i = files.length - 1; i >= 0; i--) {
+            sendFile(files[i], this);
+          }
+        },
+        onChange: function (contents, $editable) {
+          // 内容变化时触发智能分类推荐
+          debouncedGetClassificationSuggestions();
+        }
+      }
+    });
+
+    // 监听标题变化
+    $('#id_title').on('input', function () {
+      debouncedGetClassificationSuggestions();
+    });
+
+    // 监听上传文件字段变化，自动转换并填充到编辑器
+    $(document).on('change', '#id_upload_file', function (evt) {
+      var file = evt.target.files && evt.target.files[0];
+      if (!file) return;
+      var name = (file.name || '').toLowerCase();
+      if (!(name.endsWith('.md') || name.endsWith('.docx'))) {
+        alert('暂仅支持 .md 或 .docx 文件');
+        return;
+      }
+      convertDocToHtml(file);
+      // 文件上传后也触发分类推荐
+      setTimeout(debouncedGetClassificationSuggestions, 1000); // 给文件转换一些时间
+    });
+
+    // reset modal cache
+    $('body').on('hidden.bs.modal', '.modal', function () {
+      $(this).removeData('bs.modal');
+    });
+
+    var formSubmitted = false;
+    var oldFormData = $('form').serialize();
+    $("form").submit(function (e) {
+      var newFormData = $('form').serialize();
+      // 有了即时转换，允许无变更提交；不再强制阻止
+      var hasUpload = $('#id_upload_file').length && $('#id_upload_file')[0].files && $('#id_upload_file')[0].files.length > 0;
+      if (false && !hasUpload && oldFormData == newFormData) {
+        alert("没有任何改变,已经阻止表单提交.");
+        return false;
+      }
+      formSubmitted = true;
+    });
+
+    // 初始确保容器存在，并自动获取建议
+    ensureSuggestionContainers();
+    debouncedGetClassificationSuggestions();
+  });
+</script>
+{% endblock %}

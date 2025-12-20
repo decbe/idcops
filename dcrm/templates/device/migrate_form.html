@@ -1,0 +1,85 @@
+{% load static %}
+{% load i18n %}
+{% load dcrm_extras %}
+<form method="post" class="form">
+    {% csrf_token %}
+    <div class="box-body with-border">
+    {{ formset.management_form }}
+    <div class="table-responsive">
+    <table class="table table-bordered table-hover table-condensed">
+        <thead>
+            <tr>
+                <th width="2%">#</th>
+                <th width="13%"><span class="form-group margin-r-5">设备详情</span></th>
+                <th width="15%"><span class="form-group margin-r-5">机柜</span></th>
+                <th width="11%"><span class="form-group margin-r-5">机柜U位</span></th>
+                <th width="17%"><span class="form-group margin-r-5">PDU位</span></th>
+                <th><span class="form-group margin-r-5">IP地址</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for form in formset %}
+                <tr data-current-device="{{ form.instance.id }}" data-device-height="{{ form.instance.height }}" data-form-index="{{ forloop.counter0 }}">
+                    <td style="padding-bottom: 15px;">{{forloop.counter}}.
+                        {{ form.id }}
+                        <input type="hidden" name="pk" value="{{ form.instance.id }}">
+                    </td>
+                    <td class="bg-success">
+                        {% object_as_html 'OnlineDevice' form.instance.pk detail_fields %}
+                    </td>
+                    {% for field in form.visible_fields %}
+                    <td>
+                        <div class="form-group margin-r-5">
+                            {{ field }}
+                        </div>
+                    </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    <div class="box-footer" style="padding: 10px 0;">
+        <div class="buttons pull-left">
+          <input type="hidden" name="apply" value="true">
+          <button type="submit" name="action" value="{{action.action_type}}"
+            class="btn btn-danger btn-sm margin-r-5">{{ action.name }}</button>
+        </div>
+        <div class="info pull-left">
+          <a type="button" class="btn btn-default btn-sm" href="{{next_url}}"><i class="fa fa-times"></i> 取消</a>
+        </div>
+      </div>
+</form>
+
+<small id="page-subtitle" hx-swap-oob="true">{{action.name}} 总计: {{formset|length}} 台</small>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        // init select2
+        $('.select').select2({language: 'zh-CN'});
+        // select2 通过选择的机柜，发起Ajax请求，获取选中的机柜可用的U位和PDU位数据。
+        $('td select[name$="-rack"]').on('change', function(e){
+            // select2 通过选择的机柜   ，发起Ajax请求，获取选中的机柜可用的U位和PDU位数据。
+            const formId = $(this).closest('tr').data('formIndex');
+            const deviceId = $(this).closest('tr').data('currentDevice');
+            const deviceHeight = $(this).closest('tr').data('deviceHeight');
+
+            updateRackResources($(this).val(), formId, deviceId, deviceHeight);
+        });
+
+        function updateRackResources(rack, index, device, height) {
+            // 更新机柜U位，PDU位
+            // 如果有当前设备，返回当前设备的 position 和 pdus selected: true
+            const fetchUrl = `/devices/bulk-migrate/${rack}/rack/?device_id=${device}&device_height=${height}`;
+            fetch(fetchUrl).then(response => response.json())
+            .then(data => {
+                const result = data.result;
+                const rackPositionSelect = $(`td select[name="form-${index}-position"]`);
+                const rackPDUSelect = $(`td select[name="form-${index}-rack_pdus"]`);
+                rackPositionSelect.empty().select2({data: result.units}).trigger("change");
+                rackPDUSelect.empty().select2({data: result.pdus}).trigger("change");
+            })
+        };
+
+    });
+</script>

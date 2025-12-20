@@ -1,0 +1,13 @@
+<div class="form-group">
+    <label>{{ widget.label }}</label>
+    <div class="btn-group btn-group-sm" data-toggle="buttons">
+        {% for group, options, index in widget.optgroups %}
+        {% for option in options %}
+        <label class="btn {% if option.selected %}btn-primary active{% else %}btn-default{% endif %}">
+            <input type="{{ option.type }}" name="{{ option.name }}" value="{{ option.value }}" {% if option.selected%}checked{% endif %} {{ option.attrs.attrs }}>
+            {{ option.label }}
+        </label>
+        {% endfor %}
+        {% endfor %}
+    </div>
+</div> 
