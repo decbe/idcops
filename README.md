@@ -306,10 +306,6 @@ SECRET_KEY=your-secret-key
 ALLOWED_HOSTS=localhost,127.0.0.1
 ```
 
-## 文档
-
-[点击查看](https://idcops.yuzekeji.cn/docs/)
-
 ## 常见问题
 
 ### Q: 如何自定义设备类型？
