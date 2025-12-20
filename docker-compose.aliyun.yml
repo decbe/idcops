@@ -1,6 +1,6 @@
 services:
   web:
-    image: ghcr.io/decbe/idcops:latest
+    image: crpi-k4x0gcm6at8es87w.cn-guangzhou.personal.cr.aliyuncs.com/decbe/idcops:latest
     container_name: idcops-web
     command: /entrypoint.sh
     volumes:
@@ -46,7 +46,7 @@ services:
     restart: unless-stopped
 
   rq-worker:
-    image: ghcr.io/decbe/idcops:latest
+    image: crpi-k4x0gcm6at8es87w.cn-guangzhou.personal.cr.aliyuncs.com/decbe/idcops:latest
     container_name: idcops-rqworker
     command: >
       python manage.py rqworker high default low --with-scheduler
