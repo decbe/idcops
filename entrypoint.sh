@@ -7,7 +7,6 @@ set -eo pipefail
 : "${STATIC_ROOT:=${APP_HOME}/static}"
 : "${MEDIA_ROOT:=${APP_HOME}/media}"
 : "${LOGS_ROOT:=${APP_HOME}/logs}"
-: "${DATA_ROOT:=${APP_HOME}/db-data}"
 : "${RUN_ROOT:=${APP_HOME}/run}"
 : "${GUNICORN_CONFIG:=${APP_HOME}/contrib/gunicorn.py}"
 : "${POSTGRES_HOST:=postgresql}"
@@ -34,13 +33,12 @@ initialize() {
     echo "首次运行，开始初始化..."
 
     # 创建必要的目录
-    mkdir -p ${STATIC_ROOT} ${MEDIA_ROOT} ${LOGS_ROOT} ${DATA_ROOT} ${RUN_ROOT}
+    mkdir -p ${STATIC_ROOT} ${MEDIA_ROOT} ${LOGS_ROOT} ${RUN_ROOT}
 
     # 设置目录权限
     chmod -R 755 ${STATIC_ROOT}
     chmod -R 775 ${MEDIA_ROOT}
     chmod -R 755 ${LOGS_ROOT}
-    chmod -R 775 ${DATA_ROOT}
     chmod -R 775 ${RUN_ROOT}
 
     wait_for_db

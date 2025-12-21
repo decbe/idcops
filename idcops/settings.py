@@ -180,7 +180,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "zh-hans"
 
-TIME_ZONE = "Asia/Shanghai"
+TIME_ZONE = os.environ.get("TIME_ZONE", "Asia/Shanghai")
 
 USE_I18N = True
 
@@ -190,7 +190,7 @@ USE_TZ = False
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-SITE_PREFIX = "/"
+SITE_PREFIX = os.environ.get("SITE_PREFIX", "/")
 
 if SITE_PREFIX:
     SITE_PREFIX = SITE_PREFIX.rstrip("/") + "/"

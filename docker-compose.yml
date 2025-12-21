@@ -10,7 +10,7 @@ services:
       - media:${APP_HOME}/media
       - static:${APP_HOME}/static
       - logs:${APP_HOME}/logs
-      - db-data:${APP_HOME}/db-data
+      - nginx-templates:${APP_HOME}/contrib/nginx-templates
     depends_on:
       redis:
         condition: service_healthy
@@ -96,15 +96,16 @@ services:
     image: nginx:alpine
     container_name: idcops-nginx
     environment:
+      - APP_HOME=${APP_HOME:-/opt/idcops}
       - NGINX_PORT=${NGINX_PORT:-80}
       - NGINX_SERVER_NAME=localhost
       - NGINX_CLIENT_MAX_BODY_SIZE=${NGINX_CLIENT_MAX_BODY_SIZE:-100m}
       - NGINX_UPSTREAM_HOST=web
       - NGINX_UPSTREAM_PORT=${GUNICORN_PORT:-8000}
-      - NGINX_STATIC_PATH=${APP_HOME}/static/
-      - NGINX_MEDIA_PATH=${APP_HOME}/media/
+      - NGINX_STATIC_PATH=${APP_HOME:-/opt/idcops}/static/
+      - NGINX_MEDIA_PATH=${APP_HOME:-/opt/idcops}/media/
     volumes:
-      - ./contrib/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - nginx-templates:/etc/nginx/templates:ro
       - static:${APP_HOME}/static:ro
       - media:${APP_HOME}/media:ro
     ports:
@@ -112,8 +113,10 @@ services:
     depends_on:
       web:
         condition: service_healthy
+    env_file:
+      - .env
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:${NGINX_PORT:-80}/ || exit 1" ]
+      test: [ "CMD-SHELL", "curl -f http://localhost:${NGINX_PORT:-80}/health-check/ || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -130,11 +133,11 @@ volumes:
     driver: local
   logs:
     driver: local
-  db-data:
-    driver: local
   pg-data:
     driver: local
   wal-data:
     driver: local
   cache:
+    driver: local
+  nginx-templates:
     driver: local

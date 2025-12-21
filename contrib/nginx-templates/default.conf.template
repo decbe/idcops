@@ -1,0 +1,61 @@
+upstream web_upstream {
+    server ${NGINX_UPSTREAM_HOST}:${NGINX_UPSTREAM_PORT};
+}
+
+server {
+    listen ${NGINX_PORT};
+    server_name ${NGINX_SERVER_NAME};
+    client_max_body_size ${NGINX_CLIENT_MAX_BODY_SIZE};
+
+    # 连接优化
+    keepalive_timeout 65;  # 设置保持连接的超时时间
+
+    # Gzip 压缩
+    gzip on;  # 启用 Gzip 压缩
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;  # 压缩的 MIME 类型
+    gzip_min_length 1000;  # 最小压缩长度
+    gzip_vary on;  # 启用 Vary 头
+
+    # 基本代理设置
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    # 静态文件
+    location /static/ {
+        alias ${NGINX_STATIC_PATH};
+        expires 30d;
+        add_header Cache-Control "public";
+    }
+
+    # 媒体文件
+    location /media/ {
+        alias ${NGINX_MEDIA_PATH};
+        expires 30d;
+        add_header Cache-Control "public";
+        client_max_body_size ${NGINX_CLIENT_MAX_BODY_SIZE};
+    }
+
+    # 代理到 web 应用
+    location / {
+        proxy_pass http://web_upstream;
+        proxy_connect_timeout 60s;
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+
+        # 缓存配置
+        proxy_cache my_cache;  # 使用自定义缓存
+        proxy_cache_valid 404 1m;  # 404 响应缓存 1 分钟
+        proxy_cache_use_stale error timeout updating;  # 使用过期缓存
+        proxy_cache_background_update on;  # 在后台更新缓存
+        proxy_cache_lock on;  # 锁定缓存更新
+
+        # 禁止缓存 200 响应
+        proxy_cache_bypass $http_cache_control;  # 如果请求中包含 Cache-Control 头，则跳过缓存
+        add_header X-Cache-Status $upstream_cache_status;  # 添加缓存状态头
+    }
+}
+
+# 定义缓存区域
+proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=my_cache:10m max_size=1g inactive=60m use_temp_path=off;

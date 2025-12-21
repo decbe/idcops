@@ -84,7 +84,6 @@ RUN mkdir -p ${APP_HOME}/static \
     && mkdir -p ${APP_HOME}/media \
     && mkdir -p ${APP_HOME}/media/ml/ \
     && mkdir -p ${APP_HOME}/logs \
-    && mkdir -p ${APP_HOME}/db-data \
     && mkdir -p ${APP_HOME}/run
 
 COPY . ${APP_HOME}/
