@@ -7,6 +7,9 @@ server {
     server_name ${NGINX_SERVER_NAME};
     client_max_body_size ${NGINX_CLIENT_MAX_BODY_SIZE};
 
+    # ssl
+    include conf.d/ssl.conf;
+
     # 连接优化
     keepalive_timeout 65;  # 设置保持连接的超时时间
 

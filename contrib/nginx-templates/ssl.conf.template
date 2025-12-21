@@ -1,0 +1,103 @@
+# ===========================================
+# SSL/TLS 配置模板
+# ===========================================
+# 此文件用于配置 HTTPS/SSL 相关设置
+# 
+# 启用 SSL 的步骤：
+# 1. 准备 SSL 证书文件（.crt 和 .key）
+# 2. 将证书文件挂载到容器中（通过 Docker volume）
+# 3. 在 docker-compose.yml 中设置环境变量：
+#    - NGINX_SSL_CERT_PATH=/path/to/certificate.crt
+#    - NGINX_SSL_KEY_PATH=/path/to/private.key
+# 4. 取消注释下面的 SSL 配置指令
+# 5. 修改 default.conf.template 中的 listen 指令为：listen ${NGINX_PORT} ssl;
+#
+# 注意：如果未配置证书，请保持此文件为空或只包含注释
+# 否则 nginx 会因配置错误而无法启动
+# ===========================================
+
+# SSL 证书和私钥路径
+# 取消注释并设置环境变量 NGINX_SSL_CERT_PATH 和 NGINX_SSL_KEY_PATH
+# ssl_certificate ${NGINX_SSL_CERT_PATH};
+# ssl_certificate_key ${NGINX_SSL_KEY_PATH};
+
+# SSL 协议版本
+# 推荐使用 TLS 1.2 和 TLS 1.3，禁用不安全的 SSLv2 和 SSLv3
+# ssl_protocols TLSv1.2 TLSv1.3;
+
+# SSL 密码套件
+# 使用现代强密码套件，优先使用 ECDHE（前向保密）和 ChaCha20-Poly1305
+# ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+# ssl_prefer_server_ciphers off;
+
+# SSL 会话配置
+# 共享 SSL 会话缓存，提高性能，减少 SSL 握手时间
+# ssl_session_cache shared:SSL:10m;
+# ssl_session_timeout 10m;
+# ssl_session_tickets off;  # 禁用 TLS 会话票证以提高安全性
+
+# OCSP Stapling（在线证书状态协议）
+# 如果使用 Let's Encrypt 等支持 OCSP 的 CA，可以启用此功能以提高性能
+# 需要设置 NGINX_SSL_CHAIN_PATH 环境变量指向证书链文件（通常是 fullchain.pem）
+# ssl_stapling on;
+# ssl_stapling_verify on;
+# ssl_trusted_certificate ${NGINX_SSL_CHAIN_PATH};
+
+# HSTS (HTTP Strict Transport Security)
+# 强制浏览器使用 HTTPS 连接，提高安全性
+# max-age=31536000 表示 1 年（31536000 秒）
+# includeSubDomains 表示包括所有子域名
+# preload 表示可以加入浏览器的 HSTS 预加载列表（可选）
+# add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+# 如果需要预加载，使用：
+# add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+
+# 安全响应头
+# 防止点击劫持攻击
+# add_header X-Frame-Options "SAMEORIGIN" always;
+# 防止 MIME 类型嗅探攻击
+# add_header X-Content-Type-Options "nosniff" always;
+# XSS 保护（虽然现代浏览器已内置，但保留此头以兼容旧浏览器）
+# add_header X-XSS-Protection "1; mode=block" always;
+
+# 内容安全策略（Content Security Policy）
+# 根据实际需求自定义，以下为示例配置
+# add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;" always;
+
+# Referrer Policy
+# 控制浏览器发送 Referer 头的行为
+# add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+# SSL 性能优化
+# SSL 缓冲区大小，较大的缓冲区可以提高性能，但会增加内存使用
+# ssl_buffer_size 16k;
+
+# 启用 SSL 会话重用（提高性能）
+# ssl_session_reuse on;
+
+# 示例：使用 Let's Encrypt 证书的完整配置
+# 假设证书文件已挂载到容器中：
+# - /etc/nginx/ssl/fullchain.pem (证书链)
+# - /etc/nginx/ssl/privkey.pem (私钥)
+#
+# 环境变量设置：
+# NGINX_SSL_CERT_PATH=/etc/nginx/ssl/fullchain.pem
+# NGINX_SSL_KEY_PATH=/etc/nginx/ssl/privkey.pem
+# NGINX_SSL_CHAIN_PATH=/etc/nginx/ssl/fullchain.pem
+#
+# 取消注释以下配置：
+# ssl_certificate ${NGINX_SSL_CERT_PATH};
+# ssl_certificate_key ${NGINX_SSL_KEY_PATH};
+# ssl_protocols TLSv1.2 TLSv1.3;
+# ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+# ssl_prefer_server_ciphers off;
+# ssl_session_cache shared:SSL:10m;
+# ssl_session_timeout 10m;
+# ssl_session_tickets off;
+# ssl_stapling on;
+# ssl_stapling_verify on;
+# ssl_trusted_certificate ${NGINX_SSL_CHAIN_PATH};
+# add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+# add_header X-Frame-Options "SAMEORIGIN" always;
+# add_header X-Content-Type-Options "nosniff" always;
+# add_header X-XSS-Protection "1; mode=block" always;

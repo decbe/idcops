@@ -1,3 +1,6 @@
+#
+# 已弃用
+# 
 upstream web_upstream {
     server ${NGINX_UPSTREAM_HOST}:${NGINX_UPSTREAM_PORT};
 }

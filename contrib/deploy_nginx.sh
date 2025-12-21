@@ -75,7 +75,7 @@ set +a
 : "${NGINX_CLIENT_MAX_BODY_SIZE:=100M}"
 : "${NGINX_UPSTREAM_HOST:=127.0.0.1}"
 : "${NGINX_UPSTREAM_PORT:=8000}"
-: "${APP_HOME:=/app}"
+: "${APP_HOME:=/opt/idcops}"
 : "${NGINX_STATIC_PATH:=${APP_HOME}/static/}"
 : "${NGINX_MEDIA_PATH:=${APP_HOME}/media/}"
 
