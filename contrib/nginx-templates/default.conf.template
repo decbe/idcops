@@ -1,5 +1,7 @@
 upstream web_upstream {
-    server ${NGINX_UPSTREAM_HOST}:${NGINX_UPSTREAM_PORT};
+    # NGINX_UPSTREAM_HOST 默认值：web（Docker 环境）或 127.0.0.1（非 Docker 环境）
+    # NGINX_UPSTREAM_PORT 默认值：如果未设置，使用 GUNICORN_PORT 的值（由 docker-compose 或 deploy 脚本处理）
+    server ${NGINX_UPSTREAM_HOST:-web}:${NGINX_UPSTREAM_PORT};
 }
 
 server {
@@ -26,15 +28,17 @@ server {
     proxy_set_header X-Forwarded-Proto $scheme;
 
     # 静态文件
+    # NGINX_STATIC_PATH 默认值：${APP_HOME}/static/
     location /static/ {
-        alias ${NGINX_STATIC_PATH};
+        alias ${NGINX_STATIC_PATH:-${APP_HOME:-/opt/idcops}/static/};
         expires 30d;
         add_header Cache-Control "public";
     }
 
     # 媒体文件
+    # NGINX_MEDIA_PATH 默认值：${APP_HOME}/media/
     location /media/ {
-        alias ${NGINX_MEDIA_PATH};
+        alias ${NGINX_MEDIA_PATH:-${APP_HOME:-/opt/idcops}/media/};
         expires 30d;
         add_header Cache-Control "public";
         client_max_body_size ${NGINX_CLIENT_MAX_BODY_SIZE};

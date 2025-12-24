@@ -21,8 +21,8 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-idcops.settings}
       - DEBUG=${DEBUG:-0}
-      - POSTGRES_HOST=postgresql
-      - REDIS_HOST=redis
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgresql}
+      - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_DB=${REDIS_DB:-0}
     ports:
@@ -65,8 +65,8 @@ services:
       - .env
     environment:
       - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-idcops.settings}
-      - POSTGRES_HOST=postgresql
-      - REDIS_HOST=redis
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgresql}
+      - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_DB=${REDIS_DB:-0}
     restart: unless-stopped
@@ -96,14 +96,24 @@ services:
     image: nginx:alpine
     container_name: idcops-nginx
     environment:
+      # 应用主目录（用于生成静态文件和媒体文件路径）
       - APP_HOME=${APP_HOME:-/opt/idcops}
+      # Nginx 基本配置
       - NGINX_PORT=${NGINX_PORT:-80}
-      - NGINX_SERVER_NAME=localhost
+      - NGINX_SERVER_NAME=${NGINX_SERVER_NAME:-localhost}
       - NGINX_CLIENT_MAX_BODY_SIZE=${NGINX_CLIENT_MAX_BODY_SIZE:-100m}
-      - NGINX_UPSTREAM_HOST=web
-      - NGINX_UPSTREAM_PORT=${GUNICORN_PORT:-8000}
-      - NGINX_STATIC_PATH=${APP_HOME:-/opt/idcops}/static/
-      - NGINX_MEDIA_PATH=${APP_HOME:-/opt/idcops}/media/
+      # Nginx 上游服务器配置
+      # NGINX_UPSTREAM_HOST 默认值：web（Docker 环境）
+      # NGINX_UPSTREAM_PORT 默认值：使用 GUNICORN_PORT 的值
+      - NGINX_UPSTREAM_HOST=${NGINX_UPSTREAM_HOST:-web}
+      - GUNICORN_PORT=${GUNICORN_PORT:-8000}
+      # 如果 NGINX_UPSTREAM_PORT 未在 .env 中设置，则使用默认值 8000
+      # 注意：NGINX_UPSTREAM_PORT 应该与 GUNICORN_PORT 保持一致
+      # 建议在 .env 文件中明确设置：NGINX_UPSTREAM_PORT=${GUNICORN_PORT}
+      - NGINX_UPSTREAM_PORT=${NGINX_UPSTREAM_PORT:-8000}
+      # Nginx 静态文件和媒体文件路径（可选，默认基于 APP_HOME 生成）
+      - NGINX_STATIC_PATH=${NGINX_STATIC_PATH:-${APP_HOME:-/opt/idcops}/static/}
+      - NGINX_MEDIA_PATH=${NGINX_MEDIA_PATH:-${APP_HOME:-/opt/idcops}/media/}
     volumes:
       - nginx-templates:/etc/nginx/templates:ro
       - static:${APP_HOME}/static:ro
