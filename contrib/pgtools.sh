@@ -15,7 +15,7 @@ BACKUP_DIR="$PROJECT_ROOT/backups/postgresql"
 LOG_FILE="$PROJECT_ROOT/logs/postgresql_backup.log"
 DAYS_TO_KEEP=30
 COMPRESS_LEVEL=6
-BACKUP_FORMAT="custom"  # plain, custom, directory
+BACKUP_FORMAT="plain"  # plain, custom, directory
 ENCRYPT_BACKUP=false
 ENCRYPT_PASSWORD=""
 
