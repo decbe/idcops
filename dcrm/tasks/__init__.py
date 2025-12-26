@@ -6,4 +6,3 @@ __all__ = [
     "send_census_report",
     "send_census_report_job",
 ]
-

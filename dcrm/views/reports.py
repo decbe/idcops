@@ -963,7 +963,8 @@ class TenantReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
                 "ipaddr_total",
                 "avg_utilization",
                 "free_rate",
-            ).exclude(device_total=0,rack_total=0,subnet_total=0,ipaddr_total=0)
+            )
+            .exclude(device_total=0, rack_total=0, subnet_total=0, ipaddr_total=0)
             .order_by("-device_total")
         )
 
