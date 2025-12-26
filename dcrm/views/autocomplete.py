@@ -5,9 +5,9 @@ from str2bool import str2bool
 
 from django.apps import apps
 from django.core.exceptions import PermissionDenied
-from django.db.models import JSONField, Q
+from django.db import models
+from django.db.models import Q
 from django.http import JsonResponse
-from django.http.response import JsonResponse
 from django.urls import path
 from django.urls.resolvers import URLPattern
 from django.views.generic.list import BaseListView
@@ -64,7 +64,7 @@ class BaseAutocompleteView(BaseRequestMixin, BaseListView):
         return [
             f.name
             for f in self.model._meta.fields
-            if f.name not in exclude and not isinstance(f, JSONField)
+            if f.name not in exclude and not isinstance(f, models.JSONField)
         ]
 
     def get_queryset(self) -> Any:
@@ -90,7 +90,6 @@ class BaseAutocompleteView(BaseRequestMixin, BaseListView):
             "__isnull",
             "__iexact",
             "__gt",
-            "__in",
             "__range",
         ]
         model_field_map = {
@@ -111,7 +110,18 @@ class BaseAutocompleteView(BaseRequestMixin, BaseListView):
 
     def search_results(self, qs, term):
         """搜索结果"""
-        return qs
+        if not term:
+            return qs
+
+        query = Q()
+
+        # 获取用于搜索的字段（排除关系字段和JSONField）
+        search_fields = self.get_model_fields()
+
+        for field in search_fields:
+            query |= Q(**{f"{field}__icontains": term})
+
+        return qs.filter(query)
 
     def serialize_result(self, obj):
         """序列化结果"""
@@ -207,7 +217,12 @@ def register_autocomplete_views():
 
 
 # 导出URL patterns供urls.py使用
+_url_patterns_cache = None
+
+
 def get_autocomplete_urls() -> List[URLPattern]:
-    """获取所有导入视图的URL patterns"""
-    _, url_patterns = get_autocomplete_models()
-    return url_patterns
+    """获取所有导入视图的URL patterns（带缓存）"""
+    global _url_patterns_cache
+    if _url_patterns_cache is None:
+        _, _url_patterns_cache = get_autocomplete_models()
+    return _url_patterns_cache
