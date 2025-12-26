@@ -1061,8 +1061,8 @@ class DeviceHost(BaseModel, CustomFieldsMixin, TrackingModelMixin):
             # 或者可以在这里创建临时文件并返回路径
             ssh_key = self.get_ssh_key()
             if ssh_key:
-                import tempfile
                 import os
+                import tempfile
 
                 # 创建临时文件
                 with tempfile.NamedTemporaryFile(

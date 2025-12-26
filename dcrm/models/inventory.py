@@ -28,10 +28,7 @@ from django.utils.translation import gettext_lazy as _
 from dcrm.models.fields import CounterCacheField
 
 from .base import BaseModel
-from .choices import (
-    ItemInstanceHistoryOperationType,
-    ItemInstanceStatus,
-)
+from .choices import ItemInstanceHistoryOperationType, ItemInstanceStatus
 from .mixins import CustomFieldsMixin, IconMixin
 from .tracking import TrackingModelMixin
 from .utils import recursive_sort, tag_limit_filter

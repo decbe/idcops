@@ -13,8 +13,9 @@ import logging
 import sys
 
 import requests
-from django.conf import settings
 from django_rq import job
+
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
