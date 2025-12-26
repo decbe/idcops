@@ -183,7 +183,12 @@ def register_import_views():
 
 
 # 导出URL patterns供urls.py使用
+_import_url_patterns_cache = None
+
+
 def get_import_urls() -> List[URLPattern]:
-    """获取所有导入视图的URL patterns"""
-    _, url_patterns = get_importable_models()
-    return url_patterns
+    """获取所有导入视图的URL patterns（带缓存）"""
+    global _import_url_patterns_cache
+    if _import_url_patterns_cache is None:
+        _, _import_url_patterns_cache = get_importable_models()
+    return _import_url_patterns_cache
