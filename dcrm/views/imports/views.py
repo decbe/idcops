@@ -6,7 +6,6 @@ from urllib.parse import quote
 from django.contrib import messages
 from django.contrib.auth import get_permission_codename
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models.fields import NOT_PROVIDED
 from django.forms import ValidationError
@@ -19,7 +18,12 @@ from django.views.generic import FormView
 
 from dcrm.constants import FIELD_TYPE_MAP
 from dcrm.forms.imports import BaseImportForm
+from dcrm.models.base import LogEntry
+from dcrm.models.choices import ChangeActionChoices, CustomFieldTypeChoices
+from dcrm.models.mixins import CustomFieldsMixin
+from dcrm.signals.imports import import_completed
 from dcrm.utilities.base import camel_to_snake
+from dcrm.utilities.serialization import serialize_object
 from dcrm.views.mixins.base import BaseRequestMixin
 
 logger = logging.getLogger(__name__)
@@ -158,7 +162,7 @@ class BulkImportView(PermissionRequiredMixin, BaseRequestMixin, FormView):
                     model=related_model._meta.verbose_name,
                     fields=get_text_list(search_fields),
                     m2m_hint=(
-                        "（多个值用分号;分隔）"
+                        "（多个值用逗号`,`分隔，如：1,2,3）"
                         if isinstance(field, models.ManyToManyField)
                         else ""
                     ),
@@ -217,10 +221,48 @@ class BulkImportView(PermissionRequiredMixin, BaseRequestMixin, FormView):
                 field_info["required"] = False
 
             fields.append(field_info)
+
+        # 添加自定义字段到字段指南
+        if issubclass(self.model, CustomFieldsMixin):
+            from dcrm.models.customfields import CustomField
+
+            data_center = self.request.user.data_center
+            if data_center:
+                try:
+                    custom_fields = CustomField.objects.get_for_model(
+                        self.model, data_center, hidden=False
+                    )
+                    for cf in custom_fields:
+                        field_name = f"_cf_{cf.name}"
+                        field_info = {
+                            "name": field_name,
+                            "label": cf.label or cf.name,
+                            "default": cf.get_default_value() or "",
+                            "type": _("自定义字段: {type}").format(
+                                type=dict(CustomFieldTypeChoices.choices).get(
+                                    cf.type, cf.type
+                                )
+                            ),
+                            "required": cf.required,
+                            "help_text": cf.description or "",
+                            "is_text": cf.type
+                            in [
+                                "text",
+                                "longtext",
+                                "json",
+                            ],
+                            "is_m2m": cf.type in ["multiselect", "multiobject"],
+                            "is_custom": True,  # 标记为自定义字段
+                        }
+                        fields.append(field_info)
+                except Exception as e:
+                    logger.warning(f"获取自定义字段失败: {e}")
+
         # 排序字段
         fields.sort(
             key=lambda x: (
                 not x["required"],  # 必填字段优先
+                x.get("is_custom", False),  # 自定义字段放在最后
                 x["is_text"],  # 文本字段放最后
                 x["is_m2m"],  # 多对多字段放在文本字段之前
                 x["name"],  # 同类型字段按名称排序
@@ -236,6 +278,88 @@ class BulkImportView(PermissionRequiredMixin, BaseRequestMixin, FormView):
 
         for field_name, field_info in self.get_field_guide().items():
             fields.append(field_name)
+
+            # 跳过自定义字段（在模板中单独处理）
+            if field_info.get("is_custom"):
+                # 为自定义字段生成示例值
+                cf_name = field_name.replace("_cf_", "")
+                from dcrm.models.customfields import CustomField
+
+                data_center = self.request.user.data_center
+                if data_center:
+                    try:
+                        cf = CustomField.objects.get_for_model(
+                            self.model, data_center
+                        ).get(name=cf_name)
+                        # 根据字段类型生成示例值
+                        if cf.type == "boolean":
+                            values.append(
+                                "true" if field_info["required"] else "[true]"
+                            )
+                        elif cf.type == "date":
+                            values.append(
+                                "2024-01-01"
+                                if field_info["required"]
+                                else "[2024-01-01]"
+                            )
+                        elif cf.type == "datetime":
+                            values.append(
+                                "2024-01-01 12:00:00"
+                                if field_info["required"]
+                                else "[2024-01-01 12:00:00]"
+                            )
+                        elif cf.type == "integer":
+                            values.append("1" if field_info["required"] else "[1]")
+                        elif cf.type == "decimal":
+                            values.append("1.0" if field_info["required"] else "[1.0]")
+                        elif cf.type in ["select", "multiselect"]:
+                            import json
+
+                            choices = (
+                                json.loads(cf.choices)
+                                if isinstance(cf.choices, str)
+                                else cf.choices
+                            )
+                            if choices:
+                                first_choice = choices[0]
+                                values.append(
+                                    first_choice[0]
+                                    if field_info["required"]
+                                    else f"[{first_choice[0]}]"
+                                )
+                            else:
+                                values.append("")
+                        elif cf.type in ["object", "multiobject"]:
+                            if cf.related_model:
+                                model = cf.related_model.model_class()
+                                example_obj = model.objects.first()
+                                if example_obj:
+                                    search_fields = getattr(
+                                        model, "search_fields", ["name"]
+                                    )
+                                    example_value = getattr(
+                                        example_obj, search_fields[0], ""
+                                    )
+                                    values.append(str(example_value))
+                                else:
+                                    values.append(
+                                        f"{model._meta.verbose_name}-001"
+                                        if field_info["required"]
+                                        else f"[{model._meta.verbose_name}-可选]"
+                                    )
+                            else:
+                                values.append("")
+                        else:
+                            values.append(
+                                f"{field_info['label']}-示例"
+                                if field_info["required"]
+                                else f"[{field_info['label']}-可选]"
+                            )
+                    except Exception:
+                        values.append("")
+                else:
+                    values.append("")
+                continue
 
             # 生成示例值
             if field_info.get("related_model"):
@@ -309,6 +433,66 @@ class BulkImportView(PermissionRequiredMixin, BaseRequestMixin, FormView):
         for field_name, field_info in self.get_field_guide().items():
             field_names.append(field_name)
             field_labels.append(str(field_info["label"]))
+
+            # 处理自定义字段的示例值
+            if field_info.get("is_custom"):
+                cf_name = field_name.replace("_cf_", "")
+                from dcrm.models.customfields import CustomField
+
+                data_center = self.request.user.data_center
+                if data_center:
+                    try:
+                        cf = CustomField.objects.get_for_model(
+                            self.model, data_center
+                        ).get(name=cf_name)
+                        default_value = cf.get_default_value()
+                        if default_value not in [None, ""]:
+                            example_values.append(str(default_value))
+                        elif cf.type == "boolean":
+                            example_values.append("true")
+                        elif cf.type == "date":
+                            example_values.append("2024-01-01")
+                        elif cf.type == "datetime":
+                            example_values.append("2024-01-01 12:00:00")
+                        elif cf.type == "integer":
+                            example_values.append("1")
+                        elif cf.type == "decimal":
+                            example_values.append("1.0")
+                        elif cf.type in ["select", "multiselect"]:
+                            import json
+
+                            choices = (
+                                json.loads(cf.choices)
+                                if isinstance(cf.choices, str)
+                                else cf.choices
+                            )
+                            if choices:
+                                example_values.append(str(choices[0][0]))
+                            else:
+                                example_values.append("")
+                        elif cf.type in ["object", "multiobject"]:
+                            if cf.related_model:
+                                model = cf.related_model.model_class()
+                                example_obj = model.objects.first()
+                                if example_obj:
+                                    search_fields = getattr(
+                                        model, "search_fields", ["name"]
+                                    )
+                                    example_value = getattr(
+                                        example_obj, search_fields[0], ""
+                                    )
+                                    example_values.append(str(example_value))
+                                else:
+                                    example_values.append("")
+                            else:
+                                example_values.append("")
+                        else:
+                            example_values.append("")
+                    except Exception:
+                        example_values.append("")
+                else:
+                    example_values.append("")
+                continue
 
             # 获取示例值
             if field_info.get("default") not in [None, ""]:
@@ -405,6 +589,7 @@ class BulkImportView(PermissionRequiredMixin, BaseRequestMixin, FormView):
         success_count = 0
         error_count = 0
         error_messages = []
+        success_instance_ids = []  # 收集成功导入的实例IDs
 
         rows_data = form.cleaned_data.get("rows_data", [])
 
@@ -460,8 +645,68 @@ class BulkImportView(PermissionRequiredMixin, BaseRequestMixin, FormView):
                 logger.info(f"DEBUG: 第 {row_num} 行准备创建数据: {instance_data}")
                 logger.info(f"DEBUG: 第 {row_num} 行多对多数据: {m2m_data}")
 
-                # 创建对象
-                obj, created = self.model.objects.get_or_create(**instance_data)
+                # 创建模型实例用于验证
+                obj = self.model(**instance_data)
+                # 调用模型的 clean 方法进行验证（这会调用 clean() 方法）
+                try:
+                    obj.full_clean()
+                except ValidationError as e:
+                    # 将验证错误转换为可读的错误消息
+                    validation_errors = []
+                    if hasattr(e, "error_dict"):
+                        for field, errors in e.error_dict.items():
+                            for error in errors:
+                                validation_errors.append(f"{field}: {error}")
+                    else:
+                        validation_errors = e.messages if hasattr(e, "messages") else [str(e)]
+                    error_msg = f"第 {row_num} 行验证失败: {'; '.join(validation_errors)}"
+                    error_count += 1
+                    error_messages.append(error_msg)
+                    logger.info(f"DEBUG: {error_msg}")
+                    continue  # 跳过当前行，继续处理下一行
+
+                # 验证通过后，使用 get_or_create 创建或获取对象
+                # 注意：get_or_create 不会再次调用 clean，所以需要在上面先验证
+                # 根据模型的 unique_together 确定查找条件
+                # Device 模型的 unique_together 是 ("data_center", "name")
+                lookup_fields = {}
+                if hasattr(self.model._meta, "unique_together") and self.model._meta.unique_together:
+                    for unique_set in self.model._meta.unique_together:
+                        if isinstance(unique_set, tuple):
+                            for field_name in unique_set:
+                                if field_name in instance_data:
+                                    lookup_fields[field_name] = instance_data[field_name]
+                else:
+                    # 如果没有 unique_together，使用所有字段作为查找条件
+                    lookup_fields = instance_data.copy()
+
+                # 使用查找字段获取或创建对象
+                obj, created = self.model.objects.get_or_create(**lookup_fields, defaults=instance_data)
+
+                # 如果对象已存在，需要更新字段并再次验证
+                if not created:
+                    # 更新对象的字段值
+                    for field_name, value in instance_data.items():
+                        if field_name not in lookup_fields:  # 只更新非查找字段
+                            setattr(obj, field_name, value)
+                    # 再次验证更新后的对象
+                    try:
+                        obj.full_clean()
+                    except ValidationError as e:
+                        validation_errors = []
+                        if hasattr(e, "error_dict"):
+                            for field, errors in e.error_dict.items():
+                                for error in errors:
+                                    validation_errors.append(f"{field}: {error}")
+                        else:
+                            validation_errors = e.messages if hasattr(e, "messages") else [str(e)]
+                        error_msg = f"第 {row_num} 行更新验证失败: {'; '.join(validation_errors)}"
+                        error_count += 1
+                        error_messages.append(error_msg)
+                        logger.info(f"DEBUG: {error_msg}")
+                        continue  # 跳过当前行，继续处理下一行
+                    # 保存更新后的对象
+                    obj.save()
                 # 处理多对多关系
                 for field_name, related_objects in m2m_data.items():
                     if not related_objects:
@@ -470,14 +715,90 @@ class BulkImportView(PermissionRequiredMixin, BaseRequestMixin, FormView):
                     m2m_field = getattr(obj, field_name)
                     # 如果是QuerySet或列表，直接添加
                     if isinstance(related_objects, (models.QuerySet, list)):
-                        # print(related_objects)
                         m2m_field.add(*related_objects)
                     # 如果是单个对象，添加这个对象
                     else:
                         m2m_field.add(related_objects)
                 # obj.save_m2m()
+
+                # 处理自定义字段
+                custom_fields_data = row_data.get("_custom_fields", {})
+                if custom_fields_data and issubclass(self.model, CustomFieldsMixin):
+                    for cf_name, cf_value in custom_fields_data.items():
+                        try:
+                            obj.set_custom_field_value(
+                                cf_name, cf_value, obj.data_center
+                            )
+                        except Exception as e:
+                            logger.warning(
+                                f"第 {row_num} 行设置自定义字段 {cf_name} 失败: {e}"
+                            )
+                            # 不抛出异常，继续处理其他字段
+                    # 保存自定义字段数据
+                    obj.save()
+
                 success_count += 1
+                # 收集成功导入的实例ID
+                if obj.pk:
+                    success_instance_ids.append(obj.pk)
                 logger.info(f"DEBUG: 第 {row_num} 行创建成功: {obj}")
+
+                # 记录导入日志
+                try:
+                    # 确定 action
+                    action = (
+                        ChangeActionChoices.CREATE
+                        if created
+                        else ChangeActionChoices.UPDATE
+                    )
+
+                    # 获取文件名（如果可用）
+                    csv_file = form.cleaned_data.get("csv_data")
+                    file_name = None
+                    if hasattr(csv_file, "name"):
+                        file_name = csv_file.name
+
+                    # 序列化对象数据（包含自定义字段）
+                    # 注意：serialize_object 默认会排除 custom_field_data，需要显式包含
+                    exclude_list = [
+                        "created_at",
+                        "updated_at",
+                        "deleted_at",
+                        "created_by",
+                        "updated_by",
+                        "password",
+                        "_password",
+                        "ssh_key",
+                        "data_center",
+                        "extra_data",
+                        "metadata",
+                    ]
+                    postchange_data = serialize_object(obj, exclude=exclude_list)
+                    # 确保包含自定义字段数据
+                    # 注意：由于 set_custom_field_value 已使用 serialize 方法序列化值，
+                    # 这里直接使用 custom_field_data 即可，所有值都是 JSON 可序列化的
+                    if hasattr(obj, "custom_field_data") and obj.custom_field_data:
+                        postchange_data["custom_field_data"] = obj.custom_field_data
+
+                    # 记录日志
+                    LogEntry.objects.log_action(
+                        user=self.request.user,
+                        action=action,
+                        action_type="create",
+                        object_repr=obj,
+                        message=_("通过CSV导入{model}: {obj}").format(
+                            model=self.model._meta.verbose_name, obj=str(obj)
+                        ),
+                        changed=True,
+                        postchange_data=postchange_data,
+                        extra_data={
+                            "import_source": "csv",
+                            "row_number": row_num,
+                            "file_name": file_name,
+                        },
+                    )
+                except Exception as log_error:
+                    logger.error(f"记录导入日志失败: {log_error}")
 
             except Exception as e:
                 error_count += 1
@@ -501,6 +822,21 @@ class BulkImportView(PermissionRequiredMixin, BaseRequestMixin, FormView):
                 self.request,
                 f"导入失败 {error_count} 条{self.model._meta.verbose_name}记录",
             )
+
+        # 如果有成功导入的记录，发送导入完成信号
+        if success_count > 0 and success_instance_ids:
+            try:
+                import_completed.send(
+                    sender=self.model,
+                    instance_ids=success_instance_ids,
+                    user=self.request.user,
+                )
+                logger.info(
+                    f"已发送导入完成信号: {self.model.__name__}, "
+                    f"实例数量: {len(success_instance_ids)}"
+                )
+            except Exception as e:
+                logger.error(f"发送导入完成信号失败: {e}", exc_info=True)
 
         # 如果有成功导入的记录，就返回成功页面
         if success_count > 0:
