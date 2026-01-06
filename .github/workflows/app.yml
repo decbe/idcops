@@ -84,12 +84,18 @@ jobs:
               libtiff-dev \
               libharfbuzz-dev \
               libfribidi-dev \
+              file \
+              libmagic1 \
+              libmagic-dev \
               redis-tools && break || {
                 echo "apt-get install failed, retrying ($i)";
                 sleep 5;
                 apt-get update -o Acquire::Retries=3;
               }
           done
+          # verify libmagic is available
+          file --version || true
+          ldconfig -p | grep libmagic || true
           rm -rf /var/lib/apt/lists/* && apt-get clean
 
       - name: Install Python dependencies
