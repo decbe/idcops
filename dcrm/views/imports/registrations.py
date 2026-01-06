@@ -23,9 +23,7 @@ __all__ = [
 
 class ImportRegistry:
     def __init__(self):
-        self._registry: Dict[Type[models.Model], Type["BulkImportView"]] = registry[
-            "imports"
-        ]
+        self._registry: Dict[str, Type["BulkImportView"]] = registry["imports"]
 
     def register(
         self, model_class: Type[models.Model], import_view: Type["BulkImportView"]
@@ -133,7 +131,7 @@ def get_importable_models() -> Tuple[Dict[str, Type[BulkImportView]], List[URLPa
         if not getattr(model, "data_center", False):
             continue
 
-        model_path = f"{model._meta.app_label}.{model._meta.model_name}"
+        model_path = model._meta.label
 
         # 跳过被排除的模型
         if model._meta.model_name in excluded_models:
