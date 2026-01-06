@@ -59,7 +59,13 @@ jobs:
             ${{ runner.os }}-pip-
 
       - name: Install system deps
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client redis-tools
+        run: |
+          sudo apt-get update
+          # needed to build psycopg-c from source if a wheel isn't available
+          sudo apt-get install -y postgresql-client libpq-dev build-essential pkg-config python3-dev libssl-dev redis-tools
+          # optionally verify installed versions
+          psql --version || true
+          redis-server --version || true
 
       - name: Install Python dependencies
         run: |
