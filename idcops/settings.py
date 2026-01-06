@@ -30,7 +30,7 @@ load_dotenv(BASE_DIR / ".env")
 # SECRET_KEY = "django-insecure-)k2j#eh*=q)q@o@8z7-x*h4+9a17#1auo9v97sn*f%623v7$(o"
 SECRET_KEY = os.environ.get("SECRET_KEY")
 if not SECRET_KEY:
-    raise ValueError("No SECRET_KEY on .env file")
+    raise ValueError("No SECRET_KEY on .env file or environment variable.")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = str2bool(os.environ.get("DEBUG", "0"))
