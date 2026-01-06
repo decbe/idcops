@@ -8,21 +8,6 @@ from django.utils.translation import gettext_lazy as _
 logger = logging.getLogger(__name__)
 
 
-def _is_database_ready() -> bool:
-    """检查数据库是否已就绪（迁移已执行）"""
-    from django.db import connection
-
-    try:
-        with connection.cursor() as cursor:
-            # 检查关键表是否存在
-            cursor.execute(
-                "SELECT 1 FROM information_schema.tables WHERE table_name = 'dcrm_datacenter'"
-            )
-            return cursor.fetchone() is not None
-    except Exception:
-        return False
-
-
 class DcrmConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "dcrm"
@@ -53,18 +38,12 @@ class DcrmConfig(AppConfig):
             # 注册统计追踪器
             tracker_models_register()
 
-            # 仅在数据库就绪后执行后台任务
-            if _is_database_ready():
-                from dcrm.tasks.census import send_census_report_job
-                from dcrm.tasks.counters import auto_fix_cached_counts
+            from dcrm.tasks.census import send_census_report_job
+            from dcrm.tasks.counters import auto_fix_cached_counts
 
-                auto_fix_cached_counts.delay(
-                    interval=settings.AUTOFIX_CACHE_COUNT_INTERVAL
-                )
-                # 发送使用情况统计
-                send_census_report_job.delay()
-            else:
-                logger.warning("数据库未就绪，跳过后台任务调度（请先执行 migrate）")
+            auto_fix_cached_counts.delay(interval=settings.AUTOFIX_CACHE_COUNT_INTERVAL)
+            # 发送使用情况统计
+            send_census_report_job.delay()
 
         except Exception as e:
             logger.error(f"DCRM应用初始化失败: {e}")

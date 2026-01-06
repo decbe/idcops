@@ -21,7 +21,7 @@ from dcrm.views import (
     topology,
     views,
 )
-from dcrm.views.autocomplete import register_or_get_autocomplete_views
+from dcrm.views.autocomplete import get_autocomplete_urls
 from dcrm.views.imports.registrations import get_import_urls
 
 urlpatterns = [
@@ -856,5 +856,5 @@ urlpatterns = [
     # 导入功能
     *get_import_urls(),
     # Autocomplete 功能
-    *register_or_get_autocomplete_views(get_urls=True),
+    *get_autocomplete_urls(),
 ]
