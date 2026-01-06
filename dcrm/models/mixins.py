@@ -1,10 +1,6 @@
 import json
 from datetime import date, datetime
-from typing import Any, List, Literal, Optional, Type
-
-from mptt.managers import TreeManager
-from mptt.models import MPTTModel, TreeForeignKey
-from str2bool import str2bool
+from typing import Any, Literal
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -17,6 +13,9 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+from mptt.managers import TreeManager
+from mptt.models import MPTTModel, TreeForeignKey
+from str2bool import str2bool
 
 from dcrm.middleware import get_current_user
 from dcrm.utilities.base import camel_to_snake
@@ -101,8 +100,7 @@ class AbsoluteUrlMixin:
 
 
 class CreatedByMixin(models.Model):
-    """
-    创建人Mixin
+    """创建人Mixin
     user model: settings.AUTH_USER_MODEL
     related_name: %(app_label)s_%(class)s_created
     related_name Usage:
@@ -215,8 +213,7 @@ class ContentMixin(CreatedUpdatedMixin):
 
 
 class BaseModel(AbsoluteUrlMixin, CreatedUpdatedMixin):
-    """
-    基础模型，包含数据中心管理器
+    """基础模型，包含数据中心管理器
     fields include:
         - created_by
         - updated_by
@@ -228,8 +225,7 @@ class BaseModel(AbsoluteUrlMixin, CreatedUpdatedMixin):
         abstract = True
 
     def save(self, *args, **kwargs):
-        """
-        保存时设置创建者和更新者
+        """保存时设置创建者和更新者
         """
         is_new = self.pk is None
         if is_new:
@@ -244,8 +240,7 @@ class BaseModel(AbsoluteUrlMixin, CreatedUpdatedMixin):
 
 
 class NestedGroupModel(BaseModel, MPTTModel):
-    """
-    用于形成层次结构的对象的基模型（区域、位置等）。这些模型递归使用MPTT。
+    """用于形成层次结构的对象的基模型（区域、位置等）。这些模型递归使用MPTT。
     在每个父级中，每个子实例必须有一个唯一的名称。
     """
 
@@ -284,9 +279,7 @@ class NestedGroupModel(BaseModel, MPTTModel):
         ):
             raise ValidationError(
                 {
-                    "parent": "Cannot assign self or child {type} as parent.".format(
-                        type=self._meta.verbose_name
-                    )
+                    "parent": f"Cannot assign self or child {self._meta.verbose_name} as parent."
                 }
             )
 
@@ -327,8 +320,7 @@ class IconMixin(models.Model):
         abstract = True
 
     def icon_exists(self):
-        """
-        验证图标文件是否存在
+        """验证图标文件是否存在
         根据Django官方文档的最佳实践进行文件存在性检查
         """
         # 首先检查字段是否有值（Django推荐方式）
@@ -363,8 +355,7 @@ class IconMixin(models.Model):
 
 
 class CustomFieldsMixin(models.Model):
-    """
-    为模型添加自定义字段支持的Mixin
+    """为模型添加自定义字段支持的Mixin
     """
 
     custom_field_data = models.JSONField(
@@ -397,8 +388,7 @@ class CustomFieldsMixin(models.Model):
         return self._custom_fields
 
     def clean_custom_fields(self):
-        """
-        验证所有自定义字段的值
+        """验证所有自定义字段的值
         """
         # if not hasattr(self, "custom_field_data"):
         #     self.custom_field_data = {}
@@ -442,17 +432,15 @@ class CustomFieldsMixin(models.Model):
             raise ValidationError(errors)
 
     def clean(self):
-        """
-        在保存前验证自定义字段
+        """在保存前验证自定义字段
         """
         super().clean()
         self.clean_custom_fields()
 
     def get_custom_field_value(
-        self, field_name: str, field: Type["models.Model"], default: Any = None
+        self, field_name: str, field: type["models.Model"], default: Any = None
     ) -> Any:
-        """
-        获取自定义字段的值
+        """获取自定义字段的值
 
         :param field_name: 字段名称
         :param default: 默认值
@@ -474,10 +462,9 @@ class CustomFieldsMixin(models.Model):
         return value
 
     def set_custom_field_value(
-        self, field_name: str, value: Any, data_center: Type[models.Model]
+        self, field_name: str, value: Any, data_center: type[models.Model]
     ) -> None:
-        """
-        设置自定义字段的值
+        """设置自定义字段的值
 
         :param field_name: 字段名称
         :param value: 字段值
@@ -516,12 +503,10 @@ class CustomFieldsMixin(models.Model):
             self.custom_field_data[field_name] = value
 
     def get_custom_fields(self):
-        """
-        获取所有自定义字段及其值
+        """获取所有自定义字段及其值
 
         :return: 包含字段信息和值的字典列表
         """
-
         if not hasattr(self, "data_center"):
             user = get_current_user()
             self.data_center = user.data_center
@@ -543,10 +528,9 @@ class CustomFieldsMixin(models.Model):
         return result
 
     def get_custom_field_display(
-        self, field_name: str, field: Type["models.Model"]
-    ) -> Optional[str]:
-        """
-        获取自定义字段的显示值
+        self, field_name: str, field: type["models.Model"]
+    ) -> str | None:
+        """获取自定义字段的显示值
 
         :param field_name: 字段名称
         :return: 格式化后的显示值
@@ -611,16 +595,14 @@ class CustomFieldsMixin(models.Model):
             return None
 
     def validate_custom_fields(self) -> None:
-        """
-        验证所有自定义字段值
+        """验证所有自定义字段值
 
         :raises: ValidationError 如果任何字段值无效
         """
         self.clean_custom_fields()
 
     def save(self, *args, **kwargs):
-        """
-        重写save方法以确保在保存前验证自定义字段
+        """重写save方法以确保在保存前验证自定义字段
         """
         if not hasattr(self, "data_center"):
             return super().save(*args, **kwargs)
@@ -643,9 +625,8 @@ class CustomFieldsMixin(models.Model):
         super().save(*args, **kwargs)
 
     @classmethod
-    def get_custom_field_names(cls, data_center) -> List[str]:
-        """
-        获取此模型的所有自定义字段名称
+    def get_custom_field_names(cls, data_center) -> list[str]:
+        """获取此模型的所有自定义字段名称
 
         :return: 字段名称列表
         """
@@ -660,9 +641,8 @@ class CustomFieldsMixin(models.Model):
     @classmethod
     def get_custom_field_choices(
         cls, data_center, field_name: str
-    ) -> Optional[List[tuple]]:
-        """
-        获取选择类型字段的选项
+    ) -> list[tuple] | None:
+        """获取选择类型字段的选项
 
         :param field_name: 字段名称
         :return: 选项列表或None
@@ -684,8 +664,7 @@ class CustomFieldsMixin(models.Model):
 
 
 class ConfigurableMixin(models.Model):
-    """
-    提供配置管理功能的混入类，用于统一管理各种模型的配置信息。
+    """提供配置管理功能的混入类，用于统一管理各种模型的配置信息。
 
     要求使用此Mixin的模型必须具有configure JSONField字段：
     configure = models.JSONField(
@@ -710,16 +689,14 @@ class ConfigurableMixin(models.Model):
         abstract = True
 
     def _system_config_instance_by_proxy(self):
-        """
-        使用其中一个DataCenter实例来代理持久化系统配置
+        """使用其中一个DataCenter实例来代理持久化系统配置
         """
         from .base import DataCenter
 
         return DataCenter.objects.filter().order_by("pk").first()
 
     def _get_system_config(self, key, default=None) -> Any:
-        """
-        使用代理持久化数据中心实例来获取系统配置
+        """使用代理持久化数据中心实例来获取系统配置
         """
         datacenter = self._system_config_instance_by_proxy()
         if not datacenter:
@@ -728,8 +705,7 @@ class ConfigurableMixin(models.Model):
         return configs.get(key, default)
 
     def _set_system_config(self, key, value):
-        """
-        使用代理持久化数据中心实例来存储系统配置
+        """使用代理持久化数据中心实例来存储系统配置
         """
         datacenter = self._system_config_instance_by_proxy()
         if not datacenter:
@@ -749,8 +725,7 @@ class ConfigurableMixin(models.Model):
         datacenter.save(update_fields=["configure"])
 
     def _delete_system_config(self, key):
-        """
-        删除系统配置项
+        """删除系统配置项
         """
         datacenter = self._system_config_instance_by_proxy()
         if not datacenter:
@@ -773,8 +748,7 @@ class ConfigurableMixin(models.Model):
         return False
 
     def get_config(self, key, default=None, is_system=False):
-        """
-        获取配置值
+        """获取配置值
 
         :param key: 配置键名
         :param default: 默认值，如果配置不存在则返回此值
@@ -799,8 +773,7 @@ class ConfigurableMixin(models.Model):
         return configs.get(key, default)
 
     def set_config(self, key, value, is_system=False):
-        """
-        设置单个配置
+        """设置单个配置
 
         :param key: 配置键名
         :param value: 配置值
@@ -829,8 +802,7 @@ class ConfigurableMixin(models.Model):
         self.save(update_fields=["configure"])
 
     def delete_config(self, key, is_system=False):
-        """
-        删除配置项
+        """删除配置项
 
         :param key: 配置键名
         :param is_system: 是否为系统配置
@@ -862,8 +834,7 @@ class ConfigurableMixin(models.Model):
         return False
 
     def get_all_configs(self):
-        """
-        获取所有配置
+        """获取所有配置
 
         :return: 所有配置的字典，格式：{'key1': value1, 'key2': value2, ...}
 
@@ -878,8 +849,7 @@ class ConfigurableMixin(models.Model):
         return self.configure.get("configs", {}).copy()
 
     def update_configs(self, configs_dict):
-        """
-        批量更新配置
+        """批量更新配置
 
         :param configs_dict: 配置字典，格式：{'key1': value1, 'key2': value2, ...}
 
@@ -904,8 +874,7 @@ class ConfigurableMixin(models.Model):
         self.save(update_fields=["configure"])
 
     def initialize_default_configs(self, default_configs=None):
-        """
-        初始化默认配置
+        """初始化默认配置
 
         :param default_configs: 默认配置字典，如果为None则使用子类定义的DEFAULT_CONFIGS
 

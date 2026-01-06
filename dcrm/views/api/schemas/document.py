@@ -1,8 +1,6 @@
-"""
-文档分类相关的 API schemas
+"""文档分类相关的 API schemas
 """
 
-from typing import List, Optional
 
 from ninja import Schema
 
@@ -11,7 +9,7 @@ class DocumentClassificationRequestSchema(Schema):
     """文档分类请求 Schema"""
 
     content: str
-    title: Optional[str] = None
+    title: str | None = None
 
 
 class TagSuggestionSchema(Schema):
@@ -19,8 +17,8 @@ class TagSuggestionSchema(Schema):
 
     id: int
     name: str
-    color: Optional[str] = None
-    score: Optional[float] = None
+    color: str | None = None
+    score: float | None = None
 
 
 class CategorySuggestionSchema(Schema):
@@ -28,16 +26,16 @@ class CategorySuggestionSchema(Schema):
 
     id: int
     name: str
-    color: Optional[str] = None
-    score: Optional[float] = None
+    color: str | None = None
+    score: float | None = None
 
 
 class DocumentClassificationResponseSchema(Schema):
     """文档分类响应 Schema"""
 
     status: str = "success"
-    suggested_tags: List[TagSuggestionSchema]
-    suggested_categories: List[CategorySuggestionSchema]
+    suggested_tags: list[TagSuggestionSchema]
+    suggested_categories: list[CategorySuggestionSchema]
     total_suggestions: int
 
 
@@ -56,8 +54,8 @@ class ClassifierStatusSchema(Schema):
     model_exists: bool
     classifier_loaded: bool
     model_size: int
-    last_trained: Optional[float] = None
-    model_version: Optional[int] = None
+    last_trained: float | None = None
+    model_version: int | None = None
     training_samples: int
     can_train: bool
 

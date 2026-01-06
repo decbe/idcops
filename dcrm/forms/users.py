@@ -415,8 +415,7 @@ class UserProfileForm(forms.ModelForm):
 
 
 class UserPreference(forms.Form):
-    """
-    用户偏好表单，根据配置参数进行渲染表单。DYNAMIC_SETTINGS
+    """用户偏好表单，根据配置参数进行渲染表单。DYNAMIC_SETTINGS
     """
 
     ...

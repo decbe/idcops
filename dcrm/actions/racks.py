@@ -1,7 +1,5 @@
 from typing import Any
 
-from django_htmx.http import HttpResponseClientRedirect
-
 from django import forms
 from django.contrib import messages
 from django.db.models import Q
@@ -145,8 +143,7 @@ def rack_allocate(
 def rack_deallocate(
     request, instances, **kwargs
 ) -> HttpResponsePermanentRedirect | HttpResponseRedirect:
-    """
-    解除机柜分配,
+    """解除机柜分配,
     1. 更新机柜状态
     2. 记录日志
     """

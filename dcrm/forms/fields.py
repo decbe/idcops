@@ -134,8 +134,7 @@ class CustomFieldFormField(forms.Field):
 
 
 class DynamicModelChoiceField(forms.ModelChoiceField):
-    """
-    动态模型选择字段，支持API查询和动态过滤
+    """动态模型选择字段，支持API查询和动态过滤
     """
 
     def __init__(self, queryset, *args, **kwargs):
@@ -174,8 +173,7 @@ class DynamicModelChoiceField(forms.ModelChoiceField):
         return f"/api/v1/{model._meta.app_label}/{model._meta.model_name}/"
 
     def get_filters(self, form):
-        """
-        获取过滤条件
+        """获取过滤条件
         """
         filters = Q()
 
@@ -210,8 +208,7 @@ class DynamicModelChoiceField(forms.ModelChoiceField):
         return filters
 
     def get_field_value(self, form, field_name):
-        """
-        获取字段值，处理各种数据来源和类型转换
+        """获取字段值，处理各种数据来源和类型转换
         """
         value = None
 
@@ -308,8 +305,7 @@ class DynamicModelChoiceField(forms.ModelChoiceField):
         return value
 
     def get_bound_field(self, form, field_name):
-        """
-        获取绑定字段时动态更新查询集
+        """获取绑定字段时动态更新查询集
         """
         bound_field = super().get_bound_field(form, field_name)
         filters = self.get_filters(form)
@@ -325,8 +321,7 @@ class DynamicModelChoiceField(forms.ModelChoiceField):
         return bound_field
 
     def label_from_instance(self, obj):
-        """
-        自定义对象显示标签
+        """自定义对象显示标签
         """
         if hasattr(obj, "get_display_name"):
             return obj.get_display_name()
@@ -338,8 +333,7 @@ class DynamicModelChoiceField(forms.ModelChoiceField):
 class DynamicModelMultipleChoiceField(
     DynamicModelChoiceField, forms.ModelMultipleChoiceField
 ):
-    """
-    动态多选模型字段
+    """动态多选模型字段
     """
 
     def __init__(self, *args, **kwargs):
@@ -348,8 +342,7 @@ class DynamicModelMultipleChoiceField(
 
 
 class APISelectWidget(forms.Select):
-    """
-    支持API查询的Select部件，使用Choices.js实现
+    """支持API查询的Select部件，使用Choices.js实现
     display_field: 用于显示的字段名, 可以多个字段联合使用，使用逗号分割，例如：name,type
     """
 
@@ -407,8 +400,7 @@ class DeviceModelChoiceField(forms.ModelChoiceField):
 
 
 class DeviceRackChoiceField(forms.ModelChoiceField):
-    """
-    机柜选择字段，支持动态加载和过滤
+    """机柜选择字段，支持动态加载和过滤
     """
 
     def label_from_instance(self, obj):

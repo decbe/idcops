@@ -4,13 +4,11 @@ from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext as _
 
-from dcrm.models.customfields import CustomField, CustomFieldTypeChoices
 from dcrm.models.fields import InterfaceIPAddressField
 
 
 class SearchForm(forms.Form):
-    """
-    列表搜索表单
+    """列表搜索表单
     自动根据模型生成搜索字段
     """
 

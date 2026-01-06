@@ -1,7 +1,5 @@
 import logging
-import re
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -129,7 +127,7 @@ class IconFetcher:
 
         return score
 
-    def _find_meta_icons(self, tree, base_domain: str) -> List[IconInfo]:
+    def _find_meta_icons(self, tree, base_domain: str) -> list[IconInfo]:
         """从 meta 标签查找图标"""
         icons = []
 
@@ -159,9 +157,8 @@ class IconFetcher:
 
     def get_website_favicon(
         self, website_url: str
-    ) -> Tuple[Optional[str], Optional[bytes]]:
-        """
-        获取网站图标
+    ) -> tuple[str | None, bytes | None]:
+        """获取网站图标
         :param website_url: 网站URL
         :return: 图标URL和图标内容
 

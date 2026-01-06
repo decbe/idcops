@@ -56,8 +56,7 @@ def get_item(dictionary, key):
 
 @register.filter
 def zfill(value, length=2):
-    """
-    格式化数字，在左侧补0
+    """格式化数字，在左侧补0
 
     用法：
     {{ value|zfill:2 }}  # 补齐2位，如：01, 02, 03
@@ -67,8 +66,7 @@ def zfill(value, length=2):
 
 @register.filter
 def rack_elevation(rack, active_device=None):
-    """
-    渲染机柜立面图
+    """渲染机柜立面图
     采用 adminlte 2.4 的风格
     使用 table, tr, td 渲染机柜立面图
 
@@ -78,6 +76,7 @@ def rack_elevation(rack, active_device=None):
 
     Returns:
         str: 包含机柜立面图的HTML表格
+
     """
     html = []
     # 添加表格头部
@@ -136,8 +135,7 @@ def rack_elevation(rack, active_device=None):
 # 改用 inclusion_tag 的标签直接渲染 html模板
 @register.inclusion_tag("rack/rack_elevation_table.html", takes_context=True)
 def render_rack_elevation(context, rack, active_device=None, edit_device=False):
-    """
-    渲染机柜立面图，采用三列布局显示
+    """渲染机柜立面图，采用三列布局显示
 
     布局说明：
     - 左侧U位编号列：固定宽度，显示从上到下的U位编号

@@ -1,4 +1,3 @@
-from hmac import new
 from typing import Any, Literal
 
 from django.contrib.auth import get_permission_codename
@@ -535,8 +534,7 @@ class OnlineDeviceUpdateView(BaseRequestMixin, UpdateViewMixin, UpdateView):
         return context
 
     def is_migrated(self, prechange, postchange) -> bool:
-        """
-        判断是否迁移
+        """判断是否迁移
         判断依据:
         1. rack 字段改变
         2. rack 没有变化 但是 position 字段改变

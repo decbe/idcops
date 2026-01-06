@@ -1,7 +1,6 @@
 import logging
-from typing import Any, Dict, List, Literal, Never
+from typing import Any, Literal, Never
 
-from django import forms
 from django.contrib import messages
 from django.contrib.auth import get_permission_codename
 from django.contrib.auth.mixins import PermissionRequiredMixin
@@ -34,8 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 class DetailViewMixin(HtmxResponseMixin, PermissionRequiredMixin):
-    """
-    通用的详情视图 Mixin
+    """通用的详情视图 Mixin
 
     特性:
     1. 支持 fields 和 fieldsets 配置
@@ -209,7 +207,7 @@ class DetailViewMixin(HtmxResponseMixin, PermissionRequiredMixin):
             ],
         )
 
-    def get_fields(self) -> List[str]:
+    def get_fields(self) -> list[str]:
         """获取要显示的字段列表"""
         if self.fields == "__all__":
             # 获取所有字段，包括多对多字段
@@ -260,7 +258,7 @@ class DetailViewMixin(HtmxResponseMixin, PermissionRequiredMixin):
 
         return self.lookup_fields.get_field_value(obj, field_name)
 
-    def get_smart_fieldsets(self) -> List[Dict[str, Any]]:
+    def get_smart_fieldsets(self) -> list[dict[str, Any]]:
         """智能分析字段并分组"""
         fields = self.get_fields()
 
@@ -425,7 +423,7 @@ class DetailViewMixin(HtmxResponseMixin, PermissionRequiredMixin):
 
         return fieldsets
 
-    def get_fieldsets(self) -> List[Dict[str, Any]]:
+    def get_fieldsets(self) -> list[dict[str, Any]]:
         """获取字段集配置"""
         if self.fieldsets is not None:
             # 处理自定义fieldsets配置
@@ -492,6 +490,7 @@ class DetailViewMixin(HtmxResponseMixin, PermissionRequiredMixin):
 
         Returns:
             格式化后的HTML字符串
+
         """
         if value is None:
             return EMPTY_VALUE_DISPLAY

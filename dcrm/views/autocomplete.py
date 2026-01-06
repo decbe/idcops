@@ -1,7 +1,5 @@
 import logging
-from typing import Any, Dict, List, Tuple, Type
-
-from str2bool import str2bool
+from typing import Any
 
 from django.apps import apps
 from django.core.exceptions import PermissionDenied
@@ -11,6 +9,7 @@ from django.http import JsonResponse
 from django.urls import path
 from django.urls.resolvers import URLPattern
 from django.views.generic.list import BaseListView
+from str2bool import str2bool
 
 from dcrm.register import registry
 from dcrm.utilities.base import camel_to_snake
@@ -22,8 +21,7 @@ logger = logging.Logger(__name__)
 
 
 class BaseAutocompleteView(BaseRequestMixin, BaseListView):
-    """
-    基础自动完成视图
+    """基础自动完成视图
     自动生成url路由表
     url规范：/{app_label}/{model_name}/
     """
@@ -128,9 +126,8 @@ class BaseAutocompleteView(BaseRequestMixin, BaseListView):
         return {"id": str(obj.pk), "text": str(obj)}
 
 
-def create_autocomplete_view(model) -> Type[BaseAutocompleteView]:
-    """
-    动态创建导入视图类
+def create_autocomplete_view(model) -> type[BaseAutocompleteView]:
+    """动态创建导入视图类
     """
     class_name = f"{model.__name__}AutoCompleteView"
     return type(
@@ -141,10 +138,9 @@ def create_autocomplete_view(model) -> Type[BaseAutocompleteView]:
 
 
 def get_autocomplete_models() -> (
-    Tuple[Dict[str, Type[BaseAutocompleteView]], List[URLPattern]]
+    tuple[dict[str, type[BaseAutocompleteView]], list[URLPattern]]
 ):
-    """
-    获取所有可导入的模型和对应的URL patterns
+    """获取所有可导入的模型和对应的URL patterns
     返回: (autocomplete_map, url_patterns)
     """
     autocomplete_map = {}
@@ -220,7 +216,7 @@ def register_autocomplete_views():
 _url_patterns_cache = None
 
 
-def get_autocomplete_urls() -> List[URLPattern]:
+def get_autocomplete_urls() -> list[URLPattern]:
     """获取所有导入视图的URL patterns（带缓存）"""
     global _url_patterns_cache
     if _url_patterns_cache is None:

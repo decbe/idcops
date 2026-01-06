@@ -1,23 +1,22 @@
-from typing import Any, Dict, List, Optional, Tuple, Type
-
-from ninja import Schema
-from ninja.orm import create_schema
+from typing import Any
 
 from django.db import models
+from ninja import Schema
+from ninja.orm import create_schema
 
 from dcrm.models.fields import InterfaceIPAddressField
 
 
 class DevicePredictRequestSchema(Schema):
     sn: str
-    count: Optional[int] = 5
+    count: int | None = 5
 
 
 class DevicePredictResponseSchema(Schema):
     """预测设备型号Schema"""
 
     status: str
-    result: List[Tuple]
+    result: list[tuple]
 
 
 class PaginatedResponseSchema(Schema):
@@ -26,20 +25,19 @@ class PaginatedResponseSchema(Schema):
     total: int
     total_pages: int
     current_page: int
-    results: List[Dict[str, Any]]
-    pagination: Dict[str, bool]
+    results: list[dict[str, Any]]
+    pagination: dict[str, bool]
 
 
 class ErrorResponseSchema(Schema):
     """错误响应Schema"""
 
     error: str
-    detail: Optional[str] = None
+    detail: str | None = None
 
 
-def create_dynamic_schema(model: Type[models.Model]) -> Type[Schema]:
-    """
-    动态创建模型的Schema
+def create_dynamic_schema(model: type[models.Model]) -> type[Schema]:
+    """动态创建模型的Schema
     """
     exclude = ["data_center", "password", "_password"]
     name = f"{model._meta.label}Schema"
@@ -55,8 +53,7 @@ def create_dynamic_schema(model: Type[models.Model]) -> Type[Schema]:
 
 
 def register_ninja_schema():
-    """
-    将模型的Schema注册到系统注册表中
+    """将模型的Schema注册到系统注册表中
     """
     from django.apps import apps
 

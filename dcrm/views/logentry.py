@@ -1,15 +1,10 @@
-from django.utils.translation import gettext_lazy as _
 from django.views.generic import (
-    CreateView,
-    DeleteView,
     DetailView,
     ListView,
-    UpdateView,
 )
 
 from ..models import LogEntry
 from .mixins.base import BaseRequestMixin
-from .mixins.delete import DeleteViewMixin
 from .mixins.detail import DetailViewMixin
 from .mixins.list import ListViewMixin
 

@@ -6,8 +6,7 @@ _thread_locals = local()
 
 @contextmanager
 def current_user_context(user):
-    """
-    用于测试或脚本中模拟当前用户的上下文管理器
+    """用于测试或脚本中模拟当前用户的上下文管理器
 
     使用示例:
     with current_user_context(user):

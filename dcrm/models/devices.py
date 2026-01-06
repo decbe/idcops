@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -42,8 +41,7 @@ __all__ = [
 
 
 class DeviceType(BaseModel, ColorMixin, IconMixin, CustomFieldsMixin):
-    """
-    设备角色，例如交换机、路由器、服务器、防火墙等等
+    """设备角色，例如交换机、路由器、服务器、防火墙等等
     """
 
     data_center = models.ForeignKey(
@@ -102,8 +100,7 @@ class DeviceType(BaseModel, ColorMixin, IconMixin, CustomFieldsMixin):
 
 
 class DeviceModel(BaseModel, CustomFieldsMixin):
-    """
-    设备型号模型
+    """设备型号模型
     """
 
     data_center = models.ForeignKey(
@@ -257,8 +254,7 @@ class DeviceModel(BaseModel, CustomFieldsMixin):
 
 
 class DeviceModelOID(BaseModel):
-    """
-    设备型号OID
+    """设备型号OID
     """
 
     device_model = models.ForeignKey(
@@ -305,14 +301,12 @@ class DeviceModelOID(BaseModel):
 
 
 class DeviceBulkManager:
-    """
-    设备批量管理类
+    """设备批量管理类
     """
 
     @staticmethod
-    def _generate_port_names(port_count: int, port_type: str) -> List[str]:
-        """
-        生成端口名称列表
+    def _generate_port_names(port_count: int, port_type: str) -> list[str]:
+        """生成端口名称列表
         ethernet: ethernet0, ethernet1, ethernet2, ...
         fiber: fiber0, fiber1, fiber2, ...
         console: console0, console1, console2, ...
@@ -320,13 +314,15 @@ class DeviceBulkManager:
         usb: usb0, usb1, usb2, ...
         power: power0, power1, power2, ...
         other: other0, other1, other2, ...
+
         Return:
             端口名称列表[str]
+
         """
         return [f"{port_type}{i}" for i in range(0, port_count)]
 
     @staticmethod
-    def generate_port_names_by_device_model(device_model: DeviceModel) -> List[str]:
+    def generate_port_names_by_device_model(device_model: DeviceModel) -> list[str]:
         """根据设备型号生成端口名称列表"""
         device_ports = []
         for port_type in DevicePortTypeChoices.values:
@@ -338,8 +334,7 @@ class DeviceBulkManager:
 
 
 class Device(BaseModel, CustomFieldsMixin, TrackingModelMixin):
-    """
-    设备模型
+    """设备模型
     """
 
     # 基础信息
@@ -512,8 +507,7 @@ class Device(BaseModel, CustomFieldsMixin, TrackingModelMixin):
         ]
 
     def unmount_related_collections(self):
-        """
-        下架设备时收集相关联对象
+        """下架设备时收集相关联对象
         1. 机柜U位, （自动完成）
         2. 机柜PDU位，电源端口
         2. IP地址
@@ -646,8 +640,7 @@ class OnlineDevice(Device):
 
 
 class DevicePort(BaseModel, CustomFieldsMixin, TrackingModelMixin):
-    """
-    设备端口模型
+    """设备端口模型
     用于描述设备型号的端口信息
     """
 
@@ -827,8 +820,7 @@ class DevicePort(BaseModel, CustomFieldsMixin, TrackingModelMixin):
 
 
 class DeviceHost(BaseModel, CustomFieldsMixin, TrackingModelMixin):
-    """
-    设备主机模型
+    """设备主机模型
     用于管理设备上的主机系统信息
     """
 

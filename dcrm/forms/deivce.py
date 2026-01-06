@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
-from dcrm.models import Device, DeviceModel, DeviceType, IPAddress, Manufacturer, Rack
+from dcrm.models import Device, DeviceModel, DeviceType, IPAddress, Rack
 
 from .base import BaseModelFormMixin
 from .fields import DeviceModelChoiceField, DeviceRackChoiceField
@@ -84,8 +84,7 @@ class DeviceBaseForm(AutoSequenceMixin, CustomFieldModelForm, BaseModelFormMixin
         )
 
     def clean(self):
-        """
-        表单验证:
+        """表单验证:
         1. 执行通用的unique_together验证
         2. 验证position的特定规则
         """

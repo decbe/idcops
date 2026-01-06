@@ -33,6 +33,14 @@ dependencies = [
     "psycopg[c,pool]>=3.1.8,<3.2",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-django>=4.8.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.2.0",
+]
+
 # Python mirror
 [tool.uv]
 # python-install-mirror = "https://mirror.nju.edu.cn/github-release/indygreg/python-build-standalone/"
@@ -96,3 +104,40 @@ float_to_top = true
 
 # 多行输出格式 (3=垂直悬挂对齐)
 multi_line_output = 3
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "D", "N"]
+ignore = [
+    "D100",  # Missing docstring in public module
+    "D104",  # Missing docstring in public package
+    "D203",  # 1 blank line required before class docstring (conflicts with D211)
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "idcops.settings"
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["idcops", "dcrm"]
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "*/__pycache__/*",
+    "idcops/wsgi.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]

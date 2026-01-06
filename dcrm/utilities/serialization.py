@@ -14,8 +14,7 @@ __all__ = (
 def serialize_object(
     obj, resolve_tags=True, extra=None, exclude=None, delete=False, repr=False
 ):
-    """
-    Return a generic JSON representation of an object using Django's built-in serializer. (This is used for things like
+    """Return a generic JSON representation of an object using Django's built-in serializer. (This is used for things like
     change logging, not the REST API.) Optionally include a dictionary to supplement the object data. A list of keys
     can be provided to exclude them from the returned dictionary.
 
@@ -25,6 +24,7 @@ def serialize_object(
         extra: Any additional data to include in the serialized output. Keys provided in this mapping will
             override object attributes.
         exclude: An iterable of attributes to exclude from the serialized output
+
     """
     json_str = serializers.serialize("json", [obj])
     data = json.loads(json_str)[0]["fields"]
@@ -63,8 +63,7 @@ def serialize_object(
 
 
 def deserialize_object(model, fields, pk=None):
-    """
-    Instantiate an object from the given model and field data. Functions as
+    """Instantiate an object from the given model and field data. Functions as
     the complement to serialize_object().
     """
     content_type = ContentType.objects.get_for_model(model)

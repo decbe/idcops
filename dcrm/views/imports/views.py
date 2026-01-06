@@ -882,7 +882,7 @@ class BulkImportView(PermissionRequiredMixin, BaseRequestMixin, FormView):
         writer.writerow(template_data["example_values"])
 
         # 准备响应
-        filename = quote("{}导入模板.csv".format(self.model._meta.verbose_name))
+        filename = quote(f"{self.model._meta.verbose_name}导入模板.csv")
         content_type = f"application/octet-stream; charset={self.get_csv_charset()}"
         headers = {
             "Content-Disposition": f'attachment; filename="{filename}"',

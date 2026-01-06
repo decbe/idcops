@@ -8,8 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_icon_task(instance):
-    """
-    获取制造商或租户的图标
+    """获取制造商或租户的图标
     instance: 制造商或租户实例 Manufacturer，Tenant
     """
     # 使用更可靠的防重复机制

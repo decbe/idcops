@@ -1,7 +1,5 @@
-import json
 from ast import Tuple
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any
 
 from django.apps import apps
 from django.contrib.admin.utils import (
@@ -10,7 +8,6 @@ from django.contrib.admin.utils import (
     get_fields_from_path,
 )
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.core import serializers
 from django.core.exceptions import FieldDoesNotExist
 from django.db import models
 from django.db.models import ManyToOneRel
@@ -31,7 +28,6 @@ from django.db.models.functions.datetime import (
 )
 from django.urls import resolve, reverse
 from django.urls.exceptions import Resolver404
-from django.utils import timezone
 from django.utils.html import format_html, strip_tags
 from django.utils.safestring import mark_safe
 from django.utils.translation import get_language
@@ -57,26 +53,25 @@ EMPTY_VALUE_DISPLAY = "-"
 
 
 class LookupFields:
-    """
-    用于查找模型字段的类
+    """用于查找模型字段的类
     """
 
     def __init__(
         self,
-        model: Union[Type[models.Model], models.Model],
-        fields: List[str],
-        custom_fields: Optional[models.QuerySet] = None,
+        model: type[models.Model] | models.Model,
+        fields: list[str],
+        custom_fields: models.QuerySet | None = None,
         empty_value_display: str = EMPTY_VALUE_DISPLAY,
         primary_link: bool = False,
-        user: Optional[User] = None,
+        user: User | None = None,
     ):
-        """
-        初始化 LookupFields
+        """初始化 LookupFields
 
         Args:
             model: Django 模型类或模型实例
             fields: 字段名称列表，支持外键路径 (如 ['id', 'name', 'model__name'])
             empty_value_display: 空值显示的字符串
+
         """
         # 如果传入的是模型实例，获取其类
         exclude_fields = ["_password", "password"]
@@ -126,23 +121,22 @@ class LookupFields:
                 else:
                     self._field_info[field_name] = None
 
-    def get_field_labels(self) -> Dict[str, str]:
-        """
-        批量获取所有字段的标签
+    def get_field_labels(self) -> dict[str, str]:
+        """批量获取所有字段的标签
 
         Returns:
             Dict[str, str]: 字段名到标签的映射，如 {'name': '名称', 'status': '状态'}
+
         """
         return {field: self.get_field_label(field) for field in self.fields}
 
     def get_field_values(
         self,
-        obj: Union[models.Model, type],
+        obj: models.Model | type,
         html: bool = True,
-        fields: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
-        """
-        批量获取所有字段的值
+        fields: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """批量获取所有字段的值
 
         Args:
             obj: 模型实例或模型类
@@ -154,6 +148,7 @@ class LookupFields:
 
         Raises:
             TypeError: 如果传入的 obj 既不是模型实例也不是模型类
+
         """
         # 如果是模型实例，正常处理
         fields = fields or self.fields
@@ -252,14 +247,12 @@ class LookupFields:
         return ", ".join(map(str, value.all()))
 
     def handle_many_to_many_value(self, value: models.Manager) -> str:
-        """
-        处理多对多字段的值
+        """处理多对多字段的值
         支持以下格式：
         1. QuerySet 对象
         2. 空格分隔的标签字符串
         3. 逗号分隔的标签字符串
         """
-
         # 处理字符串类型的值（标签字符串）
         if isinstance(value, str):
             # 优先使用逗号分割，如果没有逗号就用空格分割
@@ -331,8 +324,7 @@ class LookupFields:
     def handle_bool_value(
         self, obj: models.Model, field: models.Field, value: bool
     ) -> str:
-        """
-        处理布尔字段的值，返回带颜色的标签
+        """处理布尔字段的值，返回带颜色的标签
 
         Args:
             obj: 模型实例
@@ -343,6 +335,7 @@ class LookupFields:
             str: 格式化后的 HTML 标签，例如：
                 True -> '<span class="label bg-green">是</span>'
                 False -> '<span class="label bg-red">否</span>'
+
         """
         # 获取显示文本
         text = getattr(
@@ -365,8 +358,7 @@ class LookupFields:
         return display_for_value(value, self.empty_value_display)
 
     def get_field_value(self, obj: models.Model, field_name: str) -> Any:
-        """
-        获取字段值，支持外键路径、自定义字段、多对多字段等
+        """获取字段值，支持外键路径、自定义字段、多对多字段等
         返回的值可能包含 HTML 标签
         """
         # 使用缓存的自定义字段名称集合进行检查
@@ -426,8 +418,7 @@ class LookupFields:
         )
 
     def get_field_value_as_str(self, obj: models.Model, field_name: str) -> str:
-        """
-        获取字段值的纯文本形式，移除所有 HTML 标签
+        """获取字段值的纯文本形式，移除所有 HTML 标签
         """
         value = self.get_field_value(obj, field_name)
         return strip_tags(str(value)) if value is not None else self.empty_value_display
@@ -437,8 +428,7 @@ class LookupFields:
 
 
 def is_model_field(model, field_name):
-    """
-    判断一个字符串是否为模型中的字段
+    """判断一个字符串是否为模型中的字段
     """
     try:
         model._meta.get_field(field_name)
@@ -448,14 +438,14 @@ def is_model_field(model, field_name):
 
 
 def get_view_info_by_url_name(url_name):
-    """
-    通过URL name获取视图相关信息
+    """通过URL name获取视图相关信息
 
     Args:
         url_name: URL的名称
 
     Returns:
         dict: 包含视图信息的字典
+
     """
     try:
         url = reverse(url_name)
@@ -470,8 +460,7 @@ def get_model_view_url_name(model, view_type="list") -> str:
 
 
 def get_related_models(model):
-    """
-    Return a list of all models which have a ForeignKey to the given model and the name of the field. For example,
+    """Return a list of all models which have a ForeignKey to the given model and the name of the field. For example,
     `get_related_models(Tenant)` will return all models which have a ForeignKey relationship to Tenant.
     """
     related_models = [
@@ -484,10 +473,9 @@ def get_related_models(model):
 
 
 def get_custom_field_models(
-    exclude_models: Optional[List[str]] = None,
-) -> List[Type[models.Model]]:
-    """
-    获取所有包含自定义字段的模型
+    exclude_models: list[str] | None = None,
+) -> list[type[models.Model]]:
+    """获取所有包含自定义字段的模型
     """
     dcrm_models = apps.get_app_config("dcrm").get_models()
     from dcrm.models.mixins import CustomFieldsMixin
@@ -511,8 +499,7 @@ def get_custom_field_models(
 
 
 def get_cf_models_query():
-    """
-    获取所有包含自定义字段的模型 Q 查询
+    """获取所有包含自定义字段的模型 Q 查询
     """
     query = models.Q()
     cf_models = [m._meta.model_name for m in get_custom_field_models()]
@@ -521,8 +508,7 @@ def get_cf_models_query():
 
 
 def get_cf_models_queryset():
-    """
-    获取所有包含自定义字段的模型 queryset
+    """获取所有包含自定义字段的模型 queryset
     """
     from django.contrib.contenttypes.models import ContentType
 
@@ -543,8 +529,7 @@ def get_select2_language():
 
 
 def generate_cable_label_by_nodes(src, apoint, zpoint) -> dict[int, str]:
-    """
-    根据数据源和节点始终，生成相对应的跳线标签
+    """根据数据源和节点始终，生成相对应的跳线标签
 
     src: 数据源，apoint：起始节点，zpoint，终止节点
     """
@@ -604,6 +589,7 @@ def create_trunc_function(
 
         >>> create_trunc_function('invalid', 'created_at')
         None
+
     """
     aggregation = aggregation.lower()
     if aggregation == "day":
@@ -620,7 +606,7 @@ def create_trunc_function(
         raise ValueError("Invalid aggregation")
 
 
-def format_date_display(trend_stats: Optional[List | Tuple], aggregation: str) -> dict:
+def format_date_display(trend_stats: list | Tuple | None, aggregation: str) -> dict:
     """格式化趋势统计中的日期显示
 
     根据不同的聚合方式格式化日期显示格式，将统计结果中的日期转换为适合图表显示的字符串格式
@@ -639,8 +625,8 @@ def format_date_display(trend_stats: Optional[List | Tuple], aggregation: str) -
 
         >>> format_date_display(trend_stats, 'week')
         {'dates': ['2023-W00', '2023-W00']}
-    """
 
+    """
     trend_data = {"dates": []}
     raw_periods = [normalize_to_date(item["period"]) for item in trend_stats]
     periods = sorted(set(raw_periods))
@@ -664,8 +650,7 @@ def format_date_display(trend_stats: Optional[List | Tuple], aggregation: str) -
 
 
 def normalize_to_date(value) -> Any:
-    """
-    获取所有时间段（兼容 date 与 datetime）
+    """获取所有时间段（兼容 date 与 datetime）
     """
     from datetime import datetime as dt
 

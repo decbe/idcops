@@ -1,10 +1,6 @@
 import re
 
 from dateparser import parse
-from mptt.managers import TreeManager
-from mptt.models import MPTTModel, TreeForeignKey
-from mptt.templatetags.mptt_tags import cache_tree_children
-
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
@@ -16,14 +12,15 @@ from django.db.models import (
     Count,
     F,
     IntegerField,
-    OuterRef,
-    Subquery,
     Sum,
     When,
 )
-from django.db.models.functions import Coalesce, ExtractDay, Now
+from django.db.models.functions import ExtractDay, Now
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from mptt.managers import TreeManager
+from mptt.models import MPTTModel, TreeForeignKey
+from mptt.templatetags.mptt_tags import cache_tree_children
 
 from dcrm.models.fields import CounterCacheField
 
@@ -118,16 +115,13 @@ class Warehouse(BaseModel, CustomFieldsMixin, MPTTModel, TrackingModelMixin):
         ):
             raise ValidationError(
                 {
-                    "parent": "Cannot assign self or child {type} as parent.".format(
-                        type=self._meta.verbose_name
-                    )
+                    "parent": f"Cannot assign self or child {self._meta.verbose_name} as parent."
                 }
             )
 
 
 class ItemCategory(BaseModel, IconMixin, CustomFieldsMixin, MPTTModel):
-    """
-    物品类别
+    """物品类别
         # 创建物品类别
     category = ItemCategory.objects.create(
         data_center=dc,
@@ -255,9 +249,7 @@ class ItemCategory(BaseModel, IconMixin, CustomFieldsMixin, MPTTModel):
         ):
             raise ValidationError(
                 {
-                    "parent": "Cannot assign self or child {type} as parent.".format(
-                        type=self._meta.verbose_name
-                    )
+                    "parent": f"Cannot assign self or child {self._meta.verbose_name} as parent."
                 }
             )
 
@@ -308,8 +300,7 @@ class ItemCategory(BaseModel, IconMixin, CustomFieldsMixin, MPTTModel):
 
     @classmethod
     def get_category_tags(cls, category):
-        """
-        获取类别的标签
+        """获取类别的标签
         """
         queryset = category.get_descendants(include_self=True)
         tags = list(
@@ -340,8 +331,7 @@ class InventoryItemManager(models.Manager.from_queryset(InventoryItemQuerySet)):
 
 
 class InventoryItem(BaseModel, CustomFieldsMixin):
-    """
-    物品基本信息
+    """物品基本信息
     # 创建物品
     item = InventoryItem.objects.create(
         data_center=dc,
@@ -437,8 +427,7 @@ class InventoryItem(BaseModel, CustomFieldsMixin):
         )
 
     def to_train_data(self) -> dict:
-        """
-        返回用于深度学习训练的数据结构
+        """返回用于深度学习训练的数据结构
         Returns:
             dict: {
                 "category": {"id": int, "name": str},
@@ -496,8 +485,7 @@ class ItemInstanceManager(models.Manager.from_queryset(ItemInstanceQuerySet)):
 
 
 class ItemInstance(BaseModel, CustomFieldsMixin, TrackingModelMixin):
-    """
-    物品实例 - 支持一物一码（有SN）和批量管理（无SN）
+    """物品实例 - 支持一物一码（有SN）和批量管理（无SN）
     """
 
     data_center = models.ForeignKey(
@@ -658,8 +646,7 @@ class ItemInstance(BaseModel, CustomFieldsMixin, TrackingModelMixin):
         return self.status == "in_stock" and self.quantity >= required_quantity
 
     def is_below_warning(self):
-        """
-        判断当前库存是否低于预警线
+        """判断当前库存是否低于预警线
         Returns:
             bool: True 表示低于预警线
         """
@@ -667,8 +654,7 @@ class ItemInstance(BaseModel, CustomFieldsMixin, TrackingModelMixin):
 
     @classmethod
     def get_warning_items(cls):
-        """
-        获取所有低于预警线的库存实例
+        """获取所有低于预警线的库存实例
         Returns:
             QuerySet: 低于预警线的库存实例
         """
@@ -677,8 +663,7 @@ class ItemInstance(BaseModel, CustomFieldsMixin, TrackingModelMixin):
         )
 
     def to_train_data(self) -> dict:
-        """
-        返回用于深度学习训练的数据结构
+        """返回用于深度学习训练的数据结构
         Returns:
             dict: {
                 "raw_text": str,  # 从 metadata 中提取
@@ -727,8 +712,7 @@ class ItemInstanceHistoryManager(models.Manager):
 
 
 class ItemInstanceHistory(BaseModel, CustomFieldsMixin, TrackingModelMixin):
-    """
-    库存历史记录 - 记录物品的完整生命周期
+    """库存历史记录 - 记录物品的完整生命周期
     支持从入库到报废的完整状态追踪，包括借用、维护、安装等所有操作
     """
 
@@ -860,7 +844,6 @@ class ItemInstanceHistory(BaseModel, CustomFieldsMixin, TrackingModelMixin):
 
     def is_overdue(self):
         """检查是否逾期"""
-
         extra_data = self.extra_data
         expected_return_date = parse(extra_data.get("expected_return_date"))
         actual_return_date = parse(extra_data.get("actual_return_date"))

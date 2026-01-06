@@ -4,7 +4,6 @@ from io import StringIO
 
 import dateparser
 from charset_normalizer import detect
-
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -57,8 +56,7 @@ class BaseImportForm(forms.Form):
         self._build_fields()
 
     def _get_search_fields(self, field):
-        """
-        获取外键字段的查找字段列表
+        """获取外键字段的查找字段列表
         """
         related_model = field.remote_field.model
         search_fields = []
@@ -205,8 +203,7 @@ class BaseImportForm(forms.Form):
             self.fields[field_name] = form_field
 
     def test_csv_header(self, reader):
-        """
-        判断 csv 文件第2行是不是模型字段名称
+        """判断 csv 文件第2行是不是模型字段名称
         """
         field_verbose_names = {
             field.verbose_name: field.name for field in self.model._meta.fields

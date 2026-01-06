@@ -2,17 +2,15 @@ import logging
 from datetime import timedelta
 
 import django_rq
-from django_rq import job
-
 from django.core.management import call_command
+from django_rq import job
 
 logger = logging.Logger(__name__)
 
 
 @job("default", timeout=60)
 def auto_fix_cached_counts(interval=60) -> None:
-    """
-    自动修复缓存字段计数器
+    """自动修复缓存字段计数器
     在 interval 时间范围内只允许执行/入队一次
     """
     # 获取 redis 连接

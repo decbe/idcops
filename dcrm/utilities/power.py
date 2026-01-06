@@ -12,6 +12,7 @@ class PowerConverter:
 
         公式: I(A) = P(W) / (V × PF × √3)  # 三相
              I(A) = P(W) / (V × PF)        # 单相
+
         """
         watts = kw * 1000  # 转换为瓦特
 
@@ -37,6 +38,7 @@ class PowerConverter:
 
         公式: P(W) = I(A) × V × PF × √3  # 三相
              P(W) = I(A) × V × PF        # 单相
+
         """
         # 三相交流
         if voltage > 220:
@@ -56,5 +58,6 @@ class PowerConverter:
             kva: 视在功率，单位千伏安
 
         公式: PF = P(kW) / S(kVA)
+
         """
         return round(kw / kva, 2) if kva else 0

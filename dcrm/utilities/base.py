@@ -1,10 +1,8 @@
 import logging
 import re
 from itertools import chain
-from typing import List
 
 import exrex
-
 from django.contrib.admin.utils import label_for_field
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldDoesNotExist
@@ -17,8 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def camel_to_snake(name, seq="_"):
-    """
-    将驼峰命名转换为蛇形命名
+    """将驼峰命名转换为蛇形命名
     ModelHost -> model_host
     objectHost -> object_host
     eg:
@@ -27,7 +24,7 @@ def camel_to_snake(name, seq="_"):
     return slugify(camel_case_to_spaces(name)).replace("-", seq)
 
 
-def expand_regex_pattern(pattern: str, limit: int = 1000) -> List[str]:
+def expand_regex_pattern(pattern: str, limit: int = 1000) -> list[str]:
     """展开正则表达式模式
 
     Args:
@@ -39,6 +36,7 @@ def expand_regex_pattern(pattern: str, limit: int = 1000) -> List[str]:
 
     Raises:
         ValueError: 当正则表达式无效或结果数量超过限制时
+
     """
     logger.debug("开始展开正则表达式模式: %s, 限制数量: %d", pattern, limit)
 
@@ -87,8 +85,7 @@ def expand_regex_pattern(pattern: str, limit: int = 1000) -> List[str]:
 
 
 def get_object_opts(obj):
-    """
-    获取模型 Meta Options
+    """获取模型 Meta Options
     支持 model, model queryset, model instance or model Meta.
     """
     if isinstance(obj, (models.Model, models.base.ModelBase)):
@@ -101,8 +98,7 @@ def get_object_opts(obj):
 
 
 def lookup_field_verbose(obj, custom_fields, field_name, custom_fields_maps=None):
-    """
-    获取字段的 verbose_name。支持外键路径（如 'model__name'）和方法的 short_description。
+    """获取字段的 verbose_name。支持外键路径（如 'model__name'）和方法的 short_description。
 
     Args:
         obj: Django Model instance
@@ -114,6 +110,7 @@ def lookup_field_verbose(obj, custom_fields, field_name, custom_fields_maps=None
     Raises:
         ValueError: 如果 obj 不是 Django Model 实例
         FieldDoesNotExist: 如果字段不存在
+
     """
     opts = get_object_opts(obj)
 
@@ -159,8 +156,7 @@ def lookup_field_verbose(obj, custom_fields, field_name, custom_fields_maps=None
 
 
 def get_content_type_by_labeled_name(labeled_name: str) -> ContentType:
-    """
-    通过 app_labeled_name 反向查询 ContentType
+    """通过 app_labeled_name 反向查询 ContentType
 
     Args:
         labeled_name: 格式为 "app_label | verbose_name" 的字符串
@@ -170,6 +166,7 @@ def get_content_type_by_labeled_name(labeled_name: str) -> ContentType:
 
     Raises:
         ContentType.DoesNotExist: 如果找不到匹配的 ContentType
+
     """
     from django.apps import apps
 

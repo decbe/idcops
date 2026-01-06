@@ -3,10 +3,8 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
-
-from django_rq import utils as rq_utils
+from datetime import timedelta
+from typing import Any
 
 from django.apps import apps
 from django.contrib import messages
@@ -21,6 +19,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, TemplateView, View
+from django_rq import utils as rq_utils
 
 from dcrm.forms.datacenter import DataCenterForm
 from dcrm.forms.users import CreateFirstSuperUserForm
@@ -53,8 +52,7 @@ class IndexView(BaseRequestMixin, TemplateView):
     template_name = "index.html"
 
     def get_device_statistics(self) -> str:
-        """
-        获取设备统计信息，包括设备变更趋势和设备类型分布
+        """获取设备统计信息，包括设备变更趋势和设备类型分布
         """
         data_center = self.request.user.data_center
 
@@ -225,7 +223,7 @@ class IndexView(BaseRequestMixin, TemplateView):
         }
         return data
 
-    def get_models_stats(self) -> List[Dict[str, Any]]:
+    def get_models_stats(self) -> list[dict[str, Any]]:
         data_center = self.request.user.data_center
         racks = Rack.objects.filter(data_center=data_center).values("status")
         actived_racks = racks.filter(status__allowed_mount=True)
@@ -274,8 +272,7 @@ class IndexView(BaseRequestMixin, TemplateView):
         return data
 
     def get_recent_operations(self):
-        """
-        获取最近的操作日志
+        """获取最近的操作日志
         """
         data_center = self.request.user.data_center
         # 获取最近10条操作日志，按创建时间倒序排列
@@ -316,8 +313,7 @@ class IndexView(BaseRequestMixin, TemplateView):
         return operations
 
     def get_system_info(self):
-        """
-        获取系统信息
+        """获取系统信息
         指标：
         app 运行时间
         python 版本
@@ -330,7 +326,6 @@ class IndexView(BaseRequestMixin, TemplateView):
         os
         system load
         """
-
         data = {}
 
         # 系统时间
@@ -368,7 +363,7 @@ class IndexView(BaseRequestMixin, TemplateView):
                 else:
                     data["postgresql_version"] = "Unknown"
                     data["database_size"] = "Unknown"
-        except Exception as e:
+        except Exception:
             data["postgresql_version"] = "Unknown"
             data["database_size"] = "Unknown"
 
@@ -388,14 +383,14 @@ class IndexView(BaseRequestMixin, TemplateView):
         return data
 
     def get_context_data(self, **kwargs) -> Any:
-        """
-        获取模板上下文数据
+        """获取模板上下文数据
 
         Args:
             **kwargs: 额外的上下文参数
 
         Returns:
             包含页面标题、面包屑导航和统计数据的上下文字典
+
         """
         context = super().get_context_data(**kwargs)
         device_stats = self.get_device_statistics()
@@ -436,8 +431,7 @@ class CreateFirstSuperUserView(FormView):
     success_url = reverse_lazy("welcome")
 
     def dispatch(self, request, *args, **kwargs):
-        """
-        请求分发处理
+        """请求分发处理
 
         检查是否已存在超级用户和数据中心，根据情况重定向到相应页面
         """
@@ -453,14 +447,14 @@ class CreateFirstSuperUserView(FormView):
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
-        """
-        表单验证成功后的处理
+        """表单验证成功后的处理
 
         Args:
             form: 验证通过的表单对象
 
         Returns:
             重定向响应
+
         """
         user = form.save(commit=False)
         user.is_superuser = True
@@ -483,8 +477,7 @@ class WelcomeView(LoginRequiredMixin, FormView):
     form_class = DataCenterForm
 
     def dispatch(self, request, *args, **kwargs):
-        """
-        请求分发处理
+        """请求分发处理
 
         检查是否已存在数据中心，如果存在则重定向到首页
         """
@@ -494,25 +487,25 @@ class WelcomeView(LoginRequiredMixin, FormView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
-        """
-        获取表单参数
+        """获取表单参数
 
         Returns:
             包含请求对象的表单参数字典
+
         """
         kwargs = super().get_form_kwargs()
         kwargs["request"] = self.request
         return kwargs
 
     def form_valid(self, form: Any) -> HttpResponse:
-        """
-        表单验证成功后的处理
+        """表单验证成功后的处理
 
         Args:
             form: 验证通过的表单对象
 
         Returns:
             重定向响应
+
         """
         user = self.request.user
         form.instance.created_by = user
@@ -538,8 +531,7 @@ class DataCenterCreateView(LoginRequiredMixin, FormView):
     success_url = reverse_lazy("index")
 
     def dispatch(self, request, *args, **kwargs):
-        """
-        请求分发处理
+        """请求分发处理
 
         检查用户是否为超级管理员，如果不是则重定向到首页
         """
@@ -549,25 +541,25 @@ class DataCenterCreateView(LoginRequiredMixin, FormView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
-        """
-        获取表单参数
+        """获取表单参数
 
         Returns:
             包含请求对象的表单参数字典
+
         """
         kwargs = super().get_form_kwargs()
         kwargs["request"] = self.request
         return kwargs
 
     def form_valid(self, form: Any) -> HttpResponse:
-        """
-        表单验证成功后的处理
+        """表单验证成功后的处理
 
         Args:
             form: 验证通过的表单对象
 
         Returns:
             重定向响应
+
         """
         user = self.request.user
         form.instance.created_by = user
@@ -581,8 +573,7 @@ class DataCenterCreateView(LoginRequiredMixin, FormView):
 
 
 class UploadAttachment(BaseRequestMixin, View):
-    """
-    附件上传视图
+    """附件上传视图
 
     主要功能：
     1. 仅允许 POST 请求上传文件，GET 请求会被拒绝。
@@ -618,28 +609,28 @@ class UploadAttachment(BaseRequestMixin, View):
         )
 
     def get_barcodes(self, attachment, file_path):
-        """
-        获取图片中的条形码，将识别的条码结果添加到附件对象的 metadata 字段中
+        """获取图片中的条形码，将识别的条码结果添加到附件对象的 metadata 字段中
         Args:
             attachment: 附件对象
             file_path: 文件路径
 
         Returns:
             处理后的附件对象
+
         """
         barcodes = extract_barcodes(file_path)
         update_attachment_metadata(attachment, barcodes=barcodes)
         return attachment
 
     def get_ocr_result(self, attachment):
-        """
-        OCR识别，将识别结果添加到附件对象的 metadata 字段中
+        """OCR识别，将识别结果添加到附件对象的 metadata 字段中
         Args:
             attachment: 附件对象
             file_path: 文件路径
 
         Returns:
             处理后的附件对象
+
         """
         ocr_texts = extract_ocr_texts(attachment.id, force_ocr=True)
         update_attachment_metadata(attachment, ocr_texts=ocr_texts)
@@ -736,7 +727,7 @@ class UploadAttachment(BaseRequestMixin, View):
 
             logger.info(f"上传处理完成，返回{len(response_files)}个文件")
             return JsonResponse({"status": "true", "files": response_files})
-        except IOError as e:
+        except OSError as e:
             logger.error(f"保存附件时出错: {str(e)}")
             return JsonResponse(
                 {"status": "false", "message": _("Failed to save attachment")},

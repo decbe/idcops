@@ -14,8 +14,7 @@ from django.utils.translation import gettext_lazy as _
 def get_request_ip(
     request, additional_headers=()
 ) -> IPv4Address | IPv6Address | Literal[""]:
-    """
-    返回请求的真实IP地址
+    """返回请求的真实IP地址
     """
     HTTP_HEADERS = (
         "HTTP_X_REAL_IP",

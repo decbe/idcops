@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-生成一个 54 字符的随机密钥，适合用作 Django SECRET_KEY。
+"""生成一个 54 字符的随机密钥，适合用作 Django SECRET_KEY。
 
 使用方法:
     python generate_secret_key.py

@@ -13,8 +13,7 @@ dcrm_models = apps.get_app_config("dcrm").get_models()
 
 
 def check_initialization():
-    """
-    检查初始化
+    """检查初始化
     """
     from dcrm.models import DataCenter
     from dcrm.register import registry
@@ -97,8 +96,7 @@ EXCLUDE_LIST_FIELDS = (
 
 
 def get_smart_fieldsets(model, fields):
-    """
-    智能分析模型字段，生成合理的 fieldsets 分组
+    """智能分析模型字段，生成合理的 fieldsets 分组
 
     分组规则：
     1. 必填信息（按字符串、外键、多对多排序）

@@ -1,11 +1,10 @@
 import json
 import logging
 import re
+from collections.abc import Sequence
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Sequence, Type
-
-from str2bool import str2bool
+from typing import Any
 
 from django import forms
 from django.contrib.contenttypes.models import ContentType
@@ -17,6 +16,7 @@ from django.forms import Field
 from django.forms.widgets import DateInput, DateTimeInput
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+from str2bool import str2bool
 
 from .choices import CustomFieldTypeChoices, CustomFieldVisibilityChoices
 from .mixins import BaseModel
@@ -31,15 +31,13 @@ __all__ = (
 
 
 class CustomFieldManager(models.Manager):
-    """
-    自定义字段管理器
+    """自定义字段管理器
     """
 
     def get_for_model(
-        self, model: Type[Model], data_center: Type[Model], hidden: bool = True
+        self, model: type[Model], data_center: type[Model], hidden: bool = True
     ) -> QuerySet["CustomField"]:
-        """
-        返回分配给指定模型的所有CustomFields
+        """返回分配给指定模型的所有CustomFields
         """
         if model is None:
             raise ValueError("model 参数不能为 None")
@@ -56,10 +54,9 @@ class CustomFieldManager(models.Manager):
         return queryset
 
     def get_for_models(
-        self, models: Sequence[Type[Model]], data_center: Type[Model]
+        self, models: Sequence[type[Model]], data_center: type[Model]
     ) -> QuerySet["CustomField"]:
-        """
-        返回分配给指定模型列表的所有CustomFields
+        """返回分配给指定模型列表的所有CustomFields
         """
         content_types = [
             ContentType.objects.get_for_model(model._meta.concrete_model)
@@ -72,8 +69,7 @@ class CustomFieldManager(models.Manager):
         )
 
     def create_field(self, name: str, type: str, **kwargs: Any) -> "CustomField":
-        """
-        创建新的自定义字段
+        """创建新的自定义字段
         """
         if not name.isidentifier():
             raise ValidationError(_("字段名称必须是有效的Python标识符"))
@@ -92,10 +88,9 @@ class CustomFieldManager(models.Manager):
         return field
 
     def copy_field(
-        self, field: "CustomField", new_name: Optional[str] = None
+        self, field: "CustomField", new_name: str | None = None
     ) -> "CustomField":
-        """
-        复制现有的自定义字段
+        """复制现有的自定义字段
         """
         if not isinstance(field, self.model):
             raise ValueError(_("必须提供CustomField实例"))
@@ -118,10 +113,9 @@ class CustomFieldManager(models.Manager):
         return field_copy
 
     def bulk_create_fields(
-        self, field_definitions: List[Dict[str, Any]]
-    ) -> List["CustomField"]:
-        """
-        批量创建自定义字段
+        self, field_definitions: list[dict[str, Any]]
+    ) -> list["CustomField"]:
+        """批量创建自定义字段
         """
         fields = []
         errors = []
@@ -141,14 +135,12 @@ class CustomFieldManager(models.Manager):
         return fields
 
     def get_fields_for_content_type(self, content_type) -> QuerySet["CustomField"]:
-        """
-        获取指定ContentType的所有自定义字段
+        """获取指定ContentType的所有自定义字段
         """
         return self.get_queryset().filter(object_types=content_type)
 
     def get_required_fields(self, model=None) -> QuerySet["CustomField"]:
-        """
-        获取所有必填字段
+        """获取所有必填字段
         """
         qs = self.get_queryset().filter(required=True)
         if model:
@@ -156,8 +148,7 @@ class CustomFieldManager(models.Manager):
         return qs
 
     def get_unique_fields(self, model=None) -> QuerySet["CustomField"]:
-        """
-        获取所有唯一字段
+        """获取所有唯一字段
         """
         qs = self.get_queryset().filter(unique=True)
         if model:
@@ -165,8 +156,7 @@ class CustomFieldManager(models.Manager):
         return qs
 
     def search_fields(self, search_term: str) -> QuerySet["CustomField"]:
-        """
-        搜索自定义字段
+        """搜索自定义字段
         """
         return self.get_queryset().filter(
             models.Q(name__icontains=search_term)
@@ -175,15 +165,13 @@ class CustomFieldManager(models.Manager):
         )
 
     def get_by_natural_key(self, name: str) -> "CustomField":
-        """
-        通过自然键获取字段
+        """通过自然键获取字段
         """
         return self.get(name=name)
 
 
 class CustomField(BaseModel):
-    """
-    自定义字段模型
+    """自定义字段模型
     """
 
     data_center = models.ForeignKey(
@@ -345,8 +333,7 @@ class CustomField(BaseModel):
         return self.label or self.name
 
     def serialize(self, value):
-        """
-        Prepare a value for storage as JSON data.
+        """Prepare a value for storage as JSON data.
         """
         if value is None:
             return value
@@ -370,8 +357,7 @@ class CustomField(BaseModel):
         return value
 
     def deserialize(self, value):
-        """
-        Convert JSON data to a Python object suitable for the field type.
+        """Convert JSON data to a Python object suitable for the field type.
         """
         if value is None:
             return value
@@ -678,15 +664,14 @@ class CustomField(BaseModel):
     def to_form_field(
         self, set_initial: bool = True, enforce_required: bool = True
     ) -> Field:
-        """
-        返回用于在表单中渲染此自定义字段的表单字段
+        """返回用于在表单中渲染此自定义字段的表单字段
         """
         default = self.get_default_value()
         initial = default if set_initial else None
         required = self.required if enforce_required else False
 
         # 基础字段参数
-        field_kwargs: Dict[str, Any] = {
+        field_kwargs: dict[str, Any] = {
             "required": required,
             "initial": initial,
             "label": self.label or self.name,
@@ -820,8 +805,7 @@ class CustomField(BaseModel):
         return field
 
     def remove_stale_data(self, content_types=None):
-        """
-        删除不再相关的自定义字段数据
+        """删除不再相关的自定义字段数据
         """
         if content_types is None:
             content_types = self.object_types.all()
@@ -848,8 +832,7 @@ class CustomField(BaseModel):
                     model.objects.bulk_update(batch, ["custom_field_data"])
 
     def rename_field_data(self, old_name):
-        """
-        重命名字段时更新所有相关数据
+        """重命名字段时更新所有相关数据
         """
         if old_name == self.name:
             return

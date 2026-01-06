@@ -1,7 +1,5 @@
 import sys
-from typing import Any, Dict, Literal
-
-from django_htmx.http import HttpResponseClientRedirect
+from typing import Any, Literal
 
 from django.contrib import messages
 from django.forms import modelformset_factory
@@ -9,9 +7,9 @@ from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django_htmx.http import HttpResponseClientRedirect
 
 from dcrm.forms.inventory import (
-    ItemInstanceHistoryBorrowForm,
     ItemInstanceHistoryStockOutForm,
 )
 from dcrm.models import CodingRule, ItemInstance, ItemInstanceHistory, LogEntry
@@ -42,7 +40,7 @@ class BatchInventoryAction:
         )
         self.action = self.get_action()
 
-    def get_action(self) -> Dict:
+    def get_action(self) -> dict:
         action = registry.get_action(self.model, self.action_name)
         return action
 
@@ -52,7 +50,7 @@ class BatchInventoryAction:
 
         return ItemInstanceStatus.IN_STOCK
 
-    def get_initial(self) -> list[Dict[str, Any]]:
+    def get_initial(self) -> list[dict[str, Any]]:
         # 可被子类重写
         return [
             {
@@ -81,7 +79,7 @@ class BatchInventoryAction:
         """子类实现具体业务逻辑"""
         raise NotImplementedError
 
-    def get_context(self, formset) -> Dict[str, Any]:
+    def get_context(self, formset) -> dict[str, Any]:
 
         return {
             "action": self.get_action(),
@@ -206,8 +204,7 @@ def batch_stock_out(
 def batch_borrow(
     request, instances, **kwargs
 ) -> HttpResponseClientRedirect | Any | TemplateResponse:
-    """
-    物品借出
+    """物品借出
     """
     _action_name = sys._getframe().f_code.co_name
     extra_data = {

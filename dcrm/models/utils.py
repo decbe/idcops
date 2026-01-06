@@ -6,11 +6,10 @@ import uuid
 from ipaddress import IPv4Interface, IPv6Interface, ip_interface
 from typing import Any
 
-from magic import Magic
-
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
+from magic import Magic
 
 logger = logging.getLogger(__name__)
 
@@ -47,22 +46,21 @@ def md5sum_file(filepath, buffer=False):
 
 
 def tag_limit_filter(app_label: str, model: str) -> models.Q:
-    """
-    获取标签选择器选项
+    """获取标签选择器选项
     """
     q = Q(object_types__app_label=app_label, object_types__model=model)
     return q
 
 
 def get_network_info(ip_interface_str: str) -> dict:
-    """
-    获取接口地址的网络信息
+    """获取接口地址的网络信息
 
     Args:
         ip_interface_str: 接口地址字符串，如 '192.168.1.1/24' 或 '2001:db8::1/64'
 
     Returns:
         包含网络信息的字典
+
     """
     iface = ip_interface(ip_interface_str)
     network = iface.network
@@ -99,8 +97,7 @@ def get_network_info(ip_interface_str: str) -> dict:
 
 
 def sort_items(items, sort_field="name", reverse=True, key_func=None):
-    """
-    根据指定字段对列表中的字典进行排序
+    """根据指定字段对列表中的字典进行排序
 
     :param items: 待排序的列表（字典组成的列表）
     :param sort_field: 排序字段名（默认按'name'排序）
@@ -137,8 +134,7 @@ def recursive_sort(items, sort_field="name", reverse=True):
 
 
 def auto_group_racks(racks, key):
-    """
-    自动识别机柜编号的命名模式并分组
+    """自动识别机柜编号的命名模式并分组
     能处理多种不同格式的机柜编号
 
     参数:

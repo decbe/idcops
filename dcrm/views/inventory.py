@@ -1,7 +1,6 @@
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Case, IntegerField, QuerySet, Value, When
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -308,8 +307,7 @@ class ItemInstanceDetailView(BaseRequestMixin, DetailViewMixin, DetailView):
     ]
 
     def get_history(self, queryset):
-        """
-        返回库存历史
+        """返回库存历史
         """
         list_fields = [
             "created_at",
@@ -431,7 +429,6 @@ class BulkItemInstanceCreateView(BaseRequestMixin, FormView):
 
     def form_valid(self, formset):
         """处理有效的表单集"""
-
         try:
             with transaction.atomic():
                 all_instances = []

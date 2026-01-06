@@ -1,10 +1,10 @@
-"""
-API 路由工具函数
+"""API 路由工具函数
 提供动态注册和管理 API 路由的功能
 """
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Any
 
 from ninja import Router
 
@@ -15,19 +15,18 @@ def register_api_route(
     router: Router,
     path: str,
     *,
-    methods: List[str] = None,
-    response: Dict[int, Type] = None,
-    auth: Union[Callable, List[Callable], None] = None,
-    tags: List[str] = None,
+    methods: list[str] = None,
+    response: dict[int, type] = None,
+    auth: Callable | list[Callable] | None = None,
+    tags: list[str] = None,
     summary: str = None,
     description: str = None,
     operation_id: str = None,
     api_key_name: str = None,
     route_name: str = None,  # 路由名称，用于后续获取
-    **options: Dict[str, Any],
+    **options: dict[str, Any],
 ):
-    """
-    动态注册 API 路由装饰器
+    """动态注册 API 路由装饰器
 
     这个装饰器允许你动态地注册一个函数为 API 路由，
     同时将路由函数注册到全局 registry 中，以便后续使用。
@@ -109,9 +108,8 @@ def register_api_route(
     return decorator
 
 
-def get_registered_api_route(route_name: str) -> Optional[Callable]:
-    """
-    获取已注册的 API 路由函数
+def get_registered_api_route(route_name: str) -> Callable | None:
+    """获取已注册的 API 路由函数
 
     参数:
         route_name: 路由名称
@@ -123,10 +121,9 @@ def get_registered_api_route(route_name: str) -> Optional[Callable]:
 
 
 def register_route_from_config(
-    router: Router, route_config: Dict[str, Any], handler_func: Callable
+    router: Router, route_config: dict[str, Any], handler_func: Callable
 ):
-    """
-    从配置字典注册路由
+    """从配置字典注册路由
 
     这个函数允许从配置字典中注册路由，方便从数据库或配置文件加载路由定义
 
@@ -160,11 +157,10 @@ def register_route_from_config(
 
 def register_routes_batch(
     router: Router,
-    routes_config: List[Dict[str, Any]],
-    handlers_map: Dict[str, Callable],
+    routes_config: list[dict[str, Any]],
+    handlers_map: dict[str, Callable],
 ):
-    """
-    批量注册路由
+    """批量注册路由
 
     从配置列表和处理函数映射中批量注册路由
 

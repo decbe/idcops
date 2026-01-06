@@ -63,11 +63,11 @@ class Attachment(BaseModel):
             self.save()
 
     def file_exists(self):
-        """
-        检查附件文件是否在文件系统中实际存在
+        """检查附件文件是否在文件系统中实际存在
 
         Returns:
             bool: 如果文件存在返回True，否则返回False
+
         """
         try:
             if not self.file:
@@ -83,11 +83,11 @@ class Attachment(BaseModel):
             return False
 
     def get_file_info(self):
-        """
-        获取文件详细信息
+        """获取文件详细信息
 
         Returns:
             dict: 包含文件详细信息的字典
+
         """
         file_exists = self.file_exists()
         file_size = 0
@@ -224,8 +224,7 @@ class Document(BaseModel, CustomFieldsMixin):
         ordering = ["-created_at"]
 
     def save(self, *args, **kwargs):
-        """
-        保存文档时检查是否设置为模板，并确保 raw_content 在通过解析产生时被保留。
+        """保存文档时检查是否设置为模板，并确保 raw_content 在通过解析产生时被保留。
         如果设置了 template_to 字段，则将 is_template 设置为 True。
         """
         is_template = bool(getattr(self, "template_to", False))
@@ -234,14 +233,14 @@ class Document(BaseModel, CustomFieldsMixin):
         return super().save(*args, **kwargs)
 
     def apply_smart_classification(self, auto_assign: bool = True) -> dict:
-        """
-        对文档应用智能分类
+        """对文档应用智能分类
 
         Args:
             auto_assign: 是否自动分配预测的标签和分类
 
         Returns:
             dict: 包含预测结果的字典
+
         """
         from dcrm.apar.document_classifier import load_classifier
         from dcrm.models import Category, Tag
@@ -381,10 +380,10 @@ class Document(BaseModel, CustomFieldsMixin):
         return result
 
     def get_classification_suggestions(self) -> dict:
-        """
-        获取分类建议（不自动分配）
+        """获取分类建议（不自动分配）
 
         Returns:
             dict: 分类建议
+
         """
         return self.apply_smart_classification(auto_assign=False)

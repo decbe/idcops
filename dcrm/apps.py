@@ -14,8 +14,7 @@ class DcrmConfig(AppConfig):
     verbose_name = _("DCRM")
 
     def ready(self) -> None:
-        """
-        初始化应用
+        """初始化应用
         """
         from dcrm.signals import signals  # noqa: F401
         from dcrm.signals.counters import tracker_models_register

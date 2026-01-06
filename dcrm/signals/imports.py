@@ -1,7 +1,5 @@
 import logging
-from typing import List, Type
 
-from django.db import models
 from django.dispatch import Signal
 
 logger = logging.getLogger(__name__)

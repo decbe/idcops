@@ -1,7 +1,4 @@
 import json
-from cgitb import lookup
-from os import name
-from typing import List
 
 from django.db import models
 from django.utils.html import format_html
@@ -12,8 +9,7 @@ from dcrm.utilities.lookup import LookupFields
 
 
 def render_custom_field_value(custom_field, value):
-    """
-    根据提供的 custom_field 和 value 渲染前端显示的值.
+    """根据提供的 custom_field 和 value 渲染前端显示的值.
     custom_field CustomField instance
     value get_custom_field_value
     """
@@ -71,8 +67,7 @@ def render_pagination(total_count, paginate_by):
 
 
 def model_headers_in_table(model):
-    """
-    模型所有字段名
+    """模型所有字段名
     """
     headers = []
     opts = model._meta
@@ -87,9 +82,8 @@ def model_headers_in_table(model):
     return headers
 
 
-def render_object_as_html(instance: models.Model, fields: List[str]):
-    """
-    不支持自定义字段的渲染
+def render_object_as_html(instance: models.Model, fields: list[str]):
+    """不支持自定义字段的渲染
     将模型实例对象渲染成前端
     """
     lookup = LookupFields(instance.__class__, fields, primary_link=False)

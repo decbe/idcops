@@ -1,10 +1,8 @@
 import logging
-from typing import Optional
-
-from ninja import Router
-from ninja.errors import HttpError
 
 from django.shortcuts import get_object_or_404
+from ninja import Router
+from ninja.errors import HttpError
 
 from dcrm.models import Document
 
@@ -29,8 +27,7 @@ router = Router()
     description="根据文档内容获取智能分类和标签建议",
 )
 def get_classification_suggestions(request, data: DocumentClassificationRequestSchema):
-    """
-    获取文档分类建议
+    """获取文档分类建议
 
     Args:
         request: HTTP请求对象
@@ -38,6 +35,7 @@ def get_classification_suggestions(request, data: DocumentClassificationRequestS
 
     Returns:
         分类建议响应
+
     """
     try:
         if not data.content.strip():
@@ -122,8 +120,7 @@ def get_classification_suggestions(request, data: DocumentClassificationRequestS
     description="自动为指定文档分配标签和分类",
 )
 def auto_classify_document(request, document_id: int):
-    """
-    文档自动分类
+    """文档自动分类
 
     Args:
         request: HTTP请求对象
@@ -131,6 +128,7 @@ def auto_classify_document(request, document_id: int):
 
     Returns:
         自动分类结果
+
     """
     try:
         # 检查用户权限
@@ -176,14 +174,14 @@ def auto_classify_document(request, document_id: int):
     description="获取文档分类器的状态信息",
 )
 def get_classifier_status(request):
-    """
-    获取分类器状态
+    """获取分类器状态
 
     Args:
         request: HTTP请求对象
 
     Returns:
         分类器状态信息
+
     """
     try:
         # 检查用户权限

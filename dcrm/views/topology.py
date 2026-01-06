@@ -1,15 +1,13 @@
 import json
 from collections import defaultdict
 
-from PIL import Image
-
 from django.core.cache import cache
 from django.utils.functional import cached_property
-from django.utils.translation import gettext as _
 from django.views.generic import DetailView
+from PIL import Image
 
 from dcrm.models import DevicePort, OnlineDevice, PatchCordNode, Rack
-from dcrm.models.choices import ColorChoices, DevicePortStatusChoices, DeviceTypeChoices
+from dcrm.models.choices import ColorChoices, DeviceTypeChoices
 
 from .mixins.base import BaseRequestMixin
 
@@ -246,8 +244,7 @@ class DeviceTopologyView(BaseRequestMixin, DetailView):
 
 
 class RackTopologyView(BaseRequestMixin, DetailView):
-    """
-    机柜拓扑图
+    """机柜拓扑图
     只显示机柜与机柜直接有多少个设备节点连接，
     本机柜内部的设备节点也显示，但是不显示连接线
     """

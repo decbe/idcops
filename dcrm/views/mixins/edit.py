@@ -1,8 +1,9 @@
 import json
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, Callable, Dict, List, Literal, Never, Optional, Type
+from typing import Any, Literal, Never
 
 from django.contrib.auth import get_permission_codename
 from django.contrib.auth.mixins import PermissionRequiredMixin
@@ -50,16 +51,16 @@ class FieldSet:
     """字段集合"""
 
     name: str
-    fields: List[str]
+    fields: list[str]
     classes: str = ""
     description: str = ""
     collapse: bool = False
     col: int = 6
-    inline_groups: List[List[str]] = None
-    inline_positions: Dict[str, int] = None  # 新增：指定每个内联组的位置
+    inline_groups: list[list[str]] = None
+    inline_positions: dict[str, int] = None  # 新增：指定每个内联组的位置
 
     @property
-    def field_groups(self) -> List[List[str]]:
+    def field_groups(self) -> list[list[str]]:
         """获取字段分组，将内联字段和普通字段分开处理"""
         if not self.fields:
             return []
@@ -119,13 +120,13 @@ class FieldSet:
 class BaseFormMixin:
     """表单基础 Mixin，为创建和更新视图提供通用功能"""
 
-    form_class: Optional[Type[ModelForm]] = None
+    form_class: type[ModelForm] | None = None
     template_name_suffix: str = "_form"
     success_message: str = _("保存成功")
     success_url: str = None
     error_message: str = _("保存失败，请检查输入")
-    fieldsets: Optional[List[FieldSet]] = None
-    htmx_configs: Dict[str, Dict[str, str]] = None
+    fieldsets: list[FieldSet] | None = None
+    htmx_configs: dict[str, dict[str, str]] = None
 
     def get_htmx_config(self, field_name: str) -> dict:
         """获取字段的HTMX配置
@@ -165,8 +166,7 @@ class BaseFormMixin:
         return f"{self.request.user.id}_clone_{model_name}_initial"
 
     def clone_object_initial(self, instance) -> dict:
-        """
-        克隆对象, 根据模型以及实例返回表单initial字典
+        """克隆对象, 根据模型以及实例返回表单initial字典
         排除在coding_rule指定的自动填充字段
         从模型或视图中获取 clone_fields = []
         :param instance:
@@ -225,7 +225,7 @@ class BaseFormMixin:
         else:
             return reverse(f"{model_name}_list")
 
-    def get_form_fields(self) -> List[str]:
+    def get_form_fields(self) -> list[str]:
         """获取表单字段列表"""
         if getattr(self, "form_class", None) is not None:
             return self.form_class.Meta.fields
@@ -251,7 +251,7 @@ class BaseFormMixin:
                 fields.append(field_name)
             return fields
 
-    def get_smart_fieldsets(self) -> List[FieldSet]:
+    def get_smart_fieldsets(self) -> list[FieldSet]:
         """智能分析字段并分组"""
         fields = self.get_form_fields()
         if not fields:
@@ -354,7 +354,7 @@ class BaseFormMixin:
 
         return fieldsets
 
-    def get_fieldsets(self) -> List[FieldSet]:
+    def get_fieldsets(self) -> list[FieldSet]:
         """获取字段集配置"""
         if self.fieldsets is not None:
             # 检查是否已经包含自定义字段
@@ -412,7 +412,7 @@ class BaseFormMixin:
         response = super().form_invalid(form)
         return response
 
-    def get_context_data(self, **kwargs) -> Dict:
+    def get_context_data(self, **kwargs) -> dict:
         """获取上下文数据"""
         context = super().get_context_data(**kwargs)
         context.update(
@@ -484,7 +484,7 @@ class CreateViewMixin(PermissionRequiredMixin, BaseFormMixin, HtmxResponseMixin)
         self.request.session.modified = True
         return super().form_invalid(form)
 
-    def get_template_names(self) -> List[str]:
+    def get_template_names(self) -> list[str]:
         """获取模板名称"""
         if self.template_name:
             return self.template_name
@@ -512,7 +512,7 @@ class CreateViewMixin(PermissionRequiredMixin, BaseFormMixin, HtmxResponseMixin)
         )
         return HttpResponse(content)
 
-    def get_context_data(self, **kwargs) -> Dict:
+    def get_context_data(self, **kwargs) -> dict:
         """获取上下文数据"""
         context = super().get_context_data(**kwargs)
         context.update({"is_create": True})
@@ -551,7 +551,7 @@ class UpdateViewMixin(PermissionRequiredMixin, BaseFormMixin, HtmxResponseMixin)
         )
         return response
 
-    def get_template_names(self) -> List[str]:
+    def get_template_names(self) -> list[str]:
         """获取模板名称"""
         if self.template_name:
             return self.template_name
@@ -785,7 +785,7 @@ class BulkCreateViewMixin(HtmxResponseMixin):
             return self.forms_valid(forms)
         return self.forms_invalid(forms)
 
-    def get_template_names(self) -> List[str]:
+    def get_template_names(self) -> list[str]:
         """获取模板名称"""
         if self.template_name:
             return [self.template_name]
@@ -946,7 +946,7 @@ class BulkUpdateViewMixin(HtmxResponseMixin):
         context["opts"] = self.model._meta
         return context
 
-    def get_template_names(self) -> List[str]:
+    def get_template_names(self) -> list[str]:
         """获取模板名称"""
         if self.template_name:
             return [self.template_name]

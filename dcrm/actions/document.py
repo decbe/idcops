@@ -1,12 +1,11 @@
 import sys
 from typing import Any
 
-from django_htmx.http import HttpResponseClientRedirect
-
 from django.contrib import messages
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from django_htmx.http import HttpResponseClientRedirect
 
 from dcrm.models import Category, Document, LogEntry, Tag
 from dcrm.models.choices import ActionColorChoices, ChangeActionChoices
@@ -33,8 +32,7 @@ __all__ = [
 def set_document_classification(
     request, instances, **kwargs
 ) -> HttpResponseClientRedirect | Any | TemplateResponse:
-    """
-    批量设置文档的分类和标签
+    """批量设置文档的分类和标签
     """
     queryset = instances.filter(data_center=request.user.data_center)
     if not queryset.exists():
@@ -131,8 +129,7 @@ def set_document_classification(
 def set_document_status(
     request, instances, **kwargs
 ) -> HttpResponseClientRedirect | TemplateResponse | Any:
-    """
-    批量设置文档状态
+    """批量设置文档状态
     """
     queryset = instances.filter(data_center=request.user.data_center)
     if not queryset.exists():

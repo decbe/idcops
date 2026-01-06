@@ -12,8 +12,7 @@ __all__ = ("Tenant",)
 
 
 class Tenant(BaseModel, IconMixin, CustomFieldsMixin, TrackingModelMixin):
-    """
-    租户代表由 idcops 所有者服务的数据中心。通常是客户或内部部门。
+    """租户代表由 idcops 所有者服务的数据中心。通常是客户或内部部门。
     """
 
     data_center = models.ForeignKey(

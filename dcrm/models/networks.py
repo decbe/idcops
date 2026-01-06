@@ -1,7 +1,6 @@
 import logging
 import re
 import time
-from datetime import timedelta
 from ipaddress import (
     IPv4Address,
     IPv4Interface,
@@ -12,12 +11,9 @@ from ipaddress import (
     ip_interface,
     ip_network,
 )
-from typing import Dict
 from urllib.parse import urlparse
 
 import requests
-from mptt.models import MPTTModel, TreeForeignKey
-
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
@@ -27,6 +23,7 @@ from django.db import models, transaction
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from mptt.models import MPTTModel, TreeForeignKey
 
 from .base import BaseModel, CustomFieldsMixin
 from .choices import (
@@ -180,8 +177,7 @@ class NetworkProduct(BaseModel, ColorMixin, CustomFieldsMixin):
 class Subnet(
     MPTTModel, BaseModel, CustomFieldsMixin, NetworkStatisticsMixin, TrackingModelMixin
 ):
-    """
-    子网模型 - 使用MPTT管理网络层级关系
+    """子网模型 - 使用MPTT管理网络层级关系
 
     功能：
     1. 自动组织网络层级关系
@@ -541,14 +537,14 @@ class Subnet(
             self.parent.update_subnet_stats()
 
     def get_available_subnets(self, prefix_length):
-        """
-        获取指定前缀长度的可用子网
+        """获取指定前缀长度的可用子网
 
         Args:
             prefix_length: 子网前缀长度
 
         Returns:
             可用子网列表
+
         """
         network = ip_network(str(self.network))
         if prefix_length <= network.prefixlen:
@@ -569,8 +565,7 @@ class Subnet(
         return [subnet for subnet in potential_subnets if subnet not in used_subnets]
 
     def find_parent_network(self):
-        """
-        查找最佳的父网络
+        """查找最佳的父网络
 
         实现逻辑：
         1. 获取当前网络的前缀长度
@@ -579,6 +574,7 @@ class Subnet(
 
         Returns:
             Subnet: 最佳父网络对象，如果没有找到则返回None
+
         """
         if not self.network:
             return None
@@ -621,8 +617,7 @@ class Subnet(
 
     @classmethod
     def auto_organize_networks(cls):
-        """
-        自动组织网络层级关系
+        """自动组织网络层级关系
         重新计算所有网络的父子关系
         """
         with transaction.atomic():
@@ -643,14 +638,14 @@ class Subnet(
                     network.save()
 
     def suggest_subnets(self, num_subnets):
-        """
-        建议子网划分方案
+        """建议子网划分方案
 
         Args:
             num_subnets: 需要的子网数量
 
         Returns:
             建议的子网列表
+
         """
         network = ip_network(str(self.network))
 
@@ -680,8 +675,7 @@ class Subnet(
 
     @property
     def used_ips(self):
-        """
-        获取已使用的IP数量
+        """获取已使用的IP数量
 
         计算规则：
         1. 直接关联到此子网的IP地址数量
@@ -691,6 +685,7 @@ class Subnet(
 
         Returns:
             int: 已使用的IP地址数量
+
         """
         # 基础使用量：当前子网直接分配的IP地址数
         base_usage = self.ip_addresses.count()
@@ -716,21 +711,21 @@ class Subnet(
 
     @property
     def available_ips(self):
-        """
-        获取可用IP数量
+        """获取可用IP数量
 
         Returns:
             int: 可用的IP地址数量
+
         """
         return self.total_ips - self.used_ips
 
     @property
     def utilization_rate(self):
-        """
-        获取IP地址利用率
+        """获取IP地址利用率
 
         Returns:
             float: IP地址利用率百分比
+
         """
         if self.total_ips == 0:
             return 0
@@ -738,11 +733,11 @@ class Subnet(
 
     @property
     def subnet_utilization(self):
-        """
-        获取子网利用情况
+        """获取子网利用情况
 
         Returns:
             dict: 包含利用率详细信息的字典
+
         """
         used = self.used_ips
         return {
@@ -796,8 +791,7 @@ class Subnet(
                     current = current.parent
 
     def get_first_available_ip(self):
-        """
-        获取第一个可用的IP地址
+        """获取第一个可用的IP地址
 
         算法：
         1. 获取可用地址范围
@@ -807,6 +801,7 @@ class Subnet(
 
         Returns:
             str|None: 第一个可用的IP地址，如果没有可用IP则返回None
+
         """
         if not self.network:
             return None
@@ -865,11 +860,11 @@ class Subnet(
 
     @property
     def next_available_ip(self):
-        """
-        获取下一个可用IP地址的属性方法
+        """获取下一个可用IP地址的属性方法
 
         Returns:
             str|None: 下一个可用的IP地址
+
         """
         ip = self.get_first_available_ip()
         if ip:
@@ -877,14 +872,14 @@ class Subnet(
         return None
 
     def get_available_ips(self, limit=None):
-        """
-        获取可用IP地址列表
+        """获取可用IP地址列表
 
         Args:
             limit: 限制返回的IP地址数量
 
         Returns:
             list: 可用IP地址列表
+
         """
         available_ips = []
         network = ip_network(str(self.network))
@@ -974,14 +969,14 @@ class Subnet(
         )
 
     def is_address_in_range(self, address):
-        """
-        检查IP地址是否在子网范围内
+        """检查IP地址是否在子网范围内
 
         Args:
             address: IP地址字符串或IP接口对象
 
         Returns:
             bool: 是否在范围内
+
         """
         if not self.start_address or not self.end_address:
             return False
@@ -995,41 +990,41 @@ class Subnet(
         )
 
     def get_network_type(self):
-        """
-        获取网络类型
+        """获取网络类型
 
         Returns:
             str: 'IPv4' 或 'IPv6'
+
         """
         network = ip_network(str(self.network))
         return "IPv6" if isinstance(network, IPv6Network) else "IPv4"
 
     def get_ip_version(self):
-        """
-        获取IP版本号
+        """获取IP版本号
 
         Returns:
             int: 4 或 6
+
         """
         return 6 if self.get_network_type() == "IPv6" else 4
 
     def get_vlan_subnets(self):
-        """
-        获取同一VLAN下的其他子网
+        """获取同一VLAN下的其他子网
 
         Returns:
             QuerySet: 子网查询集
+
         """
         if not self.vlan:
             return Subnet.objects.none()
         return self.vlan.subnets.exclude(pk=self.pk)
 
     def get_tenant_subnets(self):
-        """
-        获取同一租户的其他子网
+        """获取同一租户的其他子网
 
         Returns:
             QuerySet: 子网查询集
+
         """
         if not self.tenant:
             return Subnet.objects.none()
@@ -1037,11 +1032,11 @@ class Subnet(
 
     @property
     def network_display(self):
-        """
-        获取网络显示格式
+        """获取网络显示格式
 
         Returns:
             str: 格式化的网络地址显示
+
         """
         if not self.network:
             return ""
@@ -1060,8 +1055,7 @@ class Subnet(
             raise ValidationError({"dns_servers": _("DNS服务器地址格式无效")})
 
     def create_available_ips(self):
-        """
-        为子网创建可用IP地址
+        """为子网创建可用IP地址
 
         功能:
         1. 自动创建子网范围内的所有可用IP地址
@@ -1069,7 +1063,6 @@ class Subnet(
         3. 跳过已分配的IP地址
         4. 支持批量创建以提高性能
         """
-
         # 获取可用IP地址列表
         available_ips = self.get_available_ips()
 
@@ -1111,8 +1104,7 @@ class IPAddress(
     NetworkInheritanceMixin,
     TrackingModelMixin,
 ):
-    """
-    IP地址模型
+    """IP地址模型
 
     功能：
     1. 管理IP地址分配
@@ -1279,7 +1271,6 @@ class IPAddress(
 
     def tree_path_display(self):
         """获取树路径显示"""
-
         return self.get_ancestors(include_self=True)
 
     @property
@@ -1291,8 +1282,7 @@ class IPAddress(
         return ColorChoices.to_hex_color(self.status_color)
 
     def clean(self):
-        """
-        数据验证
+        """数据验证
         1. 验证IP地址格式
         2. 验证IP地址是否在子网范围内
         3. 验证MAC地址格式
@@ -1336,8 +1326,7 @@ class IPAddress(
             raise ValidationError(_("IP地址不能同时是主IP、管理IP和网关IP"))
 
     def save(self, *args, **kwargs):
-        """
-        保存前的处理
+        """保存前的处理
         1. 自动设置是否为私网IP
         2. 自动继承子网的数据中心和租户信息
         3. 处理网关IP的特殊情况
@@ -1387,19 +1376,18 @@ class IPAddress(
             raise ValidationError({"mac_address": _("MAC地址格式无效")})
 
     def get_ip_type(self):
-        """
-        获取IP地址类型
+        """获取IP地址类型
 
         Returns:
             str: 'IPv4' 或 'IPv6'
+
         """
         ip = ip_interface(str(self.address))
         return "IPv6" if isinstance(ip.ip, IPv6Address) else "IPv4"
 
     @property
     def ip_type_display(self):
-        """
-        获取IP类型显示名称
+        """获取IP类型显示名称
         """
         if self.is_gateway:
             return _("网关IP")
@@ -1411,8 +1399,7 @@ class IPAddress(
 
     @property
     def network_type(self):
-        """
-        获取网络类型（IPv4/IPv6）
+        """获取网络类型（IPv4/IPv6）
         """
         if not self.address:
             return None
@@ -1421,8 +1408,7 @@ class IPAddress(
 
     @property
     def address_with_mask(self):
-        """
-        获取带掩码的地址显示
+        """获取带掩码的地址显示
         """
         if not self.address:
             return ""
@@ -1430,8 +1416,7 @@ class IPAddress(
 
     @property
     def address_without_mask(self):
-        """
-        获取不带掩码的地址显示
+        """获取不带掩码的地址显示
         """
         if not self.address:
             return ""
@@ -1448,11 +1433,11 @@ class IPAddress(
 
     @property
     def address_display(self):
-        """
-        获取地址显示格式
+        """获取地址显示格式
 
         Returns:
             str: 格式化的IP地址显示
+
         """
         if not self.address:
             return ""
@@ -1461,8 +1446,7 @@ class IPAddress(
 
 
 class VLAN(BaseModel, CustomFieldsMixin, NetworkStatisticsMixin, TrackingModelMixin):
-    """
-    VLAN管理模型
+    """VLAN管理模型
 
     功能：
     1. VLAN资源管理
@@ -1610,30 +1594,30 @@ class VLAN(BaseModel, CustomFieldsMixin, NetworkStatisticsMixin, TrackingModelMi
         return Subnet.objects.filter(data_center_id=self.data_center_id, vlan=self)
 
     def get_subnet_count(self):
-        """
-        获取VLAN下的子网数量
+        """获取VLAN下的子网数量
 
         Returns:
             int: 子网数量
+
         """
         return self.subnets.count()
 
     def get_ip_count(self):
-        """
-        获取VLAN下的IP地址数量
+        """获取VLAN下的IP地址数量
 
         Returns:
             int: IP地址数量
+
         """
         return sum(subnet.used_ips for subnet in self.subnets.all())
 
     @property
     def utilization(self):
-        """
-        获取VLAN利用率信息
+        """获取VLAN利用率信息
 
         Returns:
             dict: 包含利用率信息的字典
+
         """
         subnets = self.subnets.all()
         total_ips = sum(subnet.total_ips for subnet in subnets)
@@ -1651,8 +1635,7 @@ class VLAN(BaseModel, CustomFieldsMixin, NetworkStatisticsMixin, TrackingModelMi
 
     @classmethod
     def get_available_vlans_for_tenant(cls, tenant, data_center):
-        """
-        获取租户可用的VLAN列表
+        """获取租户可用的VLAN列表
 
         Args:
             tenant: 租户实例
@@ -1660,6 +1643,7 @@ class VLAN(BaseModel, CustomFieldsMixin, NetworkStatisticsMixin, TrackingModelMi
 
         Returns:
             QuerySet: VLAN查询集
+
         """
         return cls.objects.filter(
             data_center=data_center,
@@ -1668,8 +1652,7 @@ class VLAN(BaseModel, CustomFieldsMixin, NetworkStatisticsMixin, TrackingModelMi
 
 
 class SNMP(BaseModel, CustomFieldsMixin):
-    """
-    SNMP配置模型
+    """SNMP配置模型
 
     用于存储和管理SNMP配置信息
     """
@@ -1778,8 +1761,7 @@ class SNMP(BaseModel, CustomFieldsMixin):
 
 
 class Proxy(BaseModel, CustomFieldsMixin):
-    """
-    代理服务器模型
+    """代理服务器模型
 
     用于存储和管理代理服务器信息，支持：
     1. HTTP/HTTPS/SOCKS4/SOCKS5代理
@@ -1908,14 +1890,14 @@ class Proxy(BaseModel, CustomFieldsMixin):
             raise ValidationError(_("用户名和密码必须同时设置或同时为空"))
 
     def check_availability(self, timeout: int = 10) -> bool:
-        """
-        检查代理可用性
+        """检查代理可用性
 
         Args:
             timeout: 超时时间(秒)
 
         Returns:
             bool: 代理是否可用
+
         """
         # 检查缓存
         cache_key = f"proxy_check_availability_{self.pk}"
@@ -1985,12 +1967,12 @@ class Proxy(BaseModel, CustomFieldsMixin):
             return False
 
     def can_proxy_nmap(self) -> bool:
-        """
-        是否可以代理nmap
+        """是否可以代理nmap
         socks4 代理nmap时，只能扫描基于tcp的协议，不支持域名，不支持icmp检测
 
         Returns:
             bool: 是否可以代理nmap
+
         """
         return self.proxy_type in ["http", "socks4"]
 
@@ -2030,12 +2012,12 @@ class Proxy(BaseModel, CustomFieldsMixin):
             queryset = queryset.filter(data_center=data_center)
         return queryset
 
-    def get_proxy_config(self) -> Dict:
-        """
-        获取代理配置
+    def get_proxy_config(self) -> dict:
+        """获取代理配置
 
         Returns:
             Dict: 代理配置字典
+
         """
         return {
             "proxy_host": self.host,

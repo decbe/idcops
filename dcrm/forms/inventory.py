@@ -254,8 +254,7 @@ class ItemInstanceHistoryStockOutForm(BaseModelFormMixin):
 
 
 class ItemInstanceHistoryBorrowForm(BaseModelFormMixin):
-    """
-    借出物品表单
+    """借出物品表单
     """
 
     expected_return_date = forms.DateField(label=_("归还时间"))
