@@ -13,6 +13,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: debian:12
+      options: --user root
     strategy:
       matrix:
         python-version: [3.11, 3.12]
@@ -60,12 +63,29 @@ jobs:
 
       - name: Install system deps
         run: |
-          sudo apt-get update
-          # packages required to build C extensions (psycopg-c, cryptography, pillow, etc.)
-          sudo apt-get install -y --no-install-recommends \
-            postgresql-client libpq-dev build-essential pkg-config python3-dev libssl-dev libffi-dev \
-            zlib1g-dev libjpeg-dev libjpeg62-turbo-dev libfreetype6-dev liblcms2-dev libopenjp2-7-dev \
-            libtiff-dev libharfbuzz-dev libfribidi-dev rustc cargo redis-tools
+          apt-get update
+          # keep system packages consistent with Dockerfile builder stage
+          apt-get install -y --no-install-recommends \
+            curl \
+            ca-certificates \
+            postgresql-client \
+            build-essential \
+            libffi-dev \
+            python3-dev \
+            libjpeg-dev \
+            zlib1g-dev \
+            libfreetype6-dev \
+            liblcms2-dev \
+            libopenjp2-7-dev \
+            libtiff-dev \
+            libharfbuzz-dev \
+            libfribidi-dev \
+            libjpeg62-turbo-dev \
+            libpq-dev \
+            pkg-config \
+            redis-tools \
+            && rm -rf /var/lib/apt/lists/* \
+            && apt-get clean
           # optionally verify installed versions
           psql --version || true
           redis-server --version || true
@@ -81,7 +101,7 @@ jobs:
           PGPASSWORD: postgres
         run: |
           for i in {1..15}; do
-            if psql -h 127.0.0.1 -U postgres -c '\\l' >/dev/null 2>&1; then
+            if psql -h postgres -U postgres -c '\\l' >/dev/null 2>&1; then
               echo "Postgres is ready"
               break
             else
@@ -93,7 +113,7 @@ jobs:
       - name: Wait for Redis
         run: |
           for i in {1..15}; do
-            if redis-cli -h 127.0.0.1 ping >/dev/null 2>&1; then
+            if redis-cli -h redis ping >/dev/null 2>&1; then
               echo "Redis is ready"
               break
             else
@@ -104,16 +124,16 @@ jobs:
 
       - name: Run migrations
         env:
-          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_HOST: postgres
           POSTGRES_PORT: 5432
         run: |
           python manage.py migrate --noinput
 
       - name: Run tests
         env:
-          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_HOST: postgres
           POSTGRES_PORT: 5432
-          REDIS_HOST: 127.0.0.1
+          REDIS_HOST: redis
           REDIS_PORT: 6379
           DEBUG: "1"
           ISOLATED_DEPLOYMENT: "1"
@@ -123,6 +143,8 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
+    container:
+      image: debian:12
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
