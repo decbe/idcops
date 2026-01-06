@@ -335,50 +335,11 @@ class InventoryItemQuerySet(models.QuerySet):
         """预加载 ItemCategory 和 厂家数据"""
         return self.select_related("category", "manufacturer")
 
-    def with_stock_info(self):
-        """添加库存相关信息的子查询"""
-        total_stock = Subquery(
-            ItemInstance.objects.filter(item=OuterRef("pk"), status="in_stock")
-            .values("item")
-            .annotate(total=Sum("quantity"))
-            .values("total"),
-            output_field=IntegerField(),
-        )
-
-        warehouse_count = Subquery(
-            ItemInstance.objects.filter(item=OuterRef("pk"), status="in_stock")
-            .values("item")
-            .annotate(count=Count("warehouse", distinct=True))
-            .values("count"),
-            output_field=IntegerField(),
-        )
-
-        latest_operation = Subquery(
-            OperationDetail.objects.filter(item_instance__item=OuterRef("pk"))
-            .order_by("-created_at")
-            .values("created_at")[:1]
-        )
-
-        return self.annotate(
-            total_stock=Coalesce(total_stock, 0),
-            warehouse_count=Coalesce(warehouse_count, 0),
-            latest_operation=latest_operation,
-            has_stock=Case(
-                When(total_stock__gt=0, then=True),
-                default=False,
-                output_field=models.BooleanField(),
-            ),
-        )
-
-
 class InventoryItemManager(models.Manager.from_queryset(InventoryItemQuerySet)):
     def get_queryset(self):
         """默认预加载关联对象"""
         return super().get_queryset().with_related_objects()
 
-    def with_full_info(self):
-        """获取包含完整信息的查询集"""
-        return self.get_queryset().with_stock_info()
 
 
 class InventoryItem(BaseModel, CustomFieldsMixin):
@@ -512,42 +473,11 @@ class ItemInstanceQuerySet(models.QuerySet):
             "item__manufacturer",
         )
 
-    def with_operation_info(self):
-        """添加操作相关信息的子查询"""
-        latest_operation = Subquery(
-            OperationDetail.objects.filter(item_instance=OuterRef("pk"))
-            .order_by("-created_at")
-            .values("operation__operation_type")[:1],
-            output_field=models.CharField(),
-        )
-
-        operation_count = Subquery(
-            OperationDetail.objects.filter(item_instance=OuterRef("pk"))
-            .values("item_instance")
-            .annotate(count=Count("id"))
-            .values("count"),
-            output_field=IntegerField(),
-        )
-
-        return self.annotate(
-            latest_operation_type=Coalesce(latest_operation, ""),
-            total_operations=Coalesce(operation_count, 0),
-            days_in_stock=Case(
-                When(status="in_stock", then=ExtractDay(Now() - F("created_at"))),
-                default=0,
-                output_field=IntegerField(),
-            ),
-        )
-
 
 class ItemInstanceManager(models.Manager.from_queryset(ItemInstanceQuerySet)):
     def get_queryset(self):
         """默认预加载关联对象"""
         return super().get_queryset().with_related_objects()
-
-    def with_full_info(self):
-        """获取包含完整信息的查询集"""
-        return self.get_queryset().with_operation_info()
 
     def get_stock_status(self, warehouse=None):
         """获取库存状态汇总"""
