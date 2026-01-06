@@ -86,9 +86,6 @@ jobs:
             redis-tools \
             && rm -rf /var/lib/apt/lists/* \
             && apt-get clean
-          # optionally verify installed versions
-          psql --version || true
-          redis-server --version || true
 
       - name: Install Python dependencies
         run: |
