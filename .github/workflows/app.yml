@@ -61,31 +61,37 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: Install system deps
+      - name: Install system deps (minimal + retries)
         run: |
-          apt-get update
-          # keep system packages consistent with Dockerfile builder stage
-          apt-get install -y --no-install-recommends \
-            curl \
-            ca-certificates \
-            postgresql-client \
-            build-essential \
-            libffi-dev \
-            python3-dev \
-            libjpeg-dev \
-            zlib1g-dev \
-            libfreetype6-dev \
-            liblcms2-dev \
-            libopenjp2-7-dev \
-            libtiff-dev \
-            libharfbuzz-dev \
-            libfribidi-dev \
-            libjpeg62-turbo-dev \
-            libpq-dev \
-            pkg-config \
-            redis-tools \
-            && rm -rf /var/lib/apt/lists/* \
-            && apt-get clean
+          export DEBIAN_FRONTEND=noninteractive
+          # reduce packages to the minimal set required for building C extensions
+          apt-get update -o Acquire::Retries=3
+          for i in 1 2 3; do
+            apt-get install -y --no-install-recommends \
+              curl \
+              ca-certificates \
+              postgresql-client \
+              build-essential \
+              libpq-dev \
+              pkg-config \
+              python3-dev \
+              libssl-dev \
+              libffi-dev \
+              zlib1g-dev \
+              libjpeg62-turbo-dev \
+              libfreetype6-dev \
+              liblcms2-dev \
+              libopenjp2-7-dev \
+              libtiff-dev \
+              libharfbuzz-dev \
+              libfribidi-dev \
+              redis-tools && break || {
+                echo "apt-get install failed, retrying ($i)";
+                sleep 5;
+                apt-get update -o Acquire::Retries=3;
+              }
+          done
+          rm -rf /var/lib/apt/lists/* && apt-get clean
 
       - name: Install Python dependencies
         run: |
