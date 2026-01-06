@@ -311,6 +311,8 @@ class DeviceReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
             .values("id", "name", "icon_url", "device_count")
         )
         tenant_stats = []
+        # 预先将租户查询结果转为字典，避免循环中N+1查询
+        tenants_dict = {t["id"]: t for t in tenants}
         for item in tenant_stats_queryset:
             # 只显示有变更的客户
             if (
@@ -320,7 +322,7 @@ class DeviceReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
             ):
                 tenant_stats.append(
                     {
-                        "tenant": tenants.get(id=item["postchange_data__tenant"]),
+                        "tenant": tenants_dict.get(item["postchange_data__tenant"]),
                         "create_count": item["create_count"],
                         "migrate_count": item["migrate_count"],
                         "move_down_count": item["move_down_count"],
