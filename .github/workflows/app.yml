@@ -61,8 +61,11 @@ jobs:
       - name: Install system deps
         run: |
           sudo apt-get update
-          # needed to build psycopg-c from source if a wheel isn't available
-          sudo apt-get install -y postgresql-client libpq-dev build-essential pkg-config python3-dev libssl-dev redis-tools
+          # packages required to build C extensions (psycopg-c, cryptography, pillow, etc.)
+          sudo apt-get install -y --no-install-recommends \
+            postgresql-client libpq-dev build-essential pkg-config python3-dev libssl-dev libffi-dev \
+            zlib1g-dev libjpeg-dev libjpeg62-turbo-dev libfreetype6-dev liblcms2-dev libopenjp2-7-dev \
+            libtiff-dev libharfbuzz-dev libfribidi-dev rustc cargo redis-tools
           # optionally verify installed versions
           psql --version || true
           redis-server --version || true
@@ -70,7 +73,8 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          # prefer wheels (binary distributions) to avoid building C extensions from source when possible
+          pip install --prefer-binary -r requirements.txt
 
       - name: Wait for Postgres
         env:
