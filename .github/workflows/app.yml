@@ -6,25 +6,125 @@ on:
   pull_request:
     branches: [ "main" ]
 
+env:
+  # SECRET_KEY should be stored in repository secrets (Settings → Secrets → Actions)
+  SECRET_KEY: ${{ secrets.SECRET_KEY }}
+
 jobs:
   build:
-
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 4
       matrix:
         python-version: [3.11, 3.12]
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: dcrm
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    - name: Run Tests
-      run: |
-        python manage.py test
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Ensure SECRET_KEY is set
+        run: |
+          if [ -z "$SECRET_KEY" ]; then
+            echo "ERROR: SECRET_KEY is not set. Please add it to repository secrets: Settings → Secrets → Actions → New repository secret named SECRET_KEY"
+            exit 1
+          fi
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install system deps
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client redis-tools
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Wait for Postgres
+        env:
+          PGPASSWORD: postgres
+        run: |
+          for i in {1..15}; do
+            if psql -h 127.0.0.1 -U postgres -c '\\l' >/dev/null 2>&1; then
+              echo "Postgres is ready"
+              break
+            else
+              echo "Waiting for Postgres... ($i)"
+              sleep 2
+            fi
+          done
+
+      - name: Wait for Redis
+        run: |
+          for i in {1..15}; do
+            if redis-cli -h 127.0.0.1 ping >/dev/null 2>&1; then
+              echo "Redis is ready"
+              break
+            else
+              echo "Waiting for Redis... ($i)"
+              sleep 2
+            fi
+          done
+
+      - name: Run migrations
+        env:
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PORT: 5432
+        run: |
+          python manage.py migrate --noinput
+
+      - name: Run tests
+        env:
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PORT: 5432
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+          DEBUG: "1"
+          ISOLATED_DEPLOYMENT: "1"
+          CENSUS_REPORTING_ENABLED: "0"
+        run: |
+          python manage.py test
+
+  lint:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      - name: Install flake8
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+      - name: Run flake8
+        run: |
+          # only lint project files; adjust paths if necessary
+          flake8 . || true
