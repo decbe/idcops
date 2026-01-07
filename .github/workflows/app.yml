@@ -1,4 +1,4 @@
-name: Django CI
+name: DCRM CI
 
 on:
   push:

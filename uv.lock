@@ -461,7 +461,6 @@ dependencies = [
     { name = "chardet" },
     { name = "dateparser" },
     { name = "django" },
-    { name = "django-debug-toolbar" },
     { name = "django-htmx" },
     { name = "django-mptt" },
     { name = "django-ninja-jwt", extra = ["crypto"] },
@@ -487,6 +486,16 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
+    { name = "django-debug-toolbar" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-django" },
+    { name = "ruff" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "django-debug-toolbar" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-django" },
@@ -499,7 +508,7 @@ requires-dist = [
     { name = "chardet", specifier = ">=5.2.0" },
     { name = "dateparser", specifier = ">=1.2.1" },
     { name = "django", specifier = ">=5.2.9,<6.0" },
-    { name = "django-debug-toolbar", specifier = ">=5.2.0" },
+    { name = "django-debug-toolbar", marker = "extra == 'dev'", specifier = ">=5.2.0" },
     { name = "django-htmx", specifier = ">=1.23.1" },
     { name = "django-mptt", specifier = ">=0.17.0" },
     { name = "django-ninja-jwt", extras = ["crypto"], specifier = ">=5.3.7" },
@@ -527,6 +536,15 @@ requires-dist = [
     { name = "zxing-cpp", specifier = ">=2.3.0" },
 ]
 provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "django-debug-toolbar", specifier = ">=5.2.0" },
+    { name = "pytest", specifier = ">=8.0.0" },
+    { name = "pytest-cov", specifier = ">=5.0.0" },
+    { name = "pytest-django", specifier = ">=4.8.0" },
+    { name = "ruff", specifier = ">=0.2.0" },
+]
 
 [[package]]
 name = "idna"
