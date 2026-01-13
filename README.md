@@ -162,6 +162,30 @@ DCRM账户： demo
 
 ### Docker 部署
 
+#### 预构建镜像
+```bash
+# 创建部署目录
+sudo mkdir -p /opt/idcops
+sudo chown $USER:$USER /opt/idcops
+cd /opt/idcops
+
+# 下载配置文件
+curl -sO https://gitee.com/decbe/idcops/raw/main/.env.docker -o .env # .env 配置文件
+curl -sO https://gitee.com/decbe/idcops/raw/main/get_random_secret_key.py -o get_random_secret_key.py # SECRET_KEY 生成工具
+curl -sO https://gitee.com/decbe/idcops/raw/main/docker-compose.aliyun.yml -o docker-compose.yml # docker compose 配置文件
+
+# 生成 SECRET_KEY
+python3 get_random_secret_key.py
+
+# 复制配置文件并填写 SECRET_KEY
+cp .env.docker .env
+
+# 启动容器
+docker-compose -f docker-compose.aliyun.yml up -d
+```
+
+#### 本地构建
+
 ```bash
 git clone https://gitee.com/decbe/idcops.git
 cd idcops

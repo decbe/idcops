@@ -88,7 +88,6 @@ def send_census_report_job():
     """
     # 仅在非调试模式下发送
     if settings.DEBUG:
-        logger.info("调试模式已启用，跳过使用情况上报")
         return
 
     return send_census_report()
