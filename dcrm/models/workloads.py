@@ -9,8 +9,7 @@ __all__ = ["WorkloadType", "Workload"]
 
 
 class WorkloadType(NestedGroupModel, CustomFieldsMixin):
-    """
-    工作量类型
+    """工作量类型
     """
 
     data_center = models.ForeignKey(
@@ -38,8 +37,7 @@ class WorkloadType(NestedGroupModel, CustomFieldsMixin):
 
 
 class Workload(BaseModel, CustomFieldsMixin):
-    """
-    工作量
+    """工作量
     """
 
     data_center = models.ForeignKey(

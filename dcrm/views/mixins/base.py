@@ -1,7 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
-
-from mptt.models import MPTTModel
+from typing import Any
 
 from django.apps import apps
 from django.conf import settings
@@ -21,6 +19,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+from mptt.models import MPTTModel
 
 from dcrm.actions import registry
 from dcrm.models import DataCenter, User
@@ -29,8 +28,7 @@ __all__ = ["BaseRequestMixin", "HtmxResponseMixin", "BasePeriodMixin"]
 
 
 class BaseRequestMixin(LoginRequiredMixin):
-    """
-    基础请求 Mixin
+    """基础请求 Mixin
     """
 
     @cached_property
@@ -46,7 +44,7 @@ class BaseRequestMixin(LoginRequiredMixin):
         return self.model._meta if self.has_model else None
 
     @cached_property
-    def actions(self) -> list | List[Dict]:
+    def actions(self) -> list | list[dict]:
         """操作权限属性"""
         if not self.has_model:
             return []
@@ -54,8 +52,7 @@ class BaseRequestMixin(LoginRequiredMixin):
         return actions
 
     def get_model_meta(self) -> dict | dict[str, Any]:
-        """
-        获取模型元数据
+        """获取模型元数据
         """
         if not self.has_model:
             return {}
@@ -172,13 +169,13 @@ class BaseRequestMixin(LoginRequiredMixin):
 class HtmxResponseMixin:
     """HTMX 响应处理 Mixin"""
 
-    htmx_triggers: Dict[str, str] = {}
-    htmx_push_url: Optional[str] = None
-    htmx_redirect: Optional[str] = None
+    htmx_triggers: dict[str, str] = {}
+    htmx_push_url: str | None = None
+    htmx_redirect: str | None = None
     htmx_refresh: bool = False
-    partial_template_name: Optional[str] = None
+    partial_template_name: str | None = None
 
-    def get_htmx_push_url(self) -> Optional[str]:
+    def get_htmx_push_url(self) -> str | None:
         """获取要推送的 URL"""
         return self.htmx_push_url or self.request.path
 
@@ -232,8 +229,7 @@ class HtmxResponseMixin:
 
 
 class BasePeriodMixin:
-    """
-    时间范围处理 Mixin
+    """时间范围处理 Mixin
 
     提供通用的时间范围处理功能，包括：
     - 时间范围选项配置
@@ -246,10 +242,9 @@ class BasePeriodMixin:
     _AGGREGATION = "aggregation"
 
     def get_date_range(
-        self, start_date: Optional[str] = None, end_date: Optional[str] = None
-    ) -> Tuple[Optional[datetime], Optional[datetime]]:
-        """
-        根据指定的start_date, end_date请求参数构建日期范围
+        self, start_date: str | None = None, end_date: str | None = None
+    ) -> tuple[datetime | None, datetime | None]:
+        """根据指定的start_date, end_date请求参数构建日期范围
 
         Args:
             start_date: 开始日期字符串，格式为 'YYYY-MM-DD'，如果为None则使用默认值
@@ -257,6 +252,7 @@ class BasePeriodMixin:
 
         Returns:
             (起始日期, 结束日期) 元组，日期都可能为None
+
         """
         # 处理结束日期
         if end_date:
@@ -285,10 +281,9 @@ class BasePeriodMixin:
         return start_dt, end_dt
 
     def get_prev_date_range(
-        self, start_date: Optional[datetime], end_date: Optional[datetime]
-    ) -> Tuple[Optional[datetime], Optional[datetime]]:
-        """
-        根据给定的日期范围获取上一个周期的时间范围
+        self, start_date: datetime | None, end_date: datetime | None
+    ) -> tuple[datetime | None, datetime | None]:
+        """根据给定的日期范围获取上一个周期的时间范围
 
         Args:
             start_date: 当前周期开始时间，可能为None
@@ -296,6 +291,7 @@ class BasePeriodMixin:
 
         Returns:
             (上期开始时间, 上期结束时间) 元组，可能为None
+
         """
         # 如果开始时间或结束时间为None，则无法计算上一个周期
         if start_date is None or end_date is None:

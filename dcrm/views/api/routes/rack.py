@@ -1,4 +1,3 @@
-from typing import List
 
 from ninja import Router, Schema
 
@@ -11,12 +10,12 @@ class ErrorResponse(Schema):
     status: str = "error"
     message: str
     count: int = 0
-    result: List[str] = []
+    result: list[str] = []
 
 
 class SuccessResponse(Schema):
     status: str = "success"
-    result: List[str]
+    result: list[str]
     count: int
 
 
@@ -30,14 +29,14 @@ class RegexPatternRequest(Schema):
     url_name="expand_regex_pattern_api",
 )
 def expand_regex_pattern_api(request, data: RegexPatternRequest):
-    """
-    展开正则表达式模式为具体字符串列表
+    """展开正则表达式模式为具体字符串列表
 
     Args:
         data: 包含正则表达式模式的请求数据
 
     Returns:
         包含展开结果的响应
+
     """
     if not data.pattern:
         return {

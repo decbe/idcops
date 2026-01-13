@@ -1,9 +1,6 @@
 from django import forms
-from django.contrib.contenttypes.models import ContentType
-from django.db.models import QuerySet
 from django.forms.models import BaseInlineFormSet, inlineformset_factory
 
-from dcrm.models.base import Tag
 from dcrm.models.codingrule import CodingRule
 from dcrm.models.customfields import CustomField
 
@@ -128,8 +125,7 @@ def create_inline_formset(
     validate_min=False,
     can_delete_extra=False,
 ):
-    """
-    创建内联表单集的工厂函数
+    """创建内联表单集的工厂函数
 
     Args:
         parent_model: 父模型类
@@ -149,6 +145,7 @@ def create_inline_formset(
 
     Returns:
         InlineFormSet 类
+
     """
     defaults = {
         "form": form,
@@ -170,8 +167,7 @@ def create_inline_formset(
 
 
 class RequestFormMixin:
-    """
-    表单混入类，用于将 request 对象传递给表单实例
+    """表单混入类，用于将 request 对象传递给表单实例
 
     使用方法：
     1. 在视图中，通过 form.set_request(request) 设置请求对象
@@ -189,8 +185,7 @@ class RequestFormMixin:
 
 
 class DynamicFormMixin(RequestFormMixin):
-    """
-    动态表单混入类，用于处理动态依赖字段
+    """动态表单混入类，用于处理动态依赖字段
 
     提供以下功能：
     1. 自动将请求对象传递给表单实例

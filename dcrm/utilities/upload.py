@@ -7,8 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 def extract_barcodes(file_path):
-    """
-    只负责图片条码识别，返回条码列表
+    """只负责图片条码识别，返回条码列表
     Args:
         file_path: 文件路径
     Returns:
@@ -32,8 +31,7 @@ def extract_barcodes(file_path):
 
 
 def extract_ocr_texts(attachment_id, force_ocr=True):
-    """
-    只负责OCR识别，返回文本列表
+    """只负责OCR识别，返回文本列表
     Args:
         attachment_id: 附件ID
         force_ocr: 是否强制识别
@@ -44,8 +42,7 @@ def extract_ocr_texts(attachment_id, force_ocr=True):
 
 
 def update_attachment_metadata(attachment, barcodes=None, ocr_texts=None):
-    """
-    合并识别结果到 metadata 并保存
+    """合并识别结果到 metadata 并保存
     Args:
         attachment: 附件对象
         barcodes: 条码信息列表

@@ -1,6 +1,5 @@
 import json
 
-from django.db.models import QuerySet
 from django.http import StreamingHttpResponse
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -462,8 +461,7 @@ class ServerSentEventView(BaseRequestMixin, View):
         return response
 
     def event_stream(self):
-        """
-        Generator function that yields SSE events.
+        """Generator function that yields SSE events.
         """
         try:
             object = self.model.objects.get(pk=self.pk)

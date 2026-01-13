@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
@@ -31,7 +31,7 @@ class ConfigParam:
         self.default = default
         self.choices = choices
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """将配置参数转换为字典"""
         return {
             "name": self.name,
@@ -47,7 +47,7 @@ class ConfigParam:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ConfigParam":
+    def from_dict(cls, data: dict[str, Any]) -> "ConfigParam":
         """从字典创建配置参数对象"""
         return cls(
             name=data.get("name", ""),
@@ -350,7 +350,7 @@ def is_dynamic_setting(key: str) -> bool:
     return key in DYNAMIC_SETTINGS_DICT
 
 
-def get_setting_meta(key: str) -> Dict[str, Any]:
+def get_setting_meta(key: str) -> dict[str, Any]:
     """获取设置项的元数据"""
     if key in DYNAMIC_SETTINGS_DICT:
         return DYNAMIC_SETTINGS_DICT[key].to_dict()

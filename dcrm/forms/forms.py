@@ -53,8 +53,7 @@ class CustomFieldFormField(forms.Field):
 
 
 class CustomFieldModelForm(forms.ModelForm):
-    """
-    支持自定义字段的ModelForm基类
+    """支持自定义字段的ModelForm基类
     """
 
     def __init__(self, *args, **kwargs):
@@ -139,15 +138,13 @@ class CustomFieldModelForm(forms.ModelForm):
         return instance
 
     def get_custom_fields(self) -> list[str]:
-        """
-        获取表单中的自定义字段
+        """获取表单中的自定义字段
         """
         return [field for name, field in self.fields.items() if name.startswith("cf_")]
 
 
 class CustomFieldBulkEditForm(forms.Form):
-    """
-    用于批量编辑自定义字段的表单
+    """用于批量编辑自定义字段的表单
     """
 
     _selected_action = forms.CharField(widget=forms.MultipleHiddenInput)
@@ -166,8 +163,7 @@ class CustomFieldBulkEditForm(forms.Form):
 
 
 class CustomFieldFilterForm(forms.Form):
-    """
-    用于过滤自定义字段的表单
+    """用于过滤自定义字段的表单
     """
 
     def __init__(self, *args, **kwargs):

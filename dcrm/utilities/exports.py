@@ -13,8 +13,7 @@ from .lookup import LookupFields
 
 
 def get_export_queryset(queryset):
-    """
-    针对常见外键和多对多字段做优化，减少N+1查询。
+    """针对常见外键和多对多字段做优化，减少N+1查询。
     可根据实际模型字段调整。
     """
     model = queryset.model
@@ -72,7 +71,7 @@ def export_data_with_stream(queryset, data_center, fields=None, charset="utf-8")
     )
     labels = lookup.get_field_labels()
     time = formats.localize(timezone.template_localtime(timezone.datetime.now()))
-    filename = quote("{}{}.csv".format(verbose_name, slugify(time, allow_unicode=True)))
+    filename = quote(f"{verbose_name}{slugify(time, allow_unicode=True)}.csv")
     content_type = f"application/octet-stream; charset={charset}"
     headers = {
         "Content-Disposition": f'attachment; filename="{filename}"',

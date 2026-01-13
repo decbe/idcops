@@ -1,14 +1,12 @@
 import json
-from typing import Dict, List
-
-from ninja import Router, Schema
-from ninja.errors import HttpError
-from ninja.parser import Parser
 
 from django.apps import apps
 from django.db.models import Case, IntegerField, When
 from django.http import HttpRequest
 from django.utils.translation import gettext_lazy as _
+from ninja import Router, Schema
+from ninja.errors import HttpError
+from ninja.parser import Parser
 
 from dcrm.models import CodingRule, Device, DevicePort
 
@@ -35,7 +33,7 @@ class AvailableCodesRequest(Schema):
 # 成功响应 Schema
 class AvailableCodesResponse(Schema):
     status: str = "success"
-    result: Dict[str, List[str]]
+    result: dict[str, list[str]]
 
 
 # 错误响应 Schema
@@ -51,7 +49,7 @@ class ErrorResponse(Schema):
 )
 def get_available_codes(
     request, model_name: str, payload: AvailableCodesRequest
-) -> Dict:
+) -> dict:
     """获取可用编码
 
     Args:
@@ -64,6 +62,7 @@ def get_available_codes(
 
     Raises:
         HttpError: 当发生错误时抛出，包含错误信息
+
     """
     try:
         # 获取模型类
@@ -101,7 +100,7 @@ class CableLabelRequest(Schema):
 
 class CableLabelResponse(Schema):
     status: str
-    results: Dict[int, str]
+    results: dict[int, str]
 
 
 @router.post(

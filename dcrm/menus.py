@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List
 
 from django.urls import reverse
 from django.urls.exceptions import NoReverseMatch
@@ -17,13 +17,13 @@ class MenuItem:
     url_name: str = ""  # URL name
     badge_text: str = ""  # 静态徽章文本
     badge_class: str = ""  # 徽章样式类
-    children: List = None  # 子菜单
+    children: list = None  # 子菜单
     permission: str = None  # 权限标识
     icon_color: str = ""  # 图标颜色
     badge_callback: Callable = None  # 徽章数量回调函数
     target: str = ""  # 链接打开方式: _blank, _self 等
-    active_patterns: List[str] = field(default_factory=list)  # 新增：激活模式列表
-    url_params: Dict[str, str] = field(default_factory=dict)  # 新增：URL参数
+    active_patterns: list[str] = field(default_factory=list)  # 新增：激活模式列表
+    url_params: dict[str, str] = field(default_factory=dict)  # 新增：URL参数
 
     def __post_init__(self):
         self.children = self.children or []
@@ -99,7 +99,7 @@ class MenuRegistry:
         self._base_menus = {}
         self._superuser_menus = None
 
-    def get_sections(self) -> Dict[str, str]:
+    def get_sections(self) -> dict[str, str]:
         """获取所有菜单分区"""
         return self._sections
 
@@ -181,7 +181,7 @@ class MenuRegistry:
 
     def get_menus(
         self, user=None, current_url_name: str = None
-    ) -> Dict[str, List[MenuItem]]:
+    ) -> dict[str, list[MenuItem]]:
         """获取菜单列表（使用应用级缓存）"""
         if user is None or not user.is_authenticated:
             return {}

@@ -27,8 +27,7 @@ __all__ = ["export_data"]
     onclick="handleExportCsv()",
 )
 def export_data(request, queryset, **kwargs) -> HttpResponse | StreamingHttpResponse:
-    """
-    导出数据
+    """导出数据
     """
     data_center = request.user.data_center
     # 获取请求头中的Accept-Charset

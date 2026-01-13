@@ -1,19 +1,17 @@
 import dateparser
-from str2bool import str2bool
-
 from django import forms
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
+from str2bool import str2bool
 
 from dcrm.models.choices import CustomFieldTypeChoices
 from dcrm.utilities.base import get_content_type_by_labeled_name
 
 
 class CSVModelChoiceField(forms.ModelChoiceField):
-    """
-    用于CSV导入的ModelChoiceField，支持通过多个字段查找关联对象
+    """用于CSV导入的ModelChoiceField，支持通过多个字段查找关联对象
     """
 
     default_error_messages = {
@@ -58,8 +56,7 @@ class CSVModelChoiceField(forms.ModelChoiceField):
 
 
 class CSVChoiceField(forms.ChoiceField):
-    """
-    用于CSV导入的ChoiceField，处理选项字段
+    """用于CSV导入的ChoiceField，处理选项字段
     """
 
     def __init__(self, *args, **kwargs):
@@ -82,8 +79,7 @@ class CSVChoiceField(forms.ChoiceField):
 
 
 class CSVMultipleChoiceField(forms.MultipleChoiceField):
-    """
-    用于CSV导入的MultipleChoiceField，支持逗号分隔的多选值
+    """用于CSV导入的MultipleChoiceField，支持逗号分隔的多选值
     """
 
     def to_python(self, value):
@@ -95,8 +91,7 @@ class CSVMultipleChoiceField(forms.MultipleChoiceField):
 
 
 class CSVModelMultipleChoiceField(forms.ModelMultipleChoiceField):
-    """
-    用于CSV导入的ModelMultipleChoiceField，支持逗号分隔的多个关联对象
+    """用于CSV导入的ModelMultipleChoiceField，支持逗号分隔的多个关联对象
     """
 
     default_error_messages = {
@@ -109,12 +104,12 @@ class CSVModelMultipleChoiceField(forms.ModelMultipleChoiceField):
         super().__init__(*args, **kwargs)
 
     def to_python(self, value, rack=None):
-        """
-        将CSV值转换为对象列表
+        """将CSV值转换为对象列表
 
         Args:
             value: CSV中的值（字符串，逗号分隔）
             rack: 可选的Rack对象，用于限制查找范围（用于rack_pdus字段）
+
         """
         if not value:
             return []
@@ -165,8 +160,7 @@ class CSVModelMultipleChoiceField(forms.ModelMultipleChoiceField):
 
 
 class CSVRackPDUField(CSVModelMultipleChoiceField):
-    """
-    专门用于rack_pdus字段的CSV导入字段
+    """专门用于rack_pdus字段的CSV导入字段
     限制查找范围在当前行的rack下
     """
 
@@ -177,13 +171,13 @@ class CSVRackPDUField(CSVModelMultipleChoiceField):
     }
 
     def to_python(self, value, rack=None):
-        """
-        将CSV值转换为RackPDU对象列表
+        """将CSV值转换为RackPDU对象列表
         必须在指定的rack下查找
 
         Args:
             value: CSV中的值（字符串，逗号分隔，如 "A01, B02"）
             rack: Rack对象，必须提供，用于限制查找范围
+
         """
         if not value:
             return []
@@ -198,8 +192,7 @@ class CSVRackPDUField(CSVModelMultipleChoiceField):
 
 
 def convert_custom_field_value(custom_field, value, request):
-    """
-    将CSV中的自定义字段值转换为Python对象
+    """将CSV中的自定义字段值转换为Python对象
 
     Args:
         custom_field: CustomField 实例
@@ -211,6 +204,7 @@ def convert_custom_field_value(custom_field, value, request):
 
     Raises:
         ValidationError: 如果值无效
+
     """
     import json
 

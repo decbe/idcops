@@ -5,7 +5,7 @@ from ipaddress import (
     NetmaskValueError,
     ip_interface,
 )
-from typing import Any, Optional
+from typing import Any
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -18,9 +18,8 @@ class NullableFormFieldMixin:
 
     empty_values = list(forms.Field.empty_values) + [""]
 
-    def to_python(self, value: Any) -> Optional[str]:
-        """
-        将输入值转换为Python对象
+    def to_python(self, value: Any) -> str | None:
+        """将输入值转换为Python对象
         空值返回 None
         """
         if value in self.empty_values:
@@ -35,8 +34,7 @@ class NullableCharFormField(NullableFormFieldMixin, forms.CharField):
 
 
 class NullableCharFieldMixin:
-    """
-    字符字段混入类
+    """字符字段混入类
 
     功能:
     - 将空字符串('')转换为null存入数据库
@@ -48,7 +46,7 @@ class NullableCharFieldMixin:
 
     _formfield_class = NullableCharFormField
 
-    def get_prep_value(self, value: Any) -> Optional[str]:
+    def get_prep_value(self, value: Any) -> str | None:
         """准备数据库存值"""
         value = super().get_prep_value(value)
         return value or None
@@ -61,8 +59,7 @@ class NullableCharFieldMixin:
 
 
 class NullableCharField(NullableCharFieldMixin, models.CharField):
-    """
-    可空字符字段
+    """可空字符字段
 
     用法:
     class Device(models.Model):
@@ -84,9 +81,8 @@ class NullableCharField(NullableCharFieldMixin, models.CharField):
 class RackPositionFormField(forms.IntegerField):
     """机柜U位表单字段"""
 
-    def to_python(self, value: Any) -> Optional[int]:
-        """
-        将表单值转换为Python对象
+    def to_python(self, value: Any) -> int | None:
+        """将表单值转换为Python对象
         - 空值返回 None
         - 非空值转为整数
         """
@@ -103,8 +99,7 @@ class RackPositionFormField(forms.IntegerField):
 
 
 class RackPositionField(models.IntegerField):
-    """
-    机柜U位字段
+    """机柜U位字段
 
     功能:
     - 将空值转换为 None
@@ -123,9 +118,8 @@ class RackPositionField(models.IntegerField):
         kwargs.setdefault("blank", True)
         super().__init__(*args, **kwargs)
 
-    def to_python(self, value: Any) -> Optional[int]:
-        """
-        将数据库值转换为Python对象
+    def to_python(self, value: Any) -> int | None:
+        """将数据库值转换为Python对象
         - 空值返回 None
         - 非空值转为整数
         """
@@ -147,8 +141,7 @@ class RackPositionField(models.IntegerField):
         return super().formfield(**defaults)
 
     def value_to_string(self, obj: models.Model) -> str:
-        """
-        序列化值
+        """序列化值
         转换为带U的字符串格式，例如: 01U
 
         此方法会在以下情况被调用:
@@ -162,9 +155,8 @@ class RackPositionField(models.IntegerField):
         # 确保返回的是字符串类型
         return f"{int(value):02d}U"
 
-    def get_prep_value(self, value: Any) -> Optional[int]:
-        """
-        准备数据库存储值
+    def get_prep_value(self, value: Any) -> int | None:
+        """准备数据库存储值
         在存储到数据库之前被调用
         """
         if value is None:
@@ -193,9 +185,8 @@ class DeviceHeightField(models.IntegerField):
         kwargs.setdefault("blank", True)
         super().__init__(*args, **kwargs)
 
-    def to_python(self, value: Any) -> Optional[int]:
-        """
-        将数据库值转换为Python对象
+    def to_python(self, value: Any) -> int | None:
+        """将数据库值转换为Python对象
         - 空值返回 None
         - 非空值转为整数
         """
@@ -217,8 +208,7 @@ class DeviceHeightField(models.IntegerField):
         return super().formfield(**defaults)
 
     def value_to_string(self, obj: models.Model) -> str:
-        """
-        序列化值
+        """序列化值
         转换为带U的字符串格式，例如: 01U
 
         此方法会在以下情况被调用:
@@ -232,9 +222,8 @@ class DeviceHeightField(models.IntegerField):
         # 确保返回的是字符串类型
         return f"{int(value)}U"
 
-    def get_prep_value(self, value: Any) -> Optional[int]:
-        """
-        准备数据库存储值
+    def get_prep_value(self, value: Any) -> int | None:
+        """准备数据库存储值
         在存储到数据库之前被调用
         """
         if value is None:
@@ -251,8 +240,7 @@ class DeviceHeightField(models.IntegerField):
 
 
 class InterfaceIPAddressField(models.Field):
-    """
-    支持存储带掩码的IP地址字段(IPv4/IPv6)
+    """支持存储带掩码的IP地址字段(IPv4/IPv6)
     存储格式: IP地址/掩码 (例如: 192.168.1.1/24 或 2001:db8::1/64)
     """
 
@@ -336,8 +324,7 @@ class InterfaceIPAddressField(models.Field):
 
 
 class NaturalOrderingField(models.CharField):
-    """
-    A field which stores a naturalized representation of its target field, to be used for ordering its parent model.
+    """A field which stores a naturalized representation of its target field, to be used for ordering its parent model.
 
     :param target_field: Name of the field of the parent model to be naturalized
     :param naturalize_function: The function used to generate a naturalized value (optional)
@@ -353,8 +340,7 @@ class NaturalOrderingField(models.CharField):
         super().__init__(*args, **kwargs)
 
     def pre_save(self, model_instance, add):
-        """
-        Generate a naturalized value from the target field
+        """Generate a naturalized value from the target field
         """
         original_value = getattr(model_instance, self.target_field)
         naturalized_value = self.naturalize_function(
@@ -376,8 +362,7 @@ class NaturalOrderingField(models.CharField):
 
 
 class CounterCacheField(models.BigIntegerField):
-    """
-    Counter field to keep track of related model counts.
+    """Counter field to keep track of related model counts.
     """
 
     def __init__(self, to_model, to_field, *args, **kwargs):

@@ -4,8 +4,7 @@ from dcrm.register import registry
 
 
 class Tracker:
-    """
-    一个临时实例，用于记录实例中哪些被跟踪的字段已被修改。
+    """一个临时实例，用于记录实例中哪些被跟踪的字段已被修改。
     """
 
     def __init__(self):
@@ -15,20 +14,17 @@ class Tracker:
         return item in self._changed_fields
 
     def set(self, name, value):
-        """
-        标记某个属性已被更改，并记录其原始值。
+        """标记某个属性已被更改，并记录其原始值。
         """
         self._changed_fields[name] = value
 
     def get(self, name):
-        """
-        返回已更改字段的原始值。如果未找到字段名则抛出 KeyError。
+        """返回已更改字段的原始值。如果未找到字段名则抛出 KeyError。
         """
         return self._changed_fields[name]
 
     def clear(self, *names):
-        """
-        清除所有已记录为更改的字段。
+        """清除所有已记录为更改的字段。
         """
         if names:
             for name in names:
@@ -49,8 +45,7 @@ class TrackingModelMixin:
 
     @property
     def tracker(self):
-        """
-        返回该实例的 Tracker 实例，如有必要则先创建。
+        """返回该实例的 Tracker 实例，如有必要则先创建。
         """
         if not hasattr(self._state, "_tracker"):
             self._state._tracker = Tracker()

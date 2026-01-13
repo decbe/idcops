@@ -12,8 +12,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def collect_models() -> defaultdict[Any, dict]:
-        """
-        查询注册表，查找所有具有一个或多个计数字段的模型。返回每个模型的计数字段到相关查询名称的映射。
+        """查询注册表，查找所有具有一个或多个计数字段的模型。返回每个模型的计数字段到相关查询名称的映射。
         """
         models = defaultdict(dict)
 

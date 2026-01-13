@@ -1,11 +1,8 @@
 from django import forms
 from django.conf import settings
-from django.db.models.fields import BLANK_CHOICE_DASH
-from django.utils import timezone
-from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
-from dcrm.models import Category, Document, Tag
+from dcrm.models import Document, Tag
 
 from .base import BaseModelFormMixin
 from .forms import CustomFieldModelForm
@@ -105,8 +102,7 @@ class DocumentBaseForm(CustomFieldModelForm, BaseModelFormMixin):
         return instance
 
     def get_classification_suggestions(self):
-        """
-        获取分类建议（用于AJAX调用）
+        """获取分类建议（用于AJAX调用）
         """
         if hasattr(self, "instance") and self.instance.pk and self.instance.content:
             return self.instance.get_classification_suggestions()

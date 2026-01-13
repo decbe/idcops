@@ -1,10 +1,10 @@
-from typing import Any, Callable, Dict, List, Union
+from collections.abc import Callable
+from typing import Any
 
 from django.apps import apps
 from django.core.exceptions import PermissionDenied
 from django.db import models, transaction
 from django.db.models.base import Model
-from django.utils.translation import gettext_lazy as _
 
 from dcrm.models.choices import ActionColorChoices
 from dcrm.register import registry as sys_registry
@@ -59,7 +59,7 @@ class ActionRegistry:
 
         return decorator
 
-    def get_model(self, model: Union[models.Model | str]) -> Any | Model | str:
+    def get_model(self, model: models.Model | str) -> Any | Model | str:
         if isinstance(model, str):
             if "." not in model:
                 raise ActionError(f"{model} like `dcrm.rack` string")
@@ -67,7 +67,7 @@ class ActionRegistry:
             model = apps.get_model(app_label, model_name)
         return model
 
-    def get_action(self, model: Union[models.Model | str], action_type: str) -> Dict:
+    def get_action(self, model: models.Model | str, action_type: str) -> dict:
         """获取指定操作的配置"""
         model = self.get_model(model)
         actions = self.get_model_actions(model)
@@ -75,7 +75,7 @@ class ActionRegistry:
             raise ActionError(f"{model} action: {action_type} no exists")
         return actions[action_type]
 
-    def get_model_actions(self, model: Union[models.Model | str]) -> Dict:
+    def get_model_actions(self, model: models.Model | str) -> dict:
         """获取指定模型的所有操作，已排序"""
         model = self.get_model(model)
         model_name = f"{model._meta.app_label}.{model._meta.model_name}".lower()
@@ -94,8 +94,8 @@ class ActionRegistry:
         return user.has_perms(action["permissions"])
 
     def get_user_model_actions(
-        self, user, model: Union[models.Model | str]
-    ) -> List[Dict]:
+        self, user, model: models.Model | str
+    ) -> list[dict]:
         """获取指定用户在指定模型下的所有操作权限
 
         Args:
@@ -104,6 +104,7 @@ class ActionRegistry:
 
         Returns:
             List[Dict]: 包含操作信息和权限的列表
+
         """
         model = self.get_model(model)
         # 获取模型的所有操作
@@ -121,7 +122,7 @@ class ActionRegistry:
 class ActionExecutor:
     """操作执行器"""
 
-    def __init__(self, request, model: Union[models.Model | str], action_type: str):
+    def __init__(self, request, model: models.Model | str, action_type: str):
         self.request = request
         self.user = request.user
         self.action_type = action_type
@@ -134,13 +135,13 @@ class ActionExecutor:
             )
 
     def execute(self, request, instances, **kwargs) -> Any:
-        """
-        执行操作
+        """执行操作
 
         Args:
             instances: 操作对象(单个对象或QuerySet)
             **kwargs: 操作参数
                 atomic: 是否使用事务(默认True)
+
         """
         use_atomic = kwargs.pop("atomic", True)
 

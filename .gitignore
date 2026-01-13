@@ -133,3 +133,6 @@ docs/deployment/*.md
 .claude/
 CLAUDE.md
 .codebuddy/
+
+# ruff
+.ruff_cache/

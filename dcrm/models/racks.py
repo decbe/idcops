@@ -1,5 +1,4 @@
 import math
-from typing import Dict, List, Set
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -33,8 +32,7 @@ __all__ = (
 
 
 class Room(BaseModel, CustomFieldsMixin, TrackingModelMixin):
-    """
-    机房房间
+    """机房房间
     """
 
     data_center = models.ForeignKey(
@@ -175,8 +173,7 @@ class Room(BaseModel, CustomFieldsMixin, TrackingModelMixin):
 
 
 class RackStatus(BaseModel, ColorMixin, CustomFieldsMixin):
-    """
-    机柜状态
+    """机柜状态
     """
 
     data_center = models.ForeignKey(
@@ -245,9 +242,8 @@ class RackBulkManager:
     """机柜批量操作管理器"""
 
     @staticmethod
-    def _generate_pdu_names(pdu_16a_count: int, pdu_10a_count: int) -> List[tuple]:
-        """
-        生成PDU编号列表
+    def _generate_pdu_names(pdu_16a_count: int, pdu_10a_count: int) -> list[tuple]:
+        """生成PDU编号列表
         按对创建A、B路PDU，优先创建10A PDU
         例如：2个10A PDU + 2个16A PDU的顺序为：
         [(A01, 10A), (B01, 10A), (A02, 16A), (B02, 16A)]
@@ -258,6 +254,7 @@ class RackBulkManager:
 
         Returns:
             List[tuple]: [(name, slot_type), ...] PDU名称和类型的元组列表
+
         """
         if pdu_16a_count < 0 or pdu_10a_count < 0:
             return []
@@ -287,7 +284,7 @@ class RackBulkManager:
         return names
 
     @classmethod
-    def bulk_create_pdus(cls, racks: List["Rack"]) -> None:
+    def bulk_create_pdus(cls, racks: list["Rack"]) -> None:
         """批量创建PDU"""
         pdus_to_create = []
 
@@ -322,11 +319,11 @@ class RackBulkManager:
 
     @classmethod
     def bulk_update_pdus(
-        cls, old_racks: Dict[int, "Rack"], new_racks: List["Rack"]
+        cls, old_racks: dict[int, "Rack"], new_racks: list["Rack"]
     ) -> None:
         """批量更新PDU"""
         pdus_to_create = []
-        pdus_to_delete: Set[int] = set()
+        pdus_to_delete: set[int] = set()
 
         for new_rack in new_racks:
             old_rack = old_racks.get(new_rack.pk)
@@ -420,8 +417,7 @@ class RackBulkManager:
 
     @staticmethod
     def _check_pdus_in_use_bulk(rack: "Rack", slot_type: str, count: int) -> bool:
-        """
-        批量检查指定类型PDU使用情况
+        """批量检查指定类型PDU使用情况
 
         Args:
             rack: 机柜实例
@@ -430,6 +426,7 @@ class RackBulkManager:
 
         Returns:
             bool: 是否有PDU在使用中
+
         """
         return (
             RackPDU.objects.filter(
@@ -443,7 +440,7 @@ class RackBulkManager:
         )
 
     @staticmethod
-    def expand_regex_pattern(pattern: str) -> List[str]:
+    def expand_regex_pattern(pattern: str) -> list[str]:
         """展开正则表达式模式为所有可能的具值
 
         Args:
@@ -454,6 +451,7 @@ class RackBulkManager:
 
         Returns:
             List[str]: 所有匹配该模式的具体字符串列表
+
         """
         import exrex  # 需要安装: pip install exrex
 
@@ -466,7 +464,7 @@ class RackBulkManager:
     @classmethod
     def bulk_create_from_regex(
         cls, pattern: str, data_center: "DataCenter", room: "Room", **defaults
-    ) -> List["Rack"]:
+    ) -> list["Rack"]:
         """根据正则表达式模式批量创建机柜
 
         Args:
@@ -474,8 +472,8 @@ class RackBulkManager:
             data_center: 数据中心实例
             room: 机房实例
             **defaults: 其他机柜默认参数
-        """
 
+        """
         # 展开正则表达式获取所有机柜名称
         rack_names = cls.expand_regex_pattern(pattern)
 
@@ -491,8 +489,7 @@ class RackBulkManager:
 
 class RackQuerySet(models.QuerySet):
     def with_space_usage(self):
-        """
-        预加载计算空间使用率所需的所有数据
+        """预加载计算空间使用率所需的所有数据
         """
         from .devices import OnlineDevice
 
@@ -515,7 +512,7 @@ class RackQuerySet(models.QuerySet):
 class RackManager(models.Manager.from_queryset(RackQuerySet)):
     """机柜管理器"""
 
-    def bulk_create(self, objs: List["Rack"], **kwargs) -> List["Rack"]:
+    def bulk_create(self, objs: list["Rack"], **kwargs) -> list["Rack"]:
         """重写批量创建方法"""
         # 在入库前为每个机柜根据电压自动补全额定功率/电流
         converter = PowerConverter()
@@ -537,7 +534,7 @@ class RackManager(models.Manager.from_queryset(RackQuerySet)):
         update_counts(Room, "rack_count", "rack")
         return racks
 
-    def bulk_update(self, objs: List["Rack"], fields: List[str], **kwargs) -> None:
+    def bulk_update(self, objs: list["Rack"], fields: list[str], **kwargs) -> None:
         """重写批量更新方法"""
         # 获取更新前的实例
         old_racks = {
@@ -868,8 +865,7 @@ class Rack(BaseModel, CustomFieldsMixin, TrackingModelMixin):
                     )
 
     def update_room_rack_count(self):
-        """
-        更新机房机柜数量
+        """更新机房机柜数量
         """
         if self.room:
             self.room.rack_count = Rack.objects.filter(room=self.room).count()
@@ -877,21 +873,20 @@ class Rack(BaseModel, CustomFieldsMixin, TrackingModelMixin):
 
     @cached_property
     def units(self):
-        """
-        获取当前机柜U位
+        """获取当前机柜U位
         """
         return range(self.u_height, 0, -1)
 
     @property
     def unit_devices(self):
-        """
-        获取每个U位对应的设备，并标记设备的起始位置
+        """获取每个U位对应的设备，并标记设备的起始位置
 
         Yields:
             Tuple[int, Optional[Device], bool]: (U位号, 设备对象, 是否为设备起始位置) 的元组
             - U位号: 机柜的U位编号（从上到下）
             - 设备对象: 该U位对应的设备，如果没有设备则为None
             - 是否为设备起始位置: True表示这是设备的第一个U位，用于判断是否需要合并显示
+
         """
         # 创建设备位置映射，记录设备和是否为起始位置
         device_map = {}
@@ -913,8 +908,7 @@ class Rack(BaseModel, CustomFieldsMixin, TrackingModelMixin):
 
     @cached_property
     def mounted_devices(self) -> models.QuerySet:
-        """
-        获取当前在架的所有设备
+        """获取当前在架的所有设备
         """
         from dcrm.models import OnlineDevice
 
@@ -941,9 +935,8 @@ class Rack(BaseModel, CustomFieldsMixin, TrackingModelMixin):
         )
 
     @cached_property
-    def occupied_units(self) -> Set[int]:
-        """
-        获取所有已占用的U位集合
+    def occupied_units(self) -> set[int]:
+        """获取所有已占用的U位集合
         使用cached_property缓存结果
         """
         occupied = set()
@@ -952,15 +945,15 @@ class Rack(BaseModel, CustomFieldsMixin, TrackingModelMixin):
                 occupied.add(u)
         return occupied
 
-    def get_occupied_units(self, exclude_id: int = None) -> Set[int]:
-        """
-        获取已占用的U位集合，支持排除指定设备
+    def get_occupied_units(self, exclude_id: int = None) -> set[int]:
+        """获取已占用的U位集合，支持排除指定设备
 
         Args:
             exclude_id: 需要排除的设备ID
 
         Returns:
             已占用的U位集合
+
         """
         if not exclude_id:
             return self.occupied_units
@@ -974,9 +967,8 @@ class Rack(BaseModel, CustomFieldsMixin, TrackingModelMixin):
         return occupied
 
     @cached_property
-    def available_units_map(self) -> Dict[int, List[int]]:
-        """
-        生成可用U位映射表
+    def available_units_map(self) -> dict[int, list[int]]:
+        """生成可用U位映射表
         key: 需要的U位数量
         value: 可用的起始位置列表
         """
@@ -1002,16 +994,15 @@ class Rack(BaseModel, CustomFieldsMixin, TrackingModelMixin):
 
         return available_map
 
-    def available_pdus(self, exclude_id: int = None) -> List[str]:
+    def available_pdus(self, exclude_id: int = None) -> list[str]:
         pdus = self.get_available_pdus(self)
         # [{p.id: p.name} for p in pdus]
         return list(pdus.values("pk", "name"))
 
     def get_available_units(
         self, u_height: int = 1, exclude_id: int = None
-    ) -> List[int]:
-        """
-        获取可用的U位起始位置列表
+    ) -> list[int]:
+        """获取可用的U位起始位置列表
 
         Args:
             u_height: 需要的U位数量
@@ -1019,6 +1010,7 @@ class Rack(BaseModel, CustomFieldsMixin, TrackingModelMixin):
 
         Returns:
             可用的U位起始位置列表
+
         """
         if not exclude_id:
             # 使用缓存的结果
@@ -1043,8 +1035,7 @@ class Rack(BaseModel, CustomFieldsMixin, TrackingModelMixin):
     def check_device_position(
         self, position: int, height: int, exclude_id: int = None
     ) -> bool:
-        """
-        检查设备是否可以放置在指定位置
+        """检查设备是否可以放置在指定位置
 
         Args:
             position: 设备起始U位
@@ -1053,6 +1044,7 @@ class Rack(BaseModel, CustomFieldsMixin, TrackingModelMixin):
 
         Returns:
             位置是否可用
+
         """
         # 检查位置是否在机柜范围内
         if position < 1 or position + height - 1 > self.u_height:
@@ -1076,8 +1068,7 @@ class Rack(BaseModel, CustomFieldsMixin, TrackingModelMixin):
                 del self.__dict__[prop]
 
     def get_space_usage(self) -> dict:
-        """
-        获取空间使用情况，计算机柜可用空间和PDU数量。
+        """获取空间使用情况，计算机柜可用空间和PDU数量。
         设备之间预留1U间隔，即：
         - 4U设备实际占用5U空间（4U + 1U间隔）
         - 2U设备实际占用3U空间（2U + 1U间隔）
@@ -1096,6 +1087,7 @@ class Rack(BaseModel, CustomFieldsMixin, TrackingModelMixin):
                     '4U': 可安装4U设备数量
                 }
             }
+
         """
         # 获取机柜总U数和已占用的U位
         total_u = self.u_height
@@ -1265,18 +1257,17 @@ class Rack(BaseModel, CustomFieldsMixin, TrackingModelMixin):
         return available_ports.order_by("name")
 
     def allow_add_devices(self):
-        """
-        根据机柜状态，分配的租户情况，返回机柜是否可以添加设备的信息
+        """根据机柜状态，分配的租户情况，返回机柜是否可以添加设备的信息
         Return:
             bool, str
         """
         if self.status and self.status.allowed_mount:
             if self.tenant_id and self.rack_type != RackTypeChoices.PATCH_PANEL:
-                check = True, _(f"添加设备")
+                check = True, _("添加设备")
             elif self.rack_type == RackTypeChoices.SHARED:
-                check = True, _(f"添加设备时请选择散U租户")
+                check = True, _("添加设备时请选择散U租户")
             elif self.rack_type == RackTypeChoices.PATCH_PANEL:
-                check = True, _(f"添加配线设备")
+                check = True, _("添加配线设备")
             else:
                 check = False, _("请分配租户后，再添加设备")
         else:

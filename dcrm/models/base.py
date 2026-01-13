@@ -226,8 +226,7 @@ class LogEntry(AbsoluteUrlMixin, models.Model):
 
 
 class Tag(ColorMixin, NestedGroupModel):
-    """
-    标签
+    """标签
     """
 
     data_center = models.ForeignKey(
@@ -265,8 +264,7 @@ class Tag(ColorMixin, NestedGroupModel):
 
     @classmethod
     def get_tags_for_model(cls, model, data_center=None, include_shared=True):
-        """
-        获取适用于指定模型的标签
+        """获取适用于指定模型的标签
 
         Args:
             model: 模型类或模型实例
@@ -275,6 +273,7 @@ class Tag(ColorMixin, NestedGroupModel):
 
         Returns:
             QuerySet: 适用于指定模型的标签查询集
+
         """
         from django.contrib.contenttypes.models import ContentType
 
@@ -299,8 +298,7 @@ class Tag(ColorMixin, NestedGroupModel):
     def get_tags_for_content_type(
         cls, content_type, data_center=None, include_shared=True
     ):
-        """
-        获取适用于指定ContentType的标签
+        """获取适用于指定ContentType的标签
 
         Args:
             content_type: ContentType实例或ID
@@ -309,6 +307,7 @@ class Tag(ColorMixin, NestedGroupModel):
 
         Returns:
             QuerySet: 适用于指定ContentType的标签查询集
+
         """
         # 构建查询条件
         query = models.Q(object_types=content_type)
@@ -323,8 +322,7 @@ class Tag(ColorMixin, NestedGroupModel):
 
     @classmethod
     def get_tags_for_app_label(cls, app_label, data_center=None, include_shared=True):
-        """
-        获取适用于指定应用标签的标签
+        """获取适用于指定应用标签的标签
 
         Args:
             app_label: 应用标签名称
@@ -333,6 +331,7 @@ class Tag(ColorMixin, NestedGroupModel):
 
         Returns:
             QuerySet: 适用于指定应用标签的标签查询集
+
         """
         from django.contrib.contenttypes.models import ContentType
 
@@ -352,8 +351,7 @@ class Tag(ColorMixin, NestedGroupModel):
 
     @classmethod
     def get_available_tags(cls, data_center, model=None, include_shared=True):
-        """
-        获取可用的标签（推荐使用此方法）
+        """获取可用的标签（推荐使用此方法）
 
         Args:
             data_center: 数据中心
@@ -362,6 +360,7 @@ class Tag(ColorMixin, NestedGroupModel):
 
         Returns:
             QuerySet: 可用的标签查询集
+
         """
         if model is None:
             # 获取所有标签
@@ -375,8 +374,7 @@ class Tag(ColorMixin, NestedGroupModel):
 
 
 class Manufacturer(BaseModel, IconMixin, CustomFieldsMixin):
-    """
-    制造商
+    """制造商
     """
 
     data_center = models.ForeignKey(
@@ -801,8 +799,7 @@ class DataCenter(BaseModel, CustomFieldsMixin, ConfigurableMixin, TrackingModelM
 # 信号接收器 - 在创建数据中心后初始化默认配置
 @receiver(post_save, sender=DataCenter)
 def initialize_datacenter_configs(sender, instance, created, **kwargs):
-    """
-    当创建新的数据中心时，自动初始化默认配置
+    """当创建新的数据中心时，自动初始化默认配置
     """
     if created:
         instance.initialize_default_configs()

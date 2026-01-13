@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from django.contrib import messages
 from django.contrib.admin.utils import NestedObjects
@@ -73,6 +73,7 @@ class DeleteViewMixin(HtmxResponseMixin, PermissionRequiredMixin):
 
         Returns:
             str: 对象的URL，如果没有则返回 None
+
         """
         try:
             # 使用 camel_to_snake 转换模型名称
@@ -89,6 +90,7 @@ class DeleteViewMixin(HtmxResponseMixin, PermissionRequiredMixin):
 
         Returns:
             str: 格式化后的对象显示文本，如果有URL则包含链接
+
         """
         opts = obj._meta
         no_edit_link = "%s: %s" % (capfirst(opts.verbose_name), obj)
@@ -110,6 +112,7 @@ class DeleteViewMixin(HtmxResponseMixin, PermissionRequiredMixin):
 
         Returns:
             Tuple: (要删除的对象列表, 模型计数, 受保护对象)
+
         """
         collector = NestedObjects(using=router.db_for_write(self.model))
         collector.collect([self.object])
@@ -127,7 +130,7 @@ class DeleteViewMixin(HtmxResponseMixin, PermissionRequiredMixin):
     def current_datacenter(self):
         return self.request.user.data_center
 
-    def get_protected_objects(self) -> Dict[str, List[Dict[str, Any]]]:
+    def get_protected_objects(self) -> dict[str, list[dict[str, Any]]]:
         """获取受保护的关联对象
 
         Returns:
@@ -137,6 +140,7 @@ class DeleteViewMixin(HtmxResponseMixin, PermissionRequiredMixin):
                     'url': 对象URL
                 }]
             }
+
         """
         _, _, protected = self.get_deleted_objects()
 
@@ -158,7 +162,7 @@ class DeleteViewMixin(HtmxResponseMixin, PermissionRequiredMixin):
 
         return grouped_objects
 
-    def get_related_objects(self) -> List[Tuple[str, List[Dict[str, Any]]]]:
+    def get_related_objects(self) -> list[tuple[str, list[dict[str, Any]]]]:
         """获取关联对象
 
         Returns:
@@ -168,6 +172,7 @@ class DeleteViewMixin(HtmxResponseMixin, PermissionRequiredMixin):
                     'url': 对象URL
                 }])
             ]
+
         """
         to_delete, _, _ = self.get_deleted_objects()
         result = []
@@ -206,7 +211,7 @@ class DeleteViewMixin(HtmxResponseMixin, PermissionRequiredMixin):
         process_nested_objects(to_delete)
         return result
 
-    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+    def get_context_data(self, **kwargs) -> dict[str, Any]:
         """获取上下文数据"""
         context = super().get_context_data(**kwargs)
         protected_objects = self.get_protected_objects()

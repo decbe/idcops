@@ -28,8 +28,7 @@ from .mixins.list import ListViewMixin
 
 
 class RoomListView(BaseRequestMixin, ListViewMixin):
-    """
-    房间列表视图
+    """房间列表视图
     """
 
     model = Room
@@ -212,16 +211,14 @@ class RoomRackMapsView(BaseRequestMixin, TemplateView):
 
     @cached_property
     def get_rooms(self):
-        """
-        返回当前机房的所有房间，用于tabs
+        """返回当前机房的所有房间，用于tabs
         """
         data_center = self.request.user.data_center
         return Room.objects.filter(data_center=data_center).order_by("-default", "name")
 
     @cached_property
     def get_room_racks(self):
-        """
-        获取当前机房房间下的所有机柜查询集
+        """获取当前机房房间下的所有机柜查询集
         """
         defer_fields: list[str] = [
             f"{f.name}__{field}"
@@ -247,8 +244,7 @@ class RoomRackMapsView(BaseRequestMixin, TemplateView):
         )
 
     def get_outcell_racks(self):
-        """
-        返回未布局的机柜查询集，row 或 col 数据未设置的集合
+        """返回未布局的机柜查询集，row 或 col 数据未设置的集合
         """
         query = Q(col__isnull=True) | Q(row__isnull=True)
         return self.get_room_racks.filter(query)
@@ -294,8 +290,7 @@ class RoomRackMapsView(BaseRequestMixin, TemplateView):
         return racks
 
     def get_field_stats(self, queryset) -> dict:
-        """
-        获取字段统计信息
+        """获取字段统计信息
         返回格式:
         {
             'field_name': {
@@ -406,8 +401,7 @@ class RoomRackMapsView(BaseRequestMixin, TemplateView):
             return JsonResponse({"message": f"更新错误，{e}"}, status=500)
 
     def get_racks_tenant(self):
-        """
-        按机柜租户的统计
+        """按机柜租户的统计
         """
         queryset = (
             self.get_room_racks.filter(tenant__isnull=False)
@@ -420,8 +414,7 @@ class RoomRackMapsView(BaseRequestMixin, TemplateView):
         return queryset
 
     def get_room_cells(self):
-        """
-        根据 self.mode 进行机房房间画布渲染
+        """根据 self.mode 进行机房房间画布渲染
         """
         cell = namedtuple(
             "Cell", ["row", "col", "rack", "scolor", "tcolor", "draggable"]

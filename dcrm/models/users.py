@@ -2,7 +2,6 @@ from django.contrib.auth.models import AbstractUser, Permission, UserManager
 from django.contrib.auth.signals import (
     user_logged_in,
     user_logged_out,
-    user_login_failed,
 )
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -19,8 +18,7 @@ __all__ = ["User", "Group"]
 
 
 class GroupManager(models.Manager):
-    """
-    The manager for the auth's Group model.
+    """The manager for the auth's Group model.
     """
 
     use_in_migrations = True
@@ -30,8 +28,7 @@ class GroupManager(models.Manager):
 
 
 class Group(BaseModel):
-    """
-    自定义用户组模型，支持数据中心隔离
+    """自定义用户组模型，支持数据中心隔离
     """
 
     data_center = models.ForeignKey(
@@ -209,8 +206,7 @@ class User(BaseModel, AbstractUser, ConfigurableMixin, TrackingModelMixin):
 
 @receiver(user_logged_in)
 def user_logged_in_handler(sender, user, request, **kwargs):
-    """
-    当用户登录时，记录登录日志
+    """当用户登录时，记录登录日志
     """
     if not user:
         return
@@ -250,8 +246,7 @@ def user_logged_in_handler(sender, user, request, **kwargs):
 
 @receiver(user_logged_out)
 def user_logged_out_handler(sender, user, request, **kwargs):
-    """
-    当用户退出登录时，记录退出登录日志
+    """当用户退出登录时，记录退出登录日志
     """
     if not user:
         return
@@ -276,8 +271,7 @@ def user_logged_out_handler(sender, user, request, **kwargs):
 # 信号接收器 - 在创建用户后初始化默认配置
 @receiver(post_save, sender=User)
 def initialize_user_configs(sender, instance, created, **kwargs):
-    """
-    当创建新用户时，自动初始化默认配置
+    """当创建新用户时，自动初始化默认配置
     """
     if created:
         instance.initialize_default_configs()

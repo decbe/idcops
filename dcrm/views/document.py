@@ -11,7 +11,7 @@ from django.views.generic import (
 )
 
 from dcrm.forms.document import DocumentBaseForm
-from dcrm.models import Attachment, Category, Document
+from dcrm.models import Category, Document
 from dcrm.utilities.doc_convert import (
     convert_docx,
     convert_markdown,

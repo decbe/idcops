@@ -1,16 +1,12 @@
 import sys
 from typing import Any
 
-from django_htmx.http import HttpResponseClientRedirect
-
 from django.contrib import messages
-from django.core.cache import cache
-from django.db import models
 from django.forms.models import modelformset_factory
-from django.http import JsonResponse
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from django_htmx.http import HttpResponseClientRedirect
 
 from dcrm.forms.deivce import DeviceMigrateForm
 from dcrm.models import Device, LogEntry, OnlineDevice
@@ -112,8 +108,7 @@ def device_move_down(request, instances, **kwargs) -> Any | HttpResponseClientRe
 def device_migrate(
     request, instances, **kwargs
 ) -> HttpResponseClientRedirect | Any | TemplateResponse:
-    """
-    设备位置变更
+    """设备位置变更
     1. 设备U位一定会变更
     2. 设备PDU可能会变更
     """

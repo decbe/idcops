@@ -11,22 +11,19 @@ logger = logging.getLogger(__name__)
 
 
 def get_counters_for_model(model):
-    """
-    返回注册到指定模型的所有计数字段的字段映射。
+    """返回注册到指定模型的所有计数字段的字段映射。
     """
     return registry["counter_fields"][model].items()
 
 
 def update_counter(model, pk, counter_name, value):
-    """
-    对由模型和主键（PK）标识的对象的计数字段进行自增或自减。正值为自增，负值为自减。
+    """对由模型和主键（PK）标识的对象的计数字段进行自增或自减。正值为自增，负值为自减。
     """
     model.objects.filter(pk=pk).update(**{counter_name: F(counter_name) + value})
 
 
 def update_counts(model, field_name, related_query):
-    """
-    对指定模型和计数字段执行批量更新。例如：
+    """对指定模型和计数字段执行批量更新。例如：
 
         update_counts(Device, '_interface_count', 'interfaces')
 
@@ -48,8 +45,7 @@ def update_counts(model, field_name, related_query):
 
 
 def post_save_receiver(sender, instance, created, **kwargs):
-    """
-    当 TrackingModelMixin 的子类被创建或修改时，更新相关对象的计数字段。
+    """当 TrackingModelMixin 的子类被创建或修改时，更新相关对象的计数字段。
     """
     if getattr(instance, "_counter_updated", False):
         return  # 本次 save 已经计数过，直接跳过
@@ -76,8 +72,7 @@ def pre_delete_receiver(sender, instance, origin, **kwargs):
 
 
 def post_delete_receiver(sender, instance, origin, **kwargs):
-    """
-    当 TrackingModelMixin 的子类被删除时，更新相关对象的计数字段。
+    """当 TrackingModelMixin 的子类被删除时，更新相关对象的计数字段。
     """
     if getattr(instance, "_counter_deleted", False):
         return  # 本次 save 已经计数过，直接跳过
@@ -97,8 +92,7 @@ def post_delete_receiver(sender, instance, origin, **kwargs):
 
 
 def connect_counters(*models):
-    """
-    注册计数字段，并为受影响的模型连接 post_save 和 post_delete 信号处理器。
+    """注册计数字段，并为受影响的模型连接 post_save 和 post_delete 信号处理器。
     """
     for model in models:
 

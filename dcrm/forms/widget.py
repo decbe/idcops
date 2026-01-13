@@ -1,5 +1,4 @@
 from django import forms
-from django.utils.text import gettext_lazy as _
 
 
 class DeviceModelSelect(forms.Select):

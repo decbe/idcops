@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -8,8 +8,7 @@ from dcrm.utilities.lookup import create_trunc_function, format_date_display
 
 
 class ReportPeriodMixin:
-    """
-    报表时间范围处理Mixin
+    """报表时间范围处理Mixin
 
     提供通用的时间范围处理功能，包括：
     - 时间范围选项配置
@@ -50,9 +49,8 @@ class ReportPeriodMixin:
 
     def get_metadata(
         self, aggregation: str = None, period: str = None
-    ) -> Dict[str, Any]:
-        """
-        获取报表元数据
+    ) -> dict[str, Any]:
+        """获取报表元数据
 
         Args:
             aggregation: 聚合方式，如果为None则从request.GET获取
@@ -60,6 +58,7 @@ class ReportPeriodMixin:
 
         Returns:
             包含聚合和时间范围选项的元数据字典
+
         """
         if aggregation is None:
             aggregation = getattr(self.request, "GET", {}).get("aggregation", "week")
@@ -88,10 +87,9 @@ class ReportPeriodMixin:
         }
 
     def get_date_range(
-        self, start_date: Optional[str] = None, end_date: Optional[str] = None
-    ) -> Tuple[Optional[datetime], Optional[datetime]]:
-        """
-        根据指定的start_date, end_date请求参数构建日期范围
+        self, start_date: str | None = None, end_date: str | None = None
+    ) -> tuple[datetime | None, datetime | None]:
+        """根据指定的start_date, end_date请求参数构建日期范围
 
         Args:
             start_date: 开始日期字符串，格式为 'YYYY-MM-DD'，如果为None则使用默认值
@@ -101,6 +99,7 @@ class ReportPeriodMixin:
             (起始日期, 结束日期) 元组，日期都可能为None
             起始日期的时间定为 00:00:00（不用操作）
             结束日期的时间定为 第二天的 00:00:00（请修正）
+
         """
         # 处理结束日期
         if end_date:
@@ -131,10 +130,9 @@ class ReportPeriodMixin:
         return start_dt, end_dt
 
     def get_prev_date_range(
-        self, start_date: Optional[datetime], end_date: Optional[datetime]
-    ) -> Tuple[Optional[datetime], Optional[datetime]]:
-        """
-        根据给定的日期范围获取上一个周期的时间范围
+        self, start_date: datetime | None, end_date: datetime | None
+    ) -> tuple[datetime | None, datetime | None]:
+        """根据给定的日期范围获取上一个周期的时间范围
 
         Args:
             start_date: 当前周期开始时间，可能为None
@@ -142,6 +140,7 @@ class ReportPeriodMixin:
 
         Returns:
             (上期开始时间, 上期结束时间) 元组，可能为None
+
         """
         # 如果开始时间或结束时间为None，则无法计算上一个周期
         if start_date is None or end_date is None:
@@ -164,7 +163,7 @@ class ReportPeriodMixin:
 
     def build_trend_dates(
         self, aggregation: str, queryset: Any, date_field: str = "created_at"
-    ) -> List[str]:
+    ) -> list[str]:
         """基于给定 queryset 与聚合方式构建 dates 列表。
         - 参数 queryset 可为 _build_log_query 的查询结果
         """

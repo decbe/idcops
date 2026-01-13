@@ -7,7 +7,6 @@ from django.views.generic import (
     DetailView,
     ListView,
     UpdateView,
-    View,
 )
 
 from dcrm.forms.datacenter import DataCenterForm

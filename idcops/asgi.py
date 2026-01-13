@@ -1,5 +1,4 @@
-"""
-ASGI config for idcops project.
+"""ASGI config for idcops project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 

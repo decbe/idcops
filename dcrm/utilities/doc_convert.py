@@ -5,13 +5,12 @@ import base64
 import io
 import re
 import uuid
-from typing import Optional, TextIO, Tuple
+from typing import TextIO
 from urllib.parse import urlparse
 
 import requests
-from lxml import html as lxml_html
-
 from django.core.files.base import ContentFile
+from lxml import html as lxml_html
 
 from dcrm.models import Attachment
 from dcrm.models.utils import get_file_mime
@@ -22,9 +21,8 @@ except Exception:  # pragma: no cover
     md_to_html = None  # type: ignore
 
 
-def convert_markdown(text: str) -> Tuple[str, str]:
-    """
-    将 Markdown 文本转换为 HTML，同时返回原始 Markdown 文本。
+def convert_markdown(text: str) -> tuple[str, str]:
+    """将 Markdown 文本转换为 HTML，同时返回原始 Markdown 文本。
     """
     if md_to_html is None:
         raise ImportError("markdown 库未安装，请在 requirements.txt 中添加 markdown")
@@ -40,9 +38,8 @@ def convert_markdown(text: str) -> Tuple[str, str]:
     return html, text
 
 
-def guess_title_from_markdown(md_text: str) -> Optional[str]:
-    """
-    从 Markdown 文本中猜测标题（优先使用第一个 # 开头的行，次选第一行非空文本）。
+def guess_title_from_markdown(md_text: str) -> str | None:
+    """从 Markdown 文本中猜测标题（优先使用第一个 # 开头的行，次选第一行非空文本）。
     """
     for line in md_text.splitlines():
         candidate = line.strip()
@@ -54,9 +51,8 @@ def guess_title_from_markdown(md_text: str) -> Optional[str]:
     return None
 
 
-def guess_title_from_html(html: str) -> Optional[str]:
-    """
-    从 HTML 中提取第一个 h1-h3 的内容作为标题。
+def guess_title_from_html(html: str) -> str | None:
+    """从 HTML 中提取第一个 h1-h3 的内容作为标题。
     """
     match = re.search(r"<h[1-3][^>]*>(.*?)</h[1-3]>", html, re.I | re.S)
     if match:
@@ -66,9 +62,8 @@ def guess_title_from_html(html: str) -> Optional[str]:
     return None
 
 
-def convert_docx(file_obj: TextIO) -> Tuple[str, str]:
-    """
-    将 DOCX 文件对象转换为 HTML，同时返回提取的纯文本作为原始内容。
+def convert_docx(file_obj: TextIO) -> tuple[str, str]:
+    """将 DOCX 文件对象转换为 HTML，同时返回提取的纯文本作为原始内容。
     """
     try:
         import mammoth  # type: ignore
@@ -101,7 +96,7 @@ def _ext_from_mime(mime: str) -> str:
 
 
 def _save_bytes_as_attachment(
-    user, data_center, data: bytes, content_type_hint: Optional[str] = None
+    user, data_center, data: bytes, content_type_hint: str | None = None
 ) -> Attachment:
     # 猜测mime
     mime = content_type_hint or get_file_mime(data, buffer=True)
@@ -119,7 +114,7 @@ def _save_bytes_as_attachment(
 
 def _fetch_remote_bytes(
     url: str, timeout: int = 10, max_size: int = 5 * 1024 * 1024
-) -> Tuple[Optional[bytes], Optional[str]]:
+) -> tuple[bytes | None, str | None]:
     try:
         with requests.get(url, stream=True, timeout=timeout) as resp:
             resp.raise_for_status()
@@ -138,9 +133,8 @@ def _fetch_remote_bytes(
         return None, None
 
 
-def localize_images_in_html(html: str, user, data_center) -> Tuple[str, int]:
-    """
-    将 HTML 内的 <img src=...> 转为本地附件，并替换为本地 URL。
+def localize_images_in_html(html: str, user, data_center) -> tuple[str, int]:
+    """将 HTML 内的 <img src=...> 转为本地附件，并替换为本地 URL。
 
     返回 (new_html, count)
     """

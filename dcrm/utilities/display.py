@@ -6,8 +6,7 @@ from .base import camel_to_snake
 
 
 def get_object_display(obj):
-    """
-    获取对象的显示值和详情URL
+    """获取对象的显示值和详情URL
 
     Args:
         obj: 模型实例对象
@@ -15,6 +14,7 @@ def get_object_display(obj):
 
     Returns:
         tuple: (field_name, display_value, detail_url)
+
     """
     opts = obj._meta
     display_value = None
@@ -38,7 +38,7 @@ def get_object_display(obj):
             attr = getattr(obj, field_name)
             display_value = attr() if callable(attr) else attr
             return field_name, str(display_value), detail_url
-        except (AttributeError, FieldDoesNotExist) as e:
+        except (AttributeError, FieldDoesNotExist):
             pass
 
     # 3. 查找带 unique 且不为空的自带字段

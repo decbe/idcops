@@ -128,7 +128,7 @@ class PatchCordCreateView(BaseRequestMixin, CreateViewMixin, CreateView):
 
         ports = DevicePort.objects.filter(
             pk__in=port_ids, status=DevicePortStatusChoices.DISCONNECTED
-        ).order_by(preserved_order)
+        ).select_related("device__rack", "device__tenant").order_by(preserved_order)
 
         if not ports or pre_add is None:
             return None

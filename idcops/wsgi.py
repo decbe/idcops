@@ -1,5 +1,4 @@
-"""
-WSGI config for idcops project.
+"""WSGI config for idcops project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 

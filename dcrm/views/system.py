@@ -1,7 +1,7 @@
 import json
 import logging
 from collections import namedtuple
-from typing import Any, Optional
+from typing import Any
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -204,8 +204,7 @@ class UserDeleteView(BaseRequestMixin, DeleteViewMixin, DeleteView):
 
 
 class UserCustomFieldConfigView(LoginRequiredMixin, HtmxResponseMixin, TemplateView):
-    """
-    用户自定义配置字段
+    """用户自定义配置字段
     1. 列表，支持排序
     2. 编辑，支持字段排序
     3. url: /system/users/configure/<str:model_name>/<str:view_name>/
@@ -235,9 +234,8 @@ class UserCustomFieldConfigView(LoginRequiredMixin, HtmxResponseMixin, TemplateV
         key = f"{self.view_name}.{camel_to_snake(self.opts.object_name)}"
         return key
 
-    def get_user_configure(self) -> Optional[dict]:
-        """
-        获取当前用户的配置数据
+    def get_user_configure(self) -> dict | None:
+        """获取当前用户的配置数据
         """
         return getattr(self.request.user, "configure", {})
 
@@ -246,8 +244,7 @@ class UserCustomFieldConfigView(LoginRequiredMixin, HtmxResponseMixin, TemplateV
         return reverse(url_name)
 
     def get_default_list_fields(self, view_type: str = "list") -> list[str]:
-        """
-        获取默认字段列表
+        """获取默认字段列表
         """
         url_name = get_model_view_url_name(self.model, view_type)
         view = get_view_info_by_url_name(url_name)
@@ -256,8 +253,7 @@ class UserCustomFieldConfigView(LoginRequiredMixin, HtmxResponseMixin, TemplateV
         return [f.name for f in self.opts.fields if f.name not in self.exclude_fields]
 
     def get_user_list_fields(self) -> list[str]:
-        """
-        获取用户当前配置字段
+        """获取用户当前配置字段
         1. 从 User 模型中的 configure JSONField 字段获取
         2. 使用默认字段列表，如果用户未配置
         3. 返回字段 List[str] field_name 列表
@@ -268,8 +264,7 @@ class UserCustomFieldConfigView(LoginRequiredMixin, HtmxResponseMixin, TemplateV
         return self.get_default_list_fields()
 
     def save_user_configure(self, fields: list[str]):
-        """
-        保存用户配置字段
+        """保存用户配置字段
         """
         user = self.request.user
         if not hasattr(user, "configure") or user.configure is None:
@@ -279,8 +274,7 @@ class UserCustomFieldConfigView(LoginRequiredMixin, HtmxResponseMixin, TemplateV
         # TODO: 使用信号量, 更新用户配置
 
     def post(self, request, *args, **kwargs):
-        """
-        处理字段排序配置的保存
+        """处理字段排序配置的保存
         """
         # 处理重置视图默认的字段
         reset = "resetDefaultButton" in request.POST
@@ -320,8 +314,7 @@ class UserCustomFieldConfigView(LoginRequiredMixin, HtmxResponseMixin, TemplateV
         )
 
     def get_model_all_fields(self) -> list[dict]:
-        """
-        获取模型所有可以在list中使用的字段字典列表
+        """获取模型所有可以在list中使用的字段字典列表
         """
         model_fields = [
             f.name
@@ -336,8 +329,7 @@ class UserCustomFieldConfigView(LoginRequiredMixin, HtmxResponseMixin, TemplateV
         return self.lookup_fields(fields)
 
     def lookup_fields(self, fields: list[str]) -> list[dict]:
-        """
-        解析字段列表, 获取字段信息
+        """解析字段列表, 获取字段信息
         """
 
         def get_field_type(field_name):
@@ -466,8 +458,7 @@ class UserProfileView(BaseRequestMixin, HtmxResponseMixin, UpdateView):
     def change_data_center(self) -> None: ...
 
     def get_logentries(self) -> list:
-        """
-        获取用户日志条目并按日期分组，使用高效方法减少查询次数
+        """获取用户日志条目并按日期分组，使用高效方法减少查询次数
         返回格式: [{'date': date_obj, 'data': queryset}, ...]
         """
         # from django.db.models.functions import TruncDate
@@ -496,7 +487,6 @@ class UserProfileView(BaseRequestMixin, HtmxResponseMixin, UpdateView):
 
     def get_related_objects(self) -> list:
         """获取对象的所有关联对象配置"""
-
         related_models = [
             dcrm_models.Device,
             dcrm_models.Rack,
@@ -592,8 +582,7 @@ class UserProfileView(BaseRequestMixin, HtmxResponseMixin, UpdateView):
 
 
 class ConfigurationView(BaseRequestMixin, FormView):
-    """
-    批量配置视图，用于管理系统配置的基类。
+    """批量配置视图，用于管理系统配置的基类。
 
     该视图允许同时编辑多个配置参数，并根据配置组提供不同的表单。
 
@@ -623,8 +612,7 @@ class ConfigurationView(BaseRequestMixin, FormView):
         self.is_system = self.active_tab.startswith("system")
 
     def get_form(self, form_class=None):
-        """
-        重写get_form方法，确保表单总是正确创建
+        """重写get_form方法，确保表单总是正确创建
         """
         form_class = self.get_form_class()
         kwargs = self.get_form_kwargs()
@@ -727,28 +715,28 @@ class ConfigurationView(BaseRequestMixin, FormView):
         return kwargs
 
     def get_config_params(self, group_prefix):
-        """
-        获取指定分组前缀的配置参数
+        """获取指定分组前缀的配置参数
 
         Args:
             group_prefix: 分组前缀，例如"system"、"datacenter"等
 
         Returns:
             list: 配置参数对象列表
+
         """
         return [
             param for param in DYNAMIC_SETTINGS if param.group.startswith(group_prefix)
         ]
 
     def get_param_values(self, params):
-        """
-        获取配置参数的当前值
+        """获取配置参数的当前值
 
         Args:
             params: 配置参数列表
 
         Returns:
             dict: 参数名到值的映射
+
         """
         datacenter = self.request.user.data_center
         get_config_func = {
@@ -764,8 +752,7 @@ class ConfigurationView(BaseRequestMixin, FormView):
         return values
 
     def get_context_data(self, **kwargs):
-        """
-        准备模板上下文数据
+        """准备模板上下文数据
 
         注意：根据 FormView 最佳实践，当需要多个表单时：
         1. 主表单应通过 form 参数传递（由 FormView 自动处理）

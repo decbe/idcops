@@ -1,5 +1,4 @@
 import logging
-from typing import Dict, List, Tuple, Type
 
 from django.apps import apps
 from django.db import models
@@ -23,27 +22,26 @@ __all__ = [
 
 class ImportRegistry:
     def __init__(self):
-        self._registry: Dict[str, Type["BulkImportView"]] = registry["imports"]
+        self._registry: dict[str, type[BulkImportView]] = registry["imports"]
 
     def register(
-        self, model_class: Type[models.Model], import_view: Type["BulkImportView"]
+        self, model_class: type[models.Model], import_view: type["BulkImportView"]
     ) -> None:
         """注册模型的导入视图"""
         name = model_class._meta.label
         self._registry[name] = import_view
 
     def get_import_view(
-        self, model_class: Type[models.Model]
-    ) -> Type["BulkImportView"]:
+        self, model_class: type[models.Model]
+    ) -> type["BulkImportView"]:
         """获取模型的导入视图"""
         name = model_class._meta.label
         return self._registry.get(name)
 
     def register_models(
-        self, model_import_map: Dict[str, Type["BulkImportView"]]
+        self, model_import_map: dict[str, type["BulkImportView"]]
     ) -> None:
-        """
-        批量注册模型的导入视图
+        """批量注册模型的导入视图
         model_import_map: {'app_label.model_name': ImportViewClass}
         """
         for model_path, import_view in model_import_map.items():
@@ -59,9 +57,8 @@ class ImportRegistry:
 import_registry = ImportRegistry()
 
 
-def create_import_view(model) -> Type[BulkImportView]:
-    """
-    动态创建导入视图类
+def create_import_view(model) -> type[BulkImportView]:
+    """动态创建导入视图类
     """
     class_name = f"{model.__name__}ImportView"
     url_name = f"{camel_to_snake(model._meta.object_name)}_list"
@@ -105,9 +102,8 @@ CUSTOM_URL_PATTERNS = {
 }
 
 
-def get_importable_models() -> Tuple[Dict[str, Type[BulkImportView]], List[URLPattern]]:
-    """
-    获取所有可导入的模型和对应的URL patterns
+def get_importable_models() -> tuple[dict[str, type[BulkImportView]], list[URLPattern]]:
+    """获取所有可导入的模型和对应的URL patterns
     返回: (import_map, url_patterns)
     """
     import_map = {}
@@ -184,7 +180,7 @@ def register_import_views():
 _import_url_patterns_cache = None
 
 
-def get_import_urls() -> List[URLPattern]:
+def get_import_urls() -> list[URLPattern]:
     """获取所有导入视图的URL patterns（带缓存）"""
     global _import_url_patterns_cache
     if _import_url_patterns_cache is None:

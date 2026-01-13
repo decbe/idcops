@@ -41,8 +41,7 @@ def get_form_field(form, field_name):
 
 @register.inclusion_tag("users/perm_table.html", takes_context=True)
 def render_user_or_group_perms_table(context, user, group=None):
-    """
-    渲染用户或组权限表格
+    """渲染用户或组权限表格
 
     参数说明：
         user: 用户对象

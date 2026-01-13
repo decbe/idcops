@@ -1,25 +1,21 @@
 from django import forms
 from django.conf import settings
-from django.utils.translation import gettext_lazy as _
-
-from dcrm.params import ConfigParam
 
 
 class ConfigParamForm(forms.Form):
-    """
-    批量配置表单，用于一次性编辑多个配置项。
+    """批量配置表单，用于一次性编辑多个配置项。
 
     此表单动态生成多个字段，每个字段对应一个配置项，并提供批量验证和保存功能。
     """
 
     def __init__(self, params=None, user=None, *args, **kwargs):
-        """
-        初始化批量配置表单
+        """初始化批量配置表单
 
         Args:
             params: 配置参数列表，每个元素是一个ConfigParam对象
             *args: 传递给表单的额外参数
             **kwargs: 传递给表单的额外关键字参数
+
         """
         super().__init__(*args, **kwargs)
         self.config_params = params or []
@@ -43,11 +39,11 @@ class ConfigParamForm(forms.Form):
             self.fields[param.name] = field_class(**field_kwargs)
 
     def get_fields_by_group(self):
-        """
-        按照分组返回字段，方便在模板中渲染分组表单
+        """按照分组返回字段，方便在模板中渲染分组表单
 
         Returns:
             dict: 以组名为键，字段列表为值的字典
+
         """
         groups = {}
 
@@ -108,8 +104,7 @@ class ConfigParamForm(forms.Form):
         return groups
 
     def get_perm(self, user, group):
-        """
-        获取用户对配置组的权限
+        """获取用户对配置组的权限
 
         Args:
             user: 用户
@@ -117,6 +112,7 @@ class ConfigParamForm(forms.Form):
 
         Returns:
             bool: 是否有权限
+
         """
         if group.startswith("datacenter") and user.is_superuser:
             return True

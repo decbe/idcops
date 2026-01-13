@@ -10,8 +10,7 @@ from django import forms
 
 
 class InterfaceIPAddressFormField(forms.CharField):
-    """
-    表单字段，用于处理带掩码的IP地址输入
+    """表单字段，用于处理带掩码的IP地址输入
     """
 
     def __init__(self, protocol="both", unpack_ipv4=False, *args, **kwargs):

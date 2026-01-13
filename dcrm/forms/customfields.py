@@ -12,8 +12,7 @@ from .base import BaseModelFormMixin
 
 
 class ChoicesWidget(forms.Textarea):
-    """
-    Render each key-value pair of a dictionary on a new line within a textarea for easy editing.
+    """Render each key-value pair of a dictionary on a new line within a textarea for easy editing.
     """
 
     def format_value(self, value):
@@ -136,8 +135,7 @@ class CustomFieldBaseForm(BaseModelFormMixin):
             self.fields["filter_params"].widget.attrs["hidden"] = False
 
     def clean_choices(self):
-        """
-        清理choices选项内容，规范为json格式数据
+        """清理choices选项内容，规范为json格式数据
         """
         data = []
         for line in self.cleaned_data["choices"].splitlines():

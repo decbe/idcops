@@ -3,15 +3,14 @@ from ipaddress import ip_address, ip_interface
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from dcrm.models import VLAN, IPAddress, Subnet
+from dcrm.models import Subnet
 
 from .base import BaseModelFormMixin
 from .forms import CustomFieldModelForm
 
 
 class DNSWidget(forms.Textarea):
-    """
-    Render each key-value pair of a dictionary on a new line within a textarea for easy editing.
+    """Render each key-value pair of a dictionary on a new line within a textarea for easy editing.
     """
 
     def format_value(self, value):
@@ -57,8 +56,7 @@ class SubnetBaseForm(CustomFieldModelForm, BaseModelFormMixin):
             self.initial["dns_servers"] = dns_servers
 
     def clean_dns_servers(self):
-        """
-        清理DNS服务器地址，转为json格式
+        """清理DNS服务器地址，转为json格式
         """
         data = []
         dns_value = self.cleaned_data["dns_servers"].splitlines()

@@ -1,7 +1,5 @@
 import logging
 
-from django_rq import enqueue
-
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -13,6 +11,7 @@ from django.db.models.signals import (
     pre_delete,
 )
 from django.dispatch import Signal, receiver
+from django_rq import enqueue
 
 from dcrm.models.base import Manufacturer
 from dcrm.models.choices import (
@@ -36,8 +35,7 @@ logger = logging.getLogger(__name__)
 
 @receiver(pre_delete, sender=CustomField)
 def custom_field_pre_delete(sender, instance, **kwargs):
-    """
-    在删除CustomField之前清理相关数据
+    """在删除CustomField之前清理相关数据
     """
     instance.remove_stale_data()
 
@@ -46,8 +44,7 @@ def custom_field_pre_delete(sender, instance, **kwargs):
 def custom_field_objects_changed(
     sender, instance, action, reverse, model, pk_set, **kwargs
 ):
-    """
-    当CustomField的object_types发生变化时处理数据
+    """当CustomField的object_types发生变化时处理数据
     """
     if action == "pre_remove" and pk_set:
         content_types = ContentType.objects.filter(pk__in=pk_set)
@@ -56,8 +53,7 @@ def custom_field_objects_changed(
 
 @receiver(pre_delete, sender=ContentType)
 def content_type_pre_delete(sender, instance, **kwargs):
-    """
-    在删除ContentType之前清理相关的自定义字段数据
+    """在删除ContentType之前清理相关的自定义字段数据
     """
     custom_fields = CustomField.objects.filter(
         models.Q(object_types=instance) | models.Q(related_model=instance)
@@ -69,8 +65,7 @@ def content_type_pre_delete(sender, instance, **kwargs):
 
 @receiver(post_migrate)
 def create_default_custom_fields(sender, **kwargs):
-    """
-    在迁移后创建默认的自定义字段
+    """在迁移后创建默认的自定义字段
     """
     app_config = apps.get_app_config(sender.label)
 
@@ -105,8 +100,7 @@ def create_default_custom_fields(sender, **kwargs):
 
 @receiver(post_save, sender=User)
 def sync_default_datacenter(sender, instance, created, **kwargs):
-    """
-    在用户保存后，确保默认数据中心在数据中心列表中
+    """在用户保存后，确保默认数据中心在数据中心列表中
     使用信号处理可以确保m2m关系表已经创建
     """
     if instance.data_center:
@@ -157,8 +151,7 @@ def update_device_ips_status(
 def change_pdus_is_used_status(
     sender, instance, action, reverse, model, pk_set, **kwargs
 ):
-    """
-    当设备关联的PDU发生变化时更新PDU的is_used字段
+    """当设备关联的PDU发生变化时更新PDU的is_used字段
     instance: 设备对象
     model: RackPDU模型
     pk_set: PDU的主键集合
@@ -205,11 +198,11 @@ patch_cord_status_changed = Signal()
 
 
 def connect_node_ports(patch_cord):
-    """
-    连接补丁线的端口，确保每个端口只连接到一个其他端口
+    """连接补丁线的端口，确保每个端口只连接到一个其他端口
 
     Args:
         patch_cord: PatchCord 实例
+
     """
     nodes = patch_cord.nodes.all()
     ports = [node.port_name for node in nodes if node.port_name]
@@ -250,8 +243,7 @@ def change_patch_cord_node_port_status(sender, instance, **kwargs):
 
 @receiver(pre_delete, sender=PatchCord)
 def handle_patch_cord_node_changes(sender, instance, **kwargs):
-    """
-    处理补丁线节点的变更
+    """处理补丁线节点的变更
     当节点被创建、更新或删除时触发
     """
     for node in instance.nodes.all():

@@ -1,12 +1,11 @@
-from typing import Any, Dict, Optional
-
-from ninja import Query, Router, Schema
-from str2bool import str2bool
+from typing import Any
 
 from django.apps import apps
 from django.core.paginator import Paginator
 from django.db import models
 from django.db.models import Q
+from ninja import Query, Router, Schema
+from str2bool import str2bool
 
 from dcrm.register import registry
 
@@ -25,13 +24,12 @@ def list_objects(
     request,
     app_label: str,
     model_name: str,
-    page: Optional[int] = Query(1, gt=0),
-    per_page: Optional[int] = Query(50, gt=0, le=100),
-    search: Optional[str] = None,
-    ordering: Optional[str] = None,
+    page: int | None = Query(1, gt=0),
+    per_page: int | None = Query(50, gt=0, le=100),
+    search: str | None = None,
+    ordering: str | None = None,
 ):
-    """
-    动态获取模型数据列表
+    """动态获取模型数据列表
 
     参数:
     - app_label: 应用标签
@@ -139,7 +137,7 @@ def serialize_object(obj, schema):
 # 动态 API 示例 Schema
 class DeviceInfoResponseSchema(Schema):
     status: str = "success"
-    result: Dict[str, Any]
+    result: dict[str, Any]
 
 
 # 使用动态注册路由装饰器注册 API 路由
@@ -197,8 +195,7 @@ def get_device_info(request, device_id: int):
 
 # 动态注册更多路由的函数
 def register_dynamic_routes():
-    """
-    动态注册更多自定义路由
+    """动态注册更多自定义路由
 
     这个函数可以在项目启动时或者需要时被调用，用于注册更多的自定义路由
     """

@@ -69,8 +69,7 @@ class ColorChoices(TextChoices):
 
     @classmethod
     def get_color(cls, value, tag="label"):
-        """
-        获取颜色样式
+        """获取颜色样式
         :param value: 颜色值
         :param tag: 标签类型，可选值为 'label', 'text' 或 'bg'
         :return: 对应的 CSS 类名
@@ -202,8 +201,7 @@ class ChangeActionChoices(TextChoices):
 
     @classmethod
     def get_color(cls, value) -> str | None:
-        """
-        获取设备状态颜色
+        """获取设备状态颜色
         :param value: 设备状态
         :return: 颜色值或设备状态
         """
@@ -471,8 +469,7 @@ class RackTypeChoices(TextChoices):
 
     @classmethod
     def get_color(cls, value):
-        """
-        .bg-red,.bg-yellow,.bg-aqua,.bg-blue,.bg-light-blue,
+        """.bg-red,.bg-yellow,.bg-aqua,.bg-blue,.bg-light-blue,
         .bg-green,.bg-navy,.bg-teal,.bg-olive,.bg-lime,
         .bg-orange,.bg-fuchsia,.bg-purple,.bg-maroon,.bg-black,
         """
@@ -491,8 +488,7 @@ class RackTypeChoices(TextChoices):
 # Rack Status
 #
 class RackStatusChoices(TextChoices):
-    """
-    机柜状态
+    """机柜状态
     已预留：预留给可能进行机柜扩容的某一个客户（机柜实质是空闲状态，并且未被占用）
     已采购：已经向数据中心运营商采购的机柜（针对第三方IDC公司）
     预分配：某一客户已经确认了扩容，预分配给该客户（与客户有实质性业务来往时发生的状态）
@@ -520,8 +516,7 @@ class RackStatusChoices(TextChoices):
 
     @classmethod
     def get_color(cls, value):
-        """
-        .bg-red,.bg-yellow,.bg-aqua,.bg-blue,.bg-light-blue,
+        """.bg-red,.bg-yellow,.bg-aqua,.bg-blue,.bg-light-blue,
         .bg-green,.bg-navy,.bg-teal,.bg-olive,.bg-lime,
         .bg-orange,.bg-fuchsia,.bg-purple,.bg-maroon,.bg-black,
         """
@@ -560,8 +555,7 @@ class RackPDUStatusChoices(TextChoices):
 
     @classmethod
     def get_color(cls, value):
-        """
-        .bg-red,.bg-yellow,.bg-aqua,.bg-blue,.bg-light-blue,
+        """.bg-red,.bg-yellow,.bg-aqua,.bg-blue,.bg-light-blue,
         .bg-green,.bg-navy,.bg-teal,.bg-olive,.bg-lime,
         .bg-orange,.bg-fuchsia,.bg-purple,.bg-maroon,.bg-black,
         """
@@ -603,8 +597,7 @@ class DeviceStatusChoices(TextChoices):
 
     @classmethod
     def get_color(cls, value):
-        """
-        获取设备状态颜色
+        """获取设备状态颜色
         :param value: 设备状态
         :return: 颜色值或设备状态
         """
@@ -922,8 +915,7 @@ class PatchCordStatusChoices(TextChoices):
 
     @classmethod
     def get_color(cls, value):
-        """
-        .bg-red,.bg-yellow,.bg-aqua,.bg-blue,.bg-light-blue,
+        """.bg-red,.bg-yellow,.bg-aqua,.bg-blue,.bg-light-blue,
         .bg-green,.bg-navy,.bg-teal,.bg-olive,.bg-lime,
         .bg-orange,.bg-fuchsia,.bg-purple,.bg-maroon,.bg-black,
         """

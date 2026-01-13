@@ -1,9 +1,8 @@
-from django_htmx.http import HttpResponseClientRedirect
-
 from django.contrib import messages
 from django.urls import reverse
 from django.utils.timezone import datetime
 from django.utils.translation import gettext as _
+from django_htmx.http import HttpResponseClientRedirect
 
 from dcrm.models import CustomField, LogEntry
 from dcrm.models.choices import ActionColorChoices, ChangeActionChoices
@@ -26,8 +25,7 @@ __all__ = ["disable_custom_field"]
     order=100,
 )
 def disable_custom_field(request, queryset, **kwargs):
-    """
-    禁用自定义字段
+    """禁用自定义字段
     """
     queryset = queryset.filter(is_active=True)
     if not queryset:

@@ -1,8 +1,5 @@
 import logging
 
-from mptt.managers import TreeManager
-from mptt.models import MPTTModel, TreeForeignKey
-
 from django.apps import apps
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -11,6 +8,8 @@ from django.db import models
 from django.db.models.signals import post_save, pre_delete
 from django.forms import ValidationError
 from django.utils.translation import gettext_lazy as _
+from mptt.managers import TreeManager
+from mptt.models import MPTTModel, TreeForeignKey
 
 from .mixins import BaseModel, CustomFieldsMixin
 
@@ -37,8 +36,7 @@ __all__ = [
 
 
 def auto_fill_models_filter() -> models.Q:
-    """
-    获取标签选择器选项
+    """获取标签选择器选项
     """
     if not AUTO_FILL_MODELS:
         return models.Q(app_label="dcrm")
@@ -64,8 +62,7 @@ class CodingRuleManager(TreeManager):
 
 
 class CodingRule(BaseModel, MPTTModel, CustomFieldsMixin):
-    """
-    应用于设备，机柜，跳线，库存等
+    """应用于设备，机柜，跳线，库存等
     """
 
     parent = TreeForeignKey(
@@ -183,9 +180,7 @@ class CodingRule(BaseModel, MPTTModel, CustomFieldsMixin):
         ):
             raise ValidationError(
                 {
-                    "parent": "Cannot assign self or child {type} as parent.".format(
-                        type=self._meta.verbose_name
-                    )
+                    "parent": f"Cannot assign self or child {self._meta.verbose_name} as parent."
                 }
             )
         # 验证目标字段是否存在
@@ -224,8 +219,7 @@ class CodingRule(BaseModel, MPTTModel, CustomFieldsMixin):
         return super().save(*args, **kwargs)
 
     def get_max_number(self):
-        """
-        计算编码规则的容量
+        """计算编码规则的容量
         如果 start_at 不为空，则计算容量
         """
         if not self.start_at:
@@ -234,13 +228,13 @@ class CodingRule(BaseModel, MPTTModel, CustomFieldsMixin):
         return int("9" * length)
 
     def get_available_codes(self, limit=1):
-        """
-        获取可用靠前的编码，返回列表
+        """获取可用靠前的编码，返回列表
         正常情况下列表长度应该为 1
         遇到预留，或其他情况不是序列时，返回多个最靠前的编码
 
         Returns:
             list: 可用的编码列表
+
         """
         if self.suffix and self.suffix.strip():
             regex_pattern = f"{self.prefix}([0-9]+){self.suffix}$".strip()
@@ -268,8 +262,7 @@ class CodingRule(BaseModel, MPTTModel, CustomFieldsMixin):
         return result
 
     def get_next_code(self, last_used_number: str) -> str:
-        """
-        获取下一个编码
+        """获取下一个编码
         """
         next_number = f"%0{len(last_used_number)}d" % (int(last_used_number))
         if self.suffix and self.suffix.strip():
@@ -278,8 +271,7 @@ class CodingRule(BaseModel, MPTTModel, CustomFieldsMixin):
             return f"{self.prefix}{next_number}".strip()
 
     def get_used_amount(self):
-        """
-        获取已使用数量
+        """获取已使用数量
         """
         model_class = self.content_type.model_class()
         if model_class is None:
@@ -289,8 +281,7 @@ class CodingRule(BaseModel, MPTTModel, CustomFieldsMixin):
         ).count()
 
     def get_regex_pattern(self):
-        """
-        获取正则表达式模式
+        """获取正则表达式模式
         """
         if self.suffix and self.suffix.strip():
             return f"{self.prefix}([0-9]+){self.suffix}$".strip()
@@ -298,15 +289,13 @@ class CodingRule(BaseModel, MPTTModel, CustomFieldsMixin):
             return f"{self.prefix}([0-9]+)$".strip()
 
     def get_available_amount(self):
-        """
-        获取可用数量
+        """获取可用数量
         """
         capacity = self.capacity if self.capacity is not None else 0
         return capacity - self.get_used_amount()
 
     def available_next_number(self):
-        """
-        获取下一个可用编码
+        """获取下一个可用编码
         """
         return self.get_available_codes(limit=1)[0]
 

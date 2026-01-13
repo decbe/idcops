@@ -24,8 +24,7 @@ from .mixins.list import ListViewMixin
 
 
 class RackListView(BaseRequestMixin, ListViewMixin, ListView):
-    """
-    机柜列表视图
+    """机柜列表视图
     """
 
     model = Rack

@@ -4,8 +4,7 @@ from django.utils.translation import gettext as _
 
 
 class Registry(dict):
-    """
-    用于注册功能的中央注册表。用于管理所有的注册项。
+    """用于注册功能的中央注册表。用于管理所有的注册项。
     """
 
     def __init__(self, *args, **kwargs):

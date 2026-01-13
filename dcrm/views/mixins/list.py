@@ -1,9 +1,8 @@
 import logging
+from collections.abc import Generator
 from datetime import datetime
 from itertools import chain
-from typing import Any, Dict, Generator, Never, Optional
-
-from str2bool import str2bool
+from typing import Any, Never
 
 from django import forms
 from django.contrib import messages
@@ -24,6 +23,7 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 from django.views.generic import ListView
+from str2bool import str2bool
 
 from dcrm.actions import ActionExecutor
 from dcrm.constants import (
@@ -198,7 +198,7 @@ class FilterMixin:
 
         return None
 
-    def get_filter_queryset(self) -> Dict[str, Any]:
+    def get_filter_queryset(self) -> dict[str, Any]:
         """应用过滤条件"""
         form = self.get_filter_form()
         _filter = {}
@@ -247,11 +247,10 @@ class FilterMixin:
 
 
 class ListViewMixin(HtmxResponseMixin, PermissionRequiredMixin, FilterMixin, ListView):
-    """
-    列表视图 Mixin
+    """列表视图 Mixin
     """
 
-    opts: Optional[Options] = None
+    opts: Options | None = None
     search_fields: list[str] = []
     filter_fields: list[str] = []
     ordering = ["-id"]  # 添加默认排序
@@ -259,7 +258,7 @@ class ListViewMixin(HtmxResponseMixin, PermissionRequiredMixin, FilterMixin, Lis
     paginate_by = DEFAULT_PER_PAGE  # 添加这个默认值
     empty_value_display = "-"  # 添加空值显示默认值
     extra_urls: list[dict] = []
-    custom_fields_maps: Optional[dict] = None
+    custom_fields_maps: dict | None = None
 
     def get_permission_required(self) -> tuple[Never]:
         codename = get_permission_codename("view", self.opts)
@@ -267,8 +266,7 @@ class ListViewMixin(HtmxResponseMixin, PermissionRequiredMixin, FilterMixin, Lis
         return super().get_permission_required()
 
     def get_template_names(self) -> list[str]:
-        """
-        根据请求类型返不同的模板
+        """根据请求类型返不同的模板
         """
         model_name = camel_to_snake(self.opts.object_name)
         if self.request.htmx:
@@ -594,8 +592,7 @@ class ListViewMixin(HtmxResponseMixin, PermissionRequiredMixin, FilterMixin, Lis
         return self._custom_fields
 
     def _get_list_fields(self) -> list[str]:
-        """
-        获取所有列表字段，包括 first、second 和自定义字段，确保 last 在最后
+        """获取所有列表字段，包括 first、second 和自定义字段，确保 last 在最后
         """
         fields = ["first", "second"]  # 确保这两个特殊字段在最前面
         fields.extend(self.get_list_fields())
@@ -730,10 +727,8 @@ class ListViewMixin(HtmxResponseMixin, PermissionRequiredMixin, FilterMixin, Lis
         return self.htmx_post(request, *args, **kwargs)
 
     def htmx_post(self, request, *args, **kwargs):
+        """处理来自 action post 请求
         """
-        处理来自 action post 请求
-        """
-
         action_type = request.POST.get("action")
         if request.POST.get("_all"):
             pk_list = [obj.pk for obj in self.get_queryset()]
@@ -818,8 +813,7 @@ class ListViewMixin(HtmxResponseMixin, PermissionRequiredMixin, FilterMixin, Lis
         return query_params.urlencode(safe=ORDERING_SEP)
 
     def get_extra_urls(self, request):
-        """
-        返回扩展urls列表，
+        """返回扩展urls列表，
         配置如下：
         extra_urls = [
             {

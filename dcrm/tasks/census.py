@@ -1,5 +1,4 @@
-"""
-Census（使用情况统计）任务
+"""Census（使用情况统计）任务
 
 发送匿名使用情况数据，帮助开发者了解部署数量和版本分布。
 仅上报：软件版本、Python版本、匿名部署ID（不包含任何用户数据）
@@ -13,16 +12,14 @@ import logging
 import sys
 
 import requests
-from django_rq import job
-
 from django.conf import settings
+from django_rq import job
 
 logger = logging.getLogger(__name__)
 
 
 def send_census_report():
-    """
-    发送匿名使用情况统计报告。
+    """发送匿名使用情况统计报告。
 
     上报的数据：
     - version: 软件版本号
@@ -75,8 +72,7 @@ def send_census_report():
 
 @job("default", timeout=60)
 def send_census_report_job():
-    """
-    django-rq 后台任务：发送使用情况统计。
+    """django-rq 后台任务：发送使用情况统计。
 
     使用方式：
         # 异步执行（推荐）
@@ -92,7 +88,6 @@ def send_census_report_job():
     """
     # 仅在非调试模式下发送
     if settings.DEBUG:
-        logger.info("调试模式已启用，跳过使用情况上报")
         return
 
     return send_census_report()

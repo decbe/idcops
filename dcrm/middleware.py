@@ -8,8 +8,7 @@ _thread_locals = local()
 
 
 class CoreMiddleware:
-    """
-    当前用户中间件
+    """当前用户中间件
     - 使用线程本地存储保存当前请求的用户
     - 每个请求结束后清理线程本地变量
     """
@@ -42,8 +41,7 @@ class CoreMiddleware:
 
 
 def get_current_user() -> Any | None:
-    """
-    获取当前线程的用户
+    """获取当前线程的用户
     在模型和其他地方使用
     """
     return getattr(_thread_locals, "user", None)

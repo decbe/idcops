@@ -1,12 +1,11 @@
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models import (
-    Avg,
     Case,
     Count,
     Exists,
@@ -24,20 +23,15 @@ from django.db.models import (
 from django.db.models.functions import Coalesce, Concat
 from django.http import JsonResponse
 from django.http.response import JsonResponse
-from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.views import View
 from django.views.generic import TemplateView
 
 from dcrm.models import (
     Device,
-    DeviceModel,
-    DeviceType,
-    IPAddress,
     LogEntry,
     OnlineDevice,
     Rack,
-    Subnet,
     Tenant,
 )
 from dcrm.models.choices import DeviceStatusChoices
@@ -103,7 +97,7 @@ class DeviceReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
         )
 
     def _build_log_query(
-        self, data_center, start_date: Optional[datetime], end_date: datetime
+        self, data_center, start_date: datetime | None, end_date: datetime
     ) -> Any:
         """构建日志查询条件"""
         query_conditions = {
@@ -126,9 +120,8 @@ class DeviceReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
             return round(((current_value - prev_value) / prev_value) * 100, 2)
         return 100.0 if current_value > 0 else 0.0
 
-    def get_kpis(self, data_center, period) -> Dict[str, Any]:
-        """
-        获取四个指标：总计、上架、迁移、下架（均为所选时间范围内的变更量）
+    def get_kpis(self, data_center, period) -> dict[str, Any]:
+        """获取四个指标：总计、上架、迁移、下架（均为所选时间范围内的变更量）
         并返回与上期同比百分比
         """
         start_date, end_date = period
@@ -190,7 +183,7 @@ class DeviceReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
 
     def get_device_trend_data(
         self, data_center, aggregation="week", period="half_year"
-    ) -> Dict[str, List]:
+    ) -> dict[str, list]:
         """获取设备变更趋势数据（按所选聚合维度）"""
         # 获取日期范围
         start_date, end_date = period
@@ -259,7 +252,7 @@ class DeviceReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
 
         return trend_data
 
-    def get_device_type_distribution(self, data_center, period) -> List[Dict[str, Any]]:
+    def get_device_type_distribution(self, data_center, period) -> list[dict[str, Any]]:
         """获取设备类型分布数据（按所选时间范围内新建设备统计）"""
         start_date, end_date = period
 
@@ -286,7 +279,7 @@ class DeviceReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
 
         return list(type_stats_queryset)
 
-    def get_tenant_stats(self, data_center, period) -> List[Dict[str, Any]]:
+    def get_tenant_stats(self, data_center, period) -> list[dict[str, Any]]:
         """获取客户设备变更统计（表格形式）"""
         start_date, end_date = period
 
@@ -318,6 +311,8 @@ class DeviceReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
             .values("id", "name", "icon_url", "device_count")
         )
         tenant_stats = []
+        # 预先将租户查询结果转为字典，避免循环中N+1查询
+        tenants_dict = {t["id"]: t for t in tenants}
         for item in tenant_stats_queryset:
             # 只显示有变更的客户
             if (
@@ -327,7 +322,7 @@ class DeviceReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
             ):
                 tenant_stats.append(
                     {
-                        "tenant": tenants.get(id=item["postchange_data__tenant"]),
+                        "tenant": tenants_dict.get(item["postchange_data__tenant"]),
                         "create_count": item["create_count"],
                         "migrate_count": item["migrate_count"],
                         "move_down_count": item["move_down_count"],
@@ -364,7 +359,7 @@ class RackReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
     """机柜报表数据视图 - 用于AJAX请求"""
 
     def _build_rack_log_query(
-        self, data_center, start_date: Optional[datetime], end_date: datetime
+        self, data_center, start_date: datetime | None, end_date: datetime
     ) -> Any:
         query_conditions = {
             "data_center": data_center,
@@ -384,7 +379,7 @@ class RackReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
             return round(((current_value - prev_value) / prev_value) * 100, 2)
         return 100.0 if current_value > 0 else 0.0
 
-    def get_kpis(self, data_center, period) -> Dict[str, Any]:
+    def get_kpis(self, data_center, period) -> dict[str, Any]:
         start_date, end_date = period
 
         logs = self._build_rack_log_query(data_center, start_date, end_date)
@@ -433,7 +428,7 @@ class RackReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
             "deallocate_change_percent": deallocate_change_percent,
         }
 
-    def get_rack_trend_data(self, data_center, aggregation, period) -> Dict[str, List]:
+    def get_rack_trend_data(self, data_center, aggregation, period) -> dict[str, list]:
         start_date, end_date = period
         logs = self._build_rack_log_query(data_center, start_date, end_date)
         logs = logs.annotate(period=create_trunc_function(aggregation, "created_at"))
@@ -483,7 +478,7 @@ class RackReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
 
         return trend_data
 
-    def get_rack_status_distribution(self, data_center) -> List[Dict[str, Any]]:
+    def get_rack_status_distribution(self, data_center) -> list[dict[str, Any]]:
         racks = Rack.objects.filter(data_center=data_center, status__isnull=False)
         qs = (
             racks.values("status__name")
@@ -502,9 +497,8 @@ class RackReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
         )
         return list(qs)
 
-    def get_room_rack_stacked_bars(self, data_center) -> List[Dict[str, Any]]:
-        """
-        返回水平堆叠条形图所需的数据：
+    def get_room_rack_stacked_bars(self, data_center) -> list[dict[str, Any]]:
+        """返回水平堆叠条形图所需的数据：
         - 统计每个房间可上架状态(allowed_mount=True)的机柜数量
         - 仅返回数量大于 0 的房间
         - 字段：name(房间名称)、value(机柜总数)、room_id、children(各状态明细)
@@ -520,7 +514,7 @@ class RackReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
         )
 
         # 组装结构
-        room_map: Dict[int, Dict[str, Any]] = {}
+        room_map: dict[int, dict[str, Any]] = {}
         for item in rows:
             room_id = item["room_id"]
             room_name = item["room__name"]
@@ -541,9 +535,8 @@ class RackReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
         result.sort(key=lambda x: x["value"], reverse=True)
         return result
 
-    def get_tenant_stats(self, data_center, period) -> List[Dict[str, Any]]:
-        """
-        客户维度统计：
+    def get_tenant_stats(self, data_center, period) -> list[dict[str, Any]]:
+        """客户维度统计：
         - tenant 基本信息（name, icon_url, device_count/rack_count 可选）
         - total_racks: 当前租户拥有的机柜总数（按 Rack.tenant 统计）
         - allocated: 期间内分配的机柜数量（日志 action_type=rack_allocate）
@@ -574,7 +567,7 @@ class RackReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
             .values("prechange_data__tenant")
             .annotate(deallocated=Count("id"))
         )
-        tenant_to_changes: Dict[int, Dict[str, int]] = {}
+        tenant_to_changes: dict[int, dict[str, int]] = {}
         for item in allocated_stats:
             tid = item["postchange_data__tenant"]
             if tid is None:
@@ -652,7 +645,7 @@ class RackReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
         tenants_map = {t["id"]: t for t in tenants_qs}
 
         # 5) 组装结果
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
         for tid in tenant_ids:
             tenant_info = tenants_map.get(tid)
             if not tenant_info:
@@ -761,7 +754,7 @@ class TenantReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
     def _build_log_query(
         self,
         data_center,
-        start_date: Optional[datetime],
+        start_date: datetime | None,
         end_date: datetime,
     ) -> Any:
         query_conditions = {"data_center": data_center}
@@ -771,7 +764,7 @@ class TenantReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
         return LogEntry.objects.filter(**query_conditions)
 
     def _build_tenant_log_query(
-        self, data_center, start_date: Optional[datetime], end_date: datetime
+        self, data_center, start_date: datetime | None, end_date: datetime
     ) -> Any:
         """构建租户日志查询条件"""
         query_conditions = {
@@ -787,7 +780,7 @@ class TenantReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
             return round(((current_value - prev_value) / prev_value) * 100, 2)
         return 100.0 if current_value > 0 else 0.0
 
-    def get_kpis(self, data_center, period) -> Dict[str, Any]:
+    def get_kpis(self, data_center, period) -> dict[str, Any]:
         start_date, end_date = period
 
         # 当前租户总数
@@ -853,7 +846,7 @@ class TenantReportDataView(ReportPeriodMixin, LoginRequiredMixin, View):
             "actived_change_percent": actived_tenants_change_percent,
         }
 
-    def get_top_tenants(self, data_center, period) -> List[Dict[str, Any]]:
+    def get_top_tenants(self, data_center, period) -> list[dict[str, Any]]:
         """综合指标：每个租户的设备数、机柜数、使用率、空闲率，按设备数倒序（单查询实现）"""
         # 直接使用Tenant模型中的计数字段，避免子查询
         # 设备数、机柜数、子网数、IP地址数可以直接从Tenant模型字段获取

@@ -1,6 +1,5 @@
-from mptt.managers import TreeManager, TreeQuerySet
-
 from django.db.models import Manager, Q, QuerySet
+from mptt.managers import TreeManager, TreeQuerySet
 
 
 class BaseTreeQuerySet(TreeQuerySet):
@@ -29,9 +28,8 @@ class BaseTreeManager(TreeManager.from_queryset(BaseTreeQuerySet)):
         self._current_user = None
 
     def get_queryset(self):
-        """
-        Get a queryset with appropriate filters and select_related applied
-            Ensures that this manager always returns nodes in tree order.
+        """Get a queryset with appropriate filters and select_related applied
+        Ensures that this manager always returns nodes in tree order.
         """
         qs = BaseTreeQuerySet(self.model, using=self._db)
 
@@ -97,8 +95,7 @@ class BaseQuerySet(QuerySet):
 
 
 class BaseModelManager(Manager.from_queryset(BaseQuerySet)):
-    """
-    Base model manager with datacenter filtering and user context capabilities.
+    """Base model manager with datacenter filtering and user context capabilities.
     Provides:
     - Datacenter filtering
     - Shared resource filtering
