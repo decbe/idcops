@@ -507,7 +507,7 @@ requires-dist = [
     { name = "baidu-aip", specifier = ">=4.16.13" },
     { name = "chardet", specifier = ">=5.2.0" },
     { name = "dateparser", specifier = ">=1.2.1" },
-    { name = "django", specifier = "==5.2.11" },
+    { name = "django", specifier = ">=5.2.11,<6.0" },
     { name = "django-debug-toolbar", marker = "extra == 'dev'", specifier = ">=5.2.0" },
     { name = "django-htmx", specifier = ">=1.23.1" },
     { name = "django-mptt", specifier = ">=0.17.0" },

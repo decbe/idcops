@@ -7,7 +7,7 @@ requires-python = ">=3.10,<3.12"
 dependencies = [
     "baidu-aip>=4.16.13",
     "dateparser>=1.2.1",
-    "django==5.2.11",
+    "django>=5.2.11,<6.0",
     "django-htmx>=1.23.1",
     "django-mptt>=0.17.0",
     "django-ninja-jwt[crypto]>=5.3.7",
