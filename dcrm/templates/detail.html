@@ -133,6 +133,12 @@
             </ul>
             {% endif %}
           </div>
+          {% if qr_token %}
+          <button type="button" class="btn btn-sm btn-default" data-toggle="modal" data-target="#qrModal"
+            style="margin-left: 6px;">
+            <i class="fa fa-qrcode"></i><span class="hidden-xs"> {% trans "二维码" %}</span>
+          </button>
+          {% endif %}
         </div>
       </div>
       <div class="box-body" id="object-detail">
@@ -155,7 +161,7 @@
                       {% if field.value|safe|stringformat:"s"|startswith:"<table" %} {{ field.value|safe }} {% elif
                         field.value|safe|stringformat:"s"|startswith:"<div class=\"m2m-value\"" %} {{ field.value|safe
                         }} {% else %} {{ field.value|safe|default:"-" }} {% endif %} </td>
-                        {% if not fieldset.is_m2m and forloop.counter|divisibleby:2 or forloop.last %}
+                    {% if not fieldset.is_m2m and forloop.counter|divisibleby:2 or forloop.last %}
                   </tr>
                   {% endif %}
                   {% endfor %}
@@ -166,7 +172,7 @@
                     <th style="width: 30%">{{ field.label }}</th>
                     <td style="width: 70%">
                       {% if field.value|safe|stringformat:"s"|startswith:"<table" %} {{ field.value|safe }} {% else %}
-                        {{ field.value|safe|default:"-" }} {% endif %} </td>
+                      {{ field.value|safe|default:"-" }} {% endif %} </td>
                   </tr>
                   {% endfor %}
                 </tbody>
@@ -205,7 +211,7 @@
           </div>
         </fieldset>
         {% endif %}
-        
+
         {% if enable_comments %}
         <!-- 评论区域 -->
         <fieldset class="mb-3">
@@ -219,11 +225,8 @@
                 <h3 class="box-title">添加评论</h3>
               </div>
               <div class="box-body">
-                <form method="post" 
-                      hx-post="{{ request.path }}" 
-                      hx-target="#comments-container" 
-                      hx-swap="innerHTML"
-                      hx-indicator="#comment-loading">
+                <form method="post" hx-post="{{ request.path }}" hx-target="#comments-container" hx-swap="innerHTML"
+                  hx-indicator="#comment-loading">
                   {% csrf_token %}
                   <div class="form-group">
                     {{ comment_form.content }}
@@ -239,7 +242,7 @@
                 </form>
               </div>
             </div>
-            
+
             <!-- 评论列表 -->
             <div id="comments-container">
               {% if comments %}
@@ -251,12 +254,12 @@
                 </div>
                 <div class="box-body" style="max-height: 400px; overflow-y: auto;">
                   {% for comment in comments %}
-                  <div class="post" style="border-bottom: 1px solid #f4f4f4; padding-bottom: 10px; margin-bottom: 10px;">
+                  <div class="post"
+                    style="border-bottom: 1px solid #f4f4f4; padding-bottom: 10px; margin-bottom: 10px;">
                     <div class="user-block">
-                      <img class="img-circle img-bordered-sm" 
-                           src="{{ comment.created_by.avatar_url|default:'/static/adminlte/img/avatar04.png' }}" 
-                           alt="User Image"
-                           style="object-fit: cover; object-position: center; width: 35px; height: 35px;">
+                      <img class="img-circle img-bordered-sm"
+                        src="{{ comment.created_by.avatar_url|default:'/static/adminlte/img/avatar04.png' }}"
+                        alt="User Image" style="object-fit: cover; object-position: center; width: 35px; height: 35px;">
                       <span class="username">
                         <a href="#">{{ comment.created_by.get_full_name|default:comment.created_by.username }}</a>
                       </span>
@@ -318,6 +321,42 @@
     </div>
   </div>
 </div>
+
+{% if qr_token %}
+<!-- 二维码 Modal -->
+<div class="modal fade" id="qrModal" tabindex="-1" role="dialog" aria-labelledby="qrModalLabel">
+  <div class="modal-dialog modal-sm" role="document" style="width: 300px;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="关闭">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title" id="qrModalLabel">
+          <i class="fa fa-qrcode"></i> 二维码
+        </h4>
+      </div>
+      <div class="modal-body" style="text-align: center; padding: 20px;">
+        <img src="{{ qr_image_url }}" alt="QR Code" style="width: 220px; height: 220px; display: block; margin: 0 auto;"
+          id="qrModalImage">
+        <p style="margin-top: 12px; font-size: 12px; color: #888;">
+          {{ object }}
+        </p>
+      </div>
+      <div class="modal-footer" style="text-align: center;">
+        <a href="{{ qr_download_url }}" class="btn btn-primary btn-sm" download>
+          <i class="fa fa-download"></i> {% trans "下载 PNG" %}
+        </a>
+        <a href="/scan/{{ qr_token }}/" class="btn btn-default btn-sm" target="_blank">
+          <i class="fa fa-external-link"></i> {% trans "公开页面" %}
+        </a>
+        <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">
+          {% trans "关闭" %}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
 
 

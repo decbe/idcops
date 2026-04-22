@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>扫码识别 - IDC OPS</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 20px 16px 40px;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #aaa;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    #reader {
+      width: 100%;
+      max-width: 420px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #000;
+    }
+
+    #status {
+      margin-top: 18px;
+      font-size: 14px;
+      color: #ccc;
+      text-align: center;
+      min-height: 24px;
+    }
+
+    #status.success {
+      color: #4caf50;
+    }
+
+    #status.error {
+      color: #f44336;
+    }
+
+    .result-box {
+      margin-top: 20px;
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 8px;
+      padding: 16px 20px;
+      max-width: 420px;
+      width: 100%;
+      display: none;
+      word-break: break-all;
+    }
+
+    .result-box .label {
+      font-size: 11px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 6px;
+    }
+
+    .result-box .value {
+      font-size: 13px;
+      color: #e0e0e0;
+    }
+
+    .result-box .btn-visit {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 9px 18px;
+      background: #3c8dbc;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .hint {
+      margin-top: 24px;
+      max-width: 420px;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, .05);
+      border-radius: 6px;
+      font-size: 12px;
+      color: #999;
+      line-height: 1.6;
+    }
+
+    .hint strong {
+      color: #ccc;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>📷 扫码识别</h1>
+  <p class="subtitle">将摄像头对准机柜/设备上的二维码</p>
+
+  <div id="reader"></div>
+  <div id="status">正在启动摄像头...</div>
+
+  <div class="result-box" id="result-box">
+    <div class="label">识别到的内容</div>
+    <div class="value" id="scan-result-text"></div>
+    <a id="visit-link" href="#" class="btn-visit">查看详情 →</a>
+  </div>
+
+  <div class="hint">
+    <strong>域名变更说明：</strong>二维码中记录了生成时的完整 URL，但本页面识别后会
+    <em>忽略其中的旧域名</em>，以当前访问地址为准直接跳转，无需修改任何配置。
+  </div>
+
+  <!-- html5-qrcode CDN -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script>
+    (function () {
+      var statusEl = document.getElementById('status');
+      var resultBox = document.getElementById('result-box');
+      var resultText = document.getElementById('scan-result-text');
+      var visitLink = document.getElementById('visit-link');
+
+      /**
+       * 从扫描结果（可能是旧域名的完整 URL，也可能就是 token 字符串）中提取 token。
+       * 匹配路径模式 /scan/<token>/ —— token 本身不含斜杠。
+       * 若无法匹配，则将整个字符串视为 token 直接尝试。
+       */
+      function extractToken(scanResult) {
+        var match = scanResult.match(/\/scan\/([^\/]+)\//);
+        if (match) {
+          return match[1];
+        }
+        // fallback: 也许用户扫到的就是 bare token
+        return scanResult.trim();
+      }
+
+      function onScanSuccess(decodedText) {
+        statusEl.textContent = '识别成功，正在跳转...';
+        statusEl.className = 'success';
+
+        var token = extractToken(decodedText);
+        var targetPath = '/scan/' + token + '/';
+
+        resultText.textContent = decodedText;
+        visitLink.href = targetPath;
+        resultBox.style.display = 'block';
+
+        // 短暂延迟后自动跳转，让用户看到结果
+        setTimeout(function () {
+          window.location.href = targetPath;
+        }, 800);
+      }
+
+      function onScanFailure(error) {
+        // 持续扫描中的普通失败不需要展示
+      }
+
+      var html5QrCode = new Html5Qrcode("reader");
+      var config = {
+        fps: 10,
+        qrbox: { width: 280, height: 280 },
+        aspectRatio: 1.0,
+      };
+
+      html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        onScanSuccess,
+        onScanFailure
+      ).then(function () {
+        statusEl.textContent = '摄像头已就绪，请扫描二维码';
+      }).catch(function (err) {
+        statusEl.textContent = '无法启动摄像头：' + err;
+        statusEl.className = 'error';
+      });
+    })();
+  </script>
+</body>
+
+</html>

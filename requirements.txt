@@ -36,6 +36,7 @@ psycopg==3.1.20
 psycopg-c==3.1.20
 psycopg-pool==3.3.0
 pycparser==2.22
+qrcode[pil]>=8.0
 pydantic==2.11.7
 pydantic-core==2.33.2
 pyjwt==2.10.1

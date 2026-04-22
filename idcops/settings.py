@@ -407,6 +407,13 @@ LOGGING = {
 }
 
 
+# 二维码公开展示字段配置
+# 扫码后公开页面展示的字段（无需登录即可查看），可在此处增减字段
+QR_PUBLIC_FIELDS = {
+    "dcrm.rack": ["name", "room", "status", "rack_type", "u_height", "tenant"],
+    "dcrm.device": ["name", "model", "type", "rack", "position", "status"],
+}
+
 # 配置搜索和过滤时要排除的字段
 SEARCH_FILTER_EXCLUDE_FIELDS = [
     "id",

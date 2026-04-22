@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <title>二维码打印</title>
+  <style>
+    /* 屏幕预览样式 */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background: #f0f2f5;
+      padding: 20px;
+    }
+
+    .toolbar {
+      max-width: 960px;
+      margin: 0 auto 16px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn-print {
+      padding: 8px 20px;
+      background: #3c8dbc;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .btn-print:hover {
+      background: #367fa9;
+    }
+
+    .hint-text {
+      font-size: 12px;
+      color: #888;
+    }
+
+    /* 二维码网格 */
+    .qr-grid {
+      max-width: 960px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .qr-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .qr-card img {
+      width: 160px;
+      height: 160px;
+      display: block;
+    }
+
+    .qr-type {
+      font-size: 10px;
+      color: #999;
+      margin-top: 10px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+
+    .qr-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #222;
+      margin-top: 4px;
+      word-break: break-word;
+    }
+
+    .qr-url {
+      font-size: 9px;
+      color: #bbb;
+      margin-top: 6px;
+      word-break: break-all;
+    }
+
+    /* 打印样式 */
+    @media print {
+      body {
+        background: none;
+        padding: 0;
+      }
+
+      .toolbar {
+        display: none;
+      }
+
+      .qr-grid {
+        max-width: none;
+        gap: 8px;
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .qr-card {
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        padding: 10px;
+        margin: 0;
+      }
+
+      .qr-card img {
+        width: 140px;
+        height: 140px;
+      }
+
+      .qr-name {
+        font-size: 12px;
+      }
+
+      .qr-type {
+        font-size: 9px;
+      }
+
+      .qr-url {
+        font-size: 8px;
+      }
+    }
+
+    @page {
+      size: A4;
+      margin: 10mm 8mm;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="toolbar">
+    <button class="btn-print" onclick="window.print()">🖨️ 打印</button>
+    <span class="hint-text">共 {{ items|length }} 个二维码，每行 3 个，适合 A4 纸打印</span>
+  </div>
+
+  <div class="qr-grid">
+    {% for item in items %}
+    <div class="qr-card">
+      <img src="{{ item.image_data }}" alt="{{ item.name }}">
+      <div class="qr-type">{{ item.model_verbose_name }}</div>
+      <div class="qr-name">{{ item.name }}</div>
+      <div class="qr-url">{{ item.url }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</body>
+
+</html>
