@@ -16,7 +16,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 
-from dcrm.models import Device, Rack
+from dcrm.models import Device, Rack, OnlineDevice
 from dcrm.models.choices import ActionColorChoices
 
 from .actions import registry
@@ -30,11 +30,11 @@ def _safe_name(s: str) -> str:
 
 
 @registry.register(
-    name=_("批量导出二维码 (ZIP)"),
-    models=(Rack, Device),
+    name=_("导出二维码(ZIP)"),
+    models=(Rack, Device, OnlineDevice),
     permissions=("view",),
     description=_("将选中记录的二维码图片打包为 ZIP 文件下载，可用于打印张贴"),
-    color=ActionColorChoices.INFO,
+    color=ActionColorChoices.DEFAULT,
     icon="fa fa-qrcode",
     order=200,
     is_htmx=False,
@@ -64,7 +64,7 @@ def export_qrcodes_zip(request, instances, **kwargs) -> HttpResponse:
 
 @registry.register(
     name=_("批量打印二维码"),
-    models=(Rack, Device),
+    models=(None,),
     permissions=("view",),
     description=_("生成可打印的 HTML 页面，每行 3 个二维码，适合 A4 纸打印张贴"),
     color=ActionColorChoices.DEFAULT,

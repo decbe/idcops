@@ -105,8 +105,29 @@ def get_public_url(request: HttpRequest, obj: Any) -> str:
 
 # 默认公开字段配置（可被 settings.QR_PUBLIC_FIELDS 覆盖）
 _DEFAULT_PUBLIC_FIELDS: dict[str, list[str]] = {
-    "dcrm.rack": ["name", "room", "status", "rack_type", "u_height", "tenant"],
+    "dcrm.rack": [
+        "room",
+        "name",
+        "rack_type",
+        "status",
+        "space_usage",
+        "tenant",
+        "opening_date",
+        "contract_power",
+        "u_height",
+        "pdu_count",
+        "pdu_16a_count",
+        "description",
+    ],
     "dcrm.device": ["name", "model", "type", "rack", "position", "status"],
+    "dcrm.onlinedevice": [
+        "name",
+        "model",
+        "type",
+        "rack",
+        "position",
+        "status",
+    ],
 }
 
 

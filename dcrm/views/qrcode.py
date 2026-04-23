@@ -7,9 +7,13 @@ import re
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core import signing
 from django.http import Http404, HttpResponse
+from django.utils.safestring import mark_safe
 from django.views import View
 from django.views.generic import TemplateView
 
+from dcrm.models import CustomField
+from dcrm.utilities.display import get_object_display
+from dcrm.utilities.lookup import LookupFields
 from dcrm.utilities.qr import (
     generate_qr_image,
     get_public_fields_config,
@@ -26,6 +30,31 @@ __all__ = [
 ]
 
 
+_ANCHOR_TAG_RE = re.compile(r"<a\b[^>]*>(.*?)</a>", re.IGNORECASE | re.DOTALL)
+
+
+def _get_public_custom_fields(obj):
+    data_center = getattr(obj, "data_center", None)
+    if data_center is None:
+        return CustomField.objects.none()
+    return CustomField.objects.get_for_model(obj.__class__, data_center)
+
+
+def _sanitize_public_value(value):
+    if value in (None, ""):
+        return "-"
+
+    rendered = str(value)
+    if not rendered:
+        return "-"
+
+    if "<a" in rendered.lower():
+        rendered = _ANCHOR_TAG_RE.sub(r"\1", rendered)
+        return mark_safe(rendered)
+
+    return value
+
+
 def _get_public_context(token: str) -> dict:
     """公共辅助：解析 token，构建公开详情上下文。"""
     try:
@@ -37,27 +66,29 @@ def _get_public_context(token: str) -> dict:
     model_key = f"{opts.app_label}.{opts.model_name}"
     config = get_public_fields_config()
     field_names = config.get(model_key, [])
+    custom_fields = _get_public_custom_fields(obj)
+    lookup = LookupFields(obj.__class__, field_names, custom_fields=custom_fields)
+    _, object_name, _ = get_object_display(obj)
 
     fields = []
     for field_name in field_names:
         try:
-            field = opts.get_field(field_name)
-            label = field.verbose_name
+            label = lookup.get_field_label(field_name)
+            value = _sanitize_public_value(lookup.get_field_value(obj, field_name))
         except Exception:
             label = field_name
-        raw = getattr(obj, field_name, None)
-        if raw is None:
-            value = "-"
-        elif hasattr(raw, "all"):
-            # M2M: join __str__
-            value = ", ".join(str(v) for v in raw.all()) or "-"
-        else:
-            value = str(raw) if raw != "" else "-"
+            raw = getattr(obj, field_name, None)
+            if raw is None:
+                value = "-"
+            elif hasattr(raw, "all"):
+                value = ", ".join(str(v) for v in raw.all()) or "-"
+            else:
+                value = str(raw) if raw != "" else "-"
         fields.append({"label": label, "value": value})
 
     return {
         "object": obj,
-        "object_name": str(obj),
+        "object_name": object_name,
         "model_verbose_name": opts.verbose_name,
         "fields": fields,
         "token": token,
