@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="zh-CN">
 
@@ -5,6 +6,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ model_verbose_name }} - {{ object_name }}</title>
+  <link rel="stylesheet" href="{% static 'adminlte/bootstrap/dist/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'adminlte/css/AdminLTE.min.css' %}">
   <style>
     *,
     *::before,
@@ -186,14 +189,6 @@
             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
           </svg>
           登录查看完整信息
-        </a>
-        <a href="/scan/" class="btn btn-default">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="23 4 23 10 17 10" />
-            <polyline points="1 20 1 14 7 14" />
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-          </svg>
-          扫码识别
         </a>
       </div>
     </div>

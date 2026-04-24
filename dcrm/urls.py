@@ -859,7 +859,6 @@ urlpatterns = [
     # Autocomplete 功能
     *get_autocomplete_urls(),
     # 二维码功能
-    path("scan/", qrcode.QRScannerPageView.as_view(), name="qr_scanner"),
     path(
         "scan/<str:token>/",
         qrcode.QRPublicDetailView.as_view(),

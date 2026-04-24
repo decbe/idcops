@@ -89,7 +89,7 @@ def get_public_url(request: HttpRequest, obj: Any) -> str:
     """拼接该对象的完整公开扫码 URL（含域名）。
 
     格式：``https://{host}/scan/{token}/``
-    二维码内嵌此 URL，即使域名变更也可通过 /scan/ 扫码识别页面提取 token。
+    二维码内嵌此 URL，用于直接访问公开详情页。
     """
     token = generate_token(obj)
     scheme = "https" if request.is_secure() else "http"

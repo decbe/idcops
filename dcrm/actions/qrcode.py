@@ -1,8 +1,7 @@
 """批量二维码导出 Actions（注册到 Rack 和 Device）。
 
-提供两种导出方式：
-1. export_qrcodes_zip   — 多张 PNG 打包 ZIP 下载
-2. export_qrcodes_print — 打印友好 HTML 页面（A4，每行 3 个，可直接 Ctrl+P）
+提供方式：
+1. export_qrcodes_zip — 多张 PNG 打包 ZIP 下载
 """
 
 from __future__ import annotations
@@ -10,10 +9,8 @@ from __future__ import annotations
 import io
 import re
 import zipfile
-from typing import Any
 
 from django.http import HttpResponse
-from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 
 from dcrm.models import Device, Rack, OnlineDevice
@@ -21,7 +18,7 @@ from dcrm.models.choices import ActionColorChoices
 
 from .actions import registry
 
-__all__ = ["export_qrcodes_zip", "export_qrcodes_print"]
+__all__ = ["export_qrcodes_zip"]
 
 
 def _safe_name(s: str) -> str:
@@ -60,41 +57,3 @@ def export_qrcodes_zip(request, instances, **kwargs) -> HttpResponse:
         content_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'},
     )
-
-
-@registry.register(
-    name=_("批量打印二维码"),
-    models=(None,),
-    permissions=("view",),
-    description=_("生成可打印的 HTML 页面，每行 3 个二维码，适合 A4 纸打印张贴"),
-    color=ActionColorChoices.DEFAULT,
-    icon="fa fa-print",
-    order=201,
-    is_htmx=False,
-)
-def export_qrcodes_print(request, instances, **kwargs) -> HttpResponse:
-    """生成可打印 HTML，内嵌 base64 PNG，无需服务器回源。"""
-    import base64
-
-    from dcrm.utilities.qr import generate_qr_image, get_public_url
-
-    items = []
-    for obj in instances:
-        url = get_public_url(request, obj)
-        png_buf = generate_qr_image(url)
-        b64 = base64.b64encode(png_buf.read()).decode("ascii")
-        items.append(
-            {
-                "name": str(obj),
-                "model_verbose_name": obj._meta.verbose_name,
-                "image_data": f"data:image/png;base64,{b64}",
-                "url": url,
-            }
-        )
-
-    html = render_to_string(
-        "scan/print_qrcodes.html",
-        {"items": items},
-        request=request,
-    )
-    return HttpResponse(html, content_type="text/html; charset=utf-8")

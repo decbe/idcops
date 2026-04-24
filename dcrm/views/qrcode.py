@@ -1,4 +1,4 @@
-"""QR code views: public detail, scanner page, and image/download endpoints."""
+"""QR code views: public detail and image/download endpoints."""
 
 from __future__ import annotations
 
@@ -9,7 +9,6 @@ from django.core import signing
 from django.http import Http404, HttpResponse
 from django.utils.safestring import mark_safe
 from django.views import View
-from django.views.generic import TemplateView
 
 from dcrm.models import CustomField
 from dcrm.utilities.display import get_object_display
@@ -24,7 +23,6 @@ from dcrm.utilities.qr import (
 
 __all__ = [
     "QRPublicDetailView",
-    "QRScannerPageView",
     "QRImageView",
     "QRImageDownloadView",
 ]
@@ -108,17 +106,6 @@ class QRPublicDetailView(View):
 
         context = _get_public_context(token)
         return render(request, self.template_name, context)
-
-
-class QRScannerPageView(TemplateView):
-    """摄像头扫码识别页，无需登录。
-
-    URL: /scan/
-    扫描到任意含 /scan/{token}/ 路径的 QR 码后，提取 token 并以相对路径跳转，
-    旧域名部分被完全丢弃，实现域名变更兼容。
-    """
-
-    template_name = "scan/scanner.html"
 
 
 class QRImageView(LoginRequiredMixin, View):
