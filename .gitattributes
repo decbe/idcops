@@ -1,0 +1,11 @@
+# Mark third-party and generated frontend assets so GitHub language stats
+# better reflect the project's actual source code.
+
+dcrm/static/adminlte/** linguist-vendored
+dcrm/static/daterangepicker/** linguist-vendored
+dcrm/static/moment/** linguist-vendored
+dcrm/static/summernote/** linguist-vendored
+
+dcrm/static/**/*.min.js linguist-generated
+dcrm/static/**/*.min.css linguist-generated
+dcrm/static/**/*.map linguist-generated
