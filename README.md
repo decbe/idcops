@@ -164,9 +164,9 @@ sudo chown $USER:$USER /opt/idcops
 cd /opt/idcops
 
 # 下载配置文件
-curl -sO https://raw.githubusercontent.com/decbe/idcops/refs/heads/main/.env.docker -o .env # .env 配置文件
-curl -sO https://raw.githubusercontent.com/decbe/idcops/refs/heads/main/get_random_secret_key.py -o get_random_secret_key.py # SECRET_KEY 生成工具
-curl -sO https://raw.githubusercontent.com/decbe/idcops/refs/heads/main/docker-compose.aliyun.yml -o docker-compose.yml # docker compose 配置文件
+curl -sL https://raw.githubusercontent.com/decbe/idcops/refs/heads/main/.env.docker -o .env # .env 配置文件
+curl -sL https://raw.githubusercontent.com/decbe/idcops/refs/heads/main/get_random_secret_key.py -o get_random_secret_key.py # SECRET_KEY 生成工具
+curl -sL https://raw.githubusercontent.com/decbe/idcops/refs/heads/main/docker-compose.aliyun.yml -o docker-compose.yml # docker compose 配置文件
 
 # 生成 SECRET_KEY
 python3 get_random_secret_key.py
