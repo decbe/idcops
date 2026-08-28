@@ -407,6 +407,51 @@ LOGGING = {
 }
 
 
+# 二维码公开展示字段配置
+# 扫码后公开页面展示的字段（无需登录即可查看），可在此处增减字段
+QR_PUBLIC_FIELDS = {
+    "dcrm.rack": [
+        "room",
+        "name",
+        "rack_type",
+        "status",
+        "space_usage",
+        "tenant",
+        "opening_date",
+        "rated_power_kw",
+        "u_height",
+        "pdu_count",
+        "pdu_16a_count",
+        "description",
+    ],
+    "dcrm.device": [
+        "rack",
+        "created_at",
+        "position",
+        "serial_number",
+        "name",
+        "tenant",
+        "model",
+        "type",
+        "height",
+        "ips",
+        "warranty_expiry",
+    ],
+    "dcrm.onlinedevice": [
+        "rack",
+        "created_at",
+        "position",
+        "serial_number",
+        "name",
+        "tenant",
+        "model",
+        "type",
+        "height",
+        "ips",
+        "warranty_expiry",
+    ],
+}
+
 # 配置搜索和过滤时要排除的字段
 SEARCH_FILTER_EXCLUDE_FIELDS = [
     "id",

@@ -1,0 +1,201 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ model_verbose_name }} - {{ object_name }}</title>
+  <link rel="stylesheet" href="{% static 'adminlte/bootstrap/dist/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'adminlte/css/AdminLTE.min.css' %}">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    .page-wrap {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+      overflow: hidden;
+    }
+
+    .card-header {
+      background: #3c8dbc;
+      color: #fff;
+      padding: 16px 20px;
+    }
+
+    .card-header .model-type {
+      font-size: 12px;
+      opacity: .8;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    .card-header .object-name {
+      font-size: 22px;
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    .field-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .field-table tr+tr td,
+    .field-table tr+tr th {
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .field-table th {
+      width: 36%;
+      padding: 11px 20px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      text-align: left;
+      background: #fafafa;
+      white-space: nowrap;
+    }
+
+    .field-table td {
+      padding: 11px 20px;
+      font-size: 14px;
+      word-break: break-word;
+    }
+
+    .footer {
+      padding: 16px 20px;
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+
+    .btn:hover {
+      opacity: .85;
+    }
+
+    .btn-primary {
+      background: #3c8dbc;
+      color: #fff;
+    }
+
+    .btn-default {
+      background: #f4f4f4;
+      color: #444;
+      border: 1px solid #ddd;
+    }
+
+    .badge-type {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, .25);
+      color: #fff;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    .notice {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: #fff8e1;
+      border-left: 3px solid #ffc107;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #795548;
+    }
+
+    @media (max-width: 480px) {
+
+      .field-table th,
+      .field-table td {
+        padding: 10px 14px;
+      }
+
+      .card-header {
+        padding: 14px 16px;
+      }
+
+      .footer {
+        padding: 14px 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page-wrap">
+    <div class="card">
+      <div class="card-header">
+        <div class="model-type">{{ model_verbose_name }}</div>
+        <div class="object-name">{{ object_name }}</div>
+      </div>
+
+      {% if fields %}
+      <table class="field-table">
+        <tbody>
+          {% for field in fields %}
+          <tr>
+            <th>{{ field.label }}</th>
+            <td>{{ field.value|safe }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+
+      <div class="footer">
+        <a href="/accounts/login/?next={{ request.path }}" class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          登录查看完整信息
+        </a>
+      </div>
+    </div>
+    <div class="notice">
+      此页面为公开信息展示页，由二维码生成。如需查看完整详情或进行操作，请登录系统。
+    </div>
+  </div>
+</body>
+
+</html>

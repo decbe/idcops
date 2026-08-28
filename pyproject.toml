@@ -30,6 +30,7 @@ dependencies = [
     "markdown>=3.8.2",
     "requests>=2.32.4",
     "psycopg[c,pool]>=3.1.8,<3.2",
+    "qrcode[pil]>=8.2",
 ]
 
 [project.optional-dependencies]

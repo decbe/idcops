@@ -12,6 +12,7 @@ from dcrm.views import (
     logentry,
     network,
     patchcord,
+    qrcode,
     rack,
     reports,
     room,
@@ -857,4 +858,16 @@ urlpatterns = [
     *get_import_urls(),
     # Autocomplete 功能
     *get_autocomplete_urls(),
+    # 二维码功能
+    path(
+        "scan/<str:token>/",
+        qrcode.QRPublicDetailView.as_view(),
+        name="qr_public_detail",
+    ),
+    path("qr/image/<str:token>/", qrcode.QRImageView.as_view(), name="qr_image"),
+    path(
+        "qr/download/<str:token>/",
+        qrcode.QRImageDownloadView.as_view(),
+        name="qr_download",
+    ),
 ]
