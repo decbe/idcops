@@ -3,6 +3,7 @@ from .common import *
 from .devices import *
 from .document import *
 from .inventory import *
+from .qrcode import *
 from .racks import *
 from .system import *
 

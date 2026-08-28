@@ -589,6 +589,17 @@ class DetailViewMixin(HtmxResponseMixin, PermissionRequiredMixin):
         context["enable_tabs"] = self.enable_tabs
         context["enable_create_update"] = self.enable_create_update
 
+        # 注入二维码 token 和下载 URL（供详情页 Modal 使用）
+        try:
+            from dcrm.utilities.qr import generate_token
+
+            qr_token = generate_token(self.object)
+            context["qr_token"] = qr_token
+            context["qr_image_url"] = reverse("qr_image", args=[qr_token])
+            context["qr_download_url"] = reverse("qr_download", args=[qr_token])
+        except Exception:
+            context["qr_token"] = None
+
         # 添加评论相关上下文
         if self.enable_comments:
             context["enable_comments"] = True

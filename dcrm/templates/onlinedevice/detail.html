@@ -30,6 +30,12 @@
 				</ul>
 				{% endif %}
 			</div>
+			{% if qr_token %}
+			<button type="button" class="btn btn-sm btn-default" data-toggle="modal" data-target="#qrModal"
+				style="margin-left: 6px;">
+				<i class="fa fa-qrcode"></i><span class="hidden-xs"> {% trans "二维码" %}</span>
+			</button>
+			{% endif %}
 		</div>
 	</div>
 	<div class="box-body">
@@ -53,8 +59,8 @@
 										<th class="hidden-xs" style="width: 15%">{{ field.label }}</th>
 										<td class="hidden-xs" style="width: 35%">
 											{% if field.value|safe|stringformat:"s"|startswith:"<table" %} {{ field.value|safe }} {% else %}
-												{{ field.value|safe|default:"-" }} {% endif %} </td>
-												{% if forloop.counter|divisibleby:2 or forloop.last %}
+											{{ field.value|safe|default:"-" }} {% endif %} </td>
+										{% if forloop.counter|divisibleby:2 or forloop.last %}
 									</tr>
 									{% endif %}
 									{% endfor %}
@@ -65,7 +71,7 @@
 										<th style="width: 30%">{{ field.label }}</th>
 										<td style="width: 70%">
 											{% if field.value|safe|stringformat:"s"|startswith:"<table" %} {{ field.value|safe }} {% else %}
-												{{ field.value|safe|default:"-" }} {% endif %} </td>
+											{{ field.value|safe|default:"-" }} {% endif %} </td>
 									</tr>
 									{% endfor %}
 								</tbody>
@@ -77,45 +83,52 @@
 				{% if tabs %}
 				<!-- object 统计信息 不是tabs -->
 				<fieldset class="mb-3">
-				  <div class="fieldset-header">
-					<h4>相关资源</h4>
-				  </div>
-				  <div class="fieldset-content" style="margin-top: 1px;">
-					<div class="row">
-					  {% for tab in tabs %}
-					  {% if tab.count > 0 %}
-					  <div class="col-md-3 col-sm-4 col-xs-12">
-						<div class="info-box" style="border: 1px solid #f4f4f4; box-shadow: none;">
-						  <span class="info-box-icon bg-{% cycle 'aqua' 'light-blue' 'olive' 'teal' 'navy' %}"><i class="{{ tab.icon }}"></i></span>
-			  
-						  <div class="info-box-content">
-							<a href="{{ tab.url }}"><span class="info-box-text">{{ tab.title }}</span></a>
-							<!-- <span class="info-box-text">{{ tab.title }}</span> -->
-							<span class="info-box-number">{{ tab.count }}</span>
-						  </div>
-						  <!-- /.info-box-content -->
-						</div>
-						<!-- /.info-box -->
-					  </div>
-					  {% endif %}
-					  {% endfor %}
+					<div class="fieldset-header">
+						<h4>相关资源</h4>
 					</div>
-				  </div>
+					<div class="fieldset-content" style="margin-top: 1px;">
+						<div class="row">
+							{% for tab in tabs %}
+							{% if tab.count > 0 %}
+							<div class="col-md-3 col-sm-4 col-xs-12">
+								<div class="info-box" style="border: 1px solid #f4f4f4; box-shadow: none;">
+									<span class="info-box-icon bg-{% cycle 'aqua' 'light-blue' 'olive' 'teal' 'navy' %}"><i
+											class="{{ tab.icon }}"></i></span>
+
+									<div class="info-box-content">
+										<a href="{{ tab.url }}"><span class="info-box-text">{{ tab.title }}</span></a>
+										<!-- <span class="info-box-text">{{ tab.title }}</span> -->
+										<span class="info-box-number">{{ tab.count }}</span>
+									</div>
+									<!-- /.info-box-content -->
+								</div>
+								<!-- /.info-box -->
+							</div>
+							{% endif %}
+							{% endfor %}
+						</div>
+					</div>
 				</fieldset>
 				{% endif %}
 				<fieldset>
-					<div class="fieldset-header"><h4>创建与更新</h4></div>
+					<div class="fieldset-header">
+						<h4>创建与更新</h4>
+					</div>
 					<div class="fieldset-content">
 						<p>
-						  <span class="margin-r-5" title="已创建 {{object.created_at|timesince}} ({{object.created_by}})">{% trans "创建于" %}{{ object.created_at }} ({{ object.created_by }})</span>
-						{% if object.updated_by %}
-						</br>
-						<!-- <span class="text-muted margin-r-5">•</span> -->
-						  <span title="更新 {{object.updated_at|timesince}} ({{object.updated_by}})">{% trans "更新于" %}{{ object.updated_at }} ({{ object.updated_by }})</span>
-						{% endif %}
+							<span class="margin-r-5"
+								title="已创建 {{object.created_at|timesince}} ({{object.created_by}})">{% trans "创建于" %}{{ object.created_at }}
+								({{ object.created_by }})</span>
+							{% if object.updated_by %}
+							</br>
+							<!-- <span class="text-muted margin-r-5">•</span> -->
+							<span
+								title="更新 {{object.updated_at|timesince}} ({{object.updated_by}})">{% trans "更新于" %}{{ object.updated_at }}
+								({{ object.updated_by }})</span>
+							{% endif %}
 						</p>
-					  </div>
-				  </fieldset>
+					</div>
+				</fieldset>
 			</div>
 			{# 右侧机柜立面图 #}
 			<div class="col-md-3 col-md-pull-9">
@@ -133,5 +146,32 @@
 		</div>
 	</div>
 </div>
+
+{% if qr_token %}
+<div class="modal fade" id="qrModal" tabindex="-1" role="dialog" aria-labelledby="qrModalLabel">
+	<div class="modal-dialog modal-sm" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+				<h4 class="modal-title" id="qrModalLabel">
+					<i class="fa fa-qrcode"></i> 二维码
+				</h4>
+			</div>
+			<div class="modal-body" style="text-align: center; padding: 20px;">
+				<img src="{{ qr_image_url }}" alt="QR Code"
+					style="width: 220px; height: 220px; display: block; margin: 0 auto;">
+				<p style="margin-top: 12px; font-size: 12px; color: #888;">{{ object }}</p>
+			</div>
+			<div class="modal-footer" style="text-align: center;">
+				<a href="{{ qr_download_url }}" class="btn btn-primary btn-sm" download>
+					<i class="fa fa-download"></i> {% trans "下载 PNG" %}
+				</a>
+			</div>
+		</div>
+	</div>
+</div>
+{% endif %}
 
 {% endblock %}
